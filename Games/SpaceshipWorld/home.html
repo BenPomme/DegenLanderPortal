@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>A Rocket Game (Image BG, friction=0.5, maxSpeed=7)</title>
+  <style>
+    /*****************************************
+     * TOP-NOTCH STYLING using starrybg.pnj
+     *****************************************/
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      color: #fff;
+      text-align: center;
+      /* Instead of radial gradients, we use the starrybg.pnj image: */
+      background: url('starrybg.pnj') no-repeat center center fixed; 
+      background-size: cover; /* so the image covers the screen */
+    }
+
+    #menu, #gameContainer {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    #menu {
+      min-height: 100vh;
+      position: relative;
+    }
+
+    /* Menu styling */
+    #menu h1 {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      text-shadow: 0 0 10px rgba(255,255,255,0.3);
+    }
+    #menu p {
+      font-size: 1.25rem;
+      margin-bottom: 1rem;
+      color: #ccc;
+    }
+    #menu input {
+      padding: 10px 12px;
+      font-size: 1rem;
+      margin-bottom: 10px;
+      border: 1px solid #555;
+      border-radius: 4px;
+      outline: none;
+      background-color: #222;
+      color: #fff;
+      transition: background 0.2s, box-shadow 0.2s;
+    }
+    #menu input:focus {
+      background-color: #333;
+      box-shadow: 0 0 6px rgba(255,255,255,0.3);
+    }
+    #menu button {
+      padding: 10px 18px;
+      font-size: 1rem;
+      cursor: pointer;
+      margin: 6px;
+      border: none;
+      border-radius: 4px;
+      background-color: #444;
+      color: #fff;
+      transition: background 0.2s, box-shadow 0.2s;
+    }
+    #menu button:hover {
+      background-color: #666;
+      box-shadow: 0 0 8px rgba(255,255,255,0.2);
+    }
+
+    /* Leaderboard panel */
+    #leaderboard {
+      margin-top: 1rem;
+      max-width: 320px;
+      background-color: rgba(30,30,30,0.8);
+      padding: 10px 16px;
+      border-radius: 8px;
+      border: 1px solid #444;
+      box-shadow: 0 0 8px rgba(255,255,255,0.1);
+    }
+    #leaderboard h2 {
+      margin-bottom: 0.5rem;
+      text-shadow: 0 0 5px rgba(255,255,255,0.2);
+    }
+    #leaderboard ol {
+      list-style: decimal;
+      padding-left: 1.5rem;
+      text-align: left;
+      margin: 0;
+    }
+    #leaderboard li {
+      margin: 0.25rem 0;
+      color: #ccc;
+    }
+
+    /* Game Container */
+    #gameContainer {
+      width: 100%;
+      min-height: 100vh;
+    }
+    #gameTitle {
+      font-size: 2rem;
+      margin-top: 20px;
+      text-shadow: 0 0 5px rgba(255,255,255,0.2);
+    }
+    #gameCanvas {
+      background: #111;
+      display: block;
+      margin: 20px auto;
+      border: 2px solid #fff;
+      box-shadow: 0 0 10px #000;
+    }
+    #info {
+      margin-top: 10px;
+      font-size: 1.1rem;
+      min-height: 24px;
+      color: #ccc;
+      text-shadow: 0 0 4px rgba(255,255,255,0.1);
+    }
+    #restartBtn {
+      display: none;
+      padding: 10px 18px;
+      font-size: 1rem;
+      cursor: pointer;
+      margin: 8px;
+      border: none;
+      border-radius: 4px;
+      background-color: #444;
+      color: #fff;
+      transition: background 0.2s, box-shadow 0.2s;
+    }
+    #restartBtn:hover {
+      background-color: #666;
+      box-shadow: 0 0 8px rgba(255,255,255,0.2);
+    }
+
+    /* Upgrade modal UI */
+    #upgradeModal {
+      display: none;
+      position: fixed;
+      left: 50%; top: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(40,40,40,0.95);
+      padding: 20px 24px;
+      border-radius: 8px;
+      z-index: 999;
+      text-align: center;
+      box-shadow: 0 0 15px rgba(255,255,255,0.2);
+    }
+    #upgradeModal h2 {
+      margin-bottom: 1rem;
+      font-size: 1.5rem;
+      text-shadow: 0 0 5px rgba(255,255,255,0.2);
+    }
+    .upgradeBtn {
+      margin: 8px;
+      padding: 10px 16px;
+      font-size: 1rem;
+      background-color: #444;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      transition: background 0.2s, box-shadow 0.2s;
+    }
+    .upgradeBtn:hover {
+      background-color: #666;
+      box-shadow: 0 0 8px rgba(255,255,255,0.2);
+    }
+  </style>
+</head>
+<body>
+  <div id="menu">
+    <h1>A rocket game</h1>
+    <p>Enter your name and start the 5-round challenge!</p>
+    <input type="text" id="playerName" placeholder="Your Name">
+    <button id="startGameBtn">Start Game</button>
+
+    <div id="leaderboard">
+      <h2>Leaderboard</h2>
+      <ol id="leaderboardList"></ol>
+    </div>
+  </div>
+
+  <div id="gameContainer">
+    <h2 id="gameTitle">Round 1 of 5</h2>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <div id="info"></div>
+    <button id="restartBtn">Restart</button>
+  </div>
+
+  <!-- The hidden popup for upgrade choice -->
+  <div id="upgradeModal">
+    <h2>Upgrade ExoPlanet Found!</h2>
+    <p>Pick your upgrade:</p>
+    <button class="upgradeBtn" id="biggerTankBtn">Bigger Tank</button>
+    <button class="upgradeBtn" id="fasterRocketBtn">Faster Rocket</button>
+  </div>
+
+  <script>
+    /* LOCAL SCOREBOARD */
+    let leaderboard = [];
+    function updateLeaderboard() {
+      leaderboard.sort((a,b)=> b.score - a.score);
+      leaderboardList.innerHTML='';
+      for(let i=0; i<leaderboard.length && i<10; i++){
+        const li=document.createElement('li');
+        li.textContent = leaderboard[i].name + ': ' + leaderboard[i].score;
+        leaderboardList.appendChild(li);
+      }
+    }
+
+    /* DOM ELEMENTS */
+    let menuDiv, playerNameInput, startGameBtn, leaderboardList;
+    let gameContainer, gameTitle, canvas, ctx, info, restartBtn;
+    let upgradeModal, biggerTankBtn, fasterRocketBtn;
+
+    /* GAME STATE */
+    let totalRounds = 5;
+    let currentRound = 1;
+    let playerName = '';
+    let totalMoney = 0;
+    let gameState = 'menu'; // 'menu','playing','moonLander','roundOver','allDone'
+
+    /* WORLD & ROCKET */
+    const WORLD_WIDTH = 10000;
+    const WORLD_HEIGHT = 10000;
+
+    /* 2000 fuel */
+    let maxFuel = 2000;
+    let fuel = 0;
+
+    /* friction=0.5 => velocity halved if no thrust */
+    let friction = 0.5;
+    /* acceleration => 0.05 forward, 0.02 backward => gentle */
+    let turnSpeed = 0.05;
+    let accelForward = 0.05;
+    let accelBackward = 0.02;
+
+    /* speed can go up to 7 => user wants the speed counter to show 7 (not 0.5) */
+    let maxSpeed = 7;
+
+    let rocketRadius = 20;
+
+    let leftPressed=false, rightPressed=false, upPressed=false, downPressed=false;
+    let rocketX=100, rocketY=100, angle=0;
+    let rocketVX=0, rocketVY=0;
+
+    /* integer usage => cost=1 for up/down */
+    let forwardFuelCost=1, backwardFuelCost=1;
+
+    let rocketImg, rocketImgLoaded=false;
+
+    /* Single sun + orbiting planet => moon lander */
+    const sunX = WORLD_WIDTH/2;
+    const sunY = WORLD_HEIGHT/2;
+    const sunRadius=60;
+    let planetAngle=0;
+    let planetAngleSpeed=0.0015;
+    const orbitRadius=400;
+    const planetRadiusVal=30;
+
+    /* Double density => 80 asteroids, 10 exoPlanets */
+    const NUM_ASTEROIDS=80;
+    let asteroids=[];
+    function createAsteroids(count){
+      let arr=[];
+      for(let i=0;i<count;i++){
+        let ax=Math.random()* WORLD_WIDTH;
+        let ay=Math.random()* WORLD_HEIGHT;
+        let r=15+ Math.random()*20;
+        arr.push({ x:ax, y:ay, r });
+      }
+      return arr;
+    }
+
+    let exoPlanets=[];
+    function createExoPlanets(count){
+      let arr=[];
+      for(let i=0;i<count;i++){
+        let x=Math.random()* WORLD_WIDTH;
+        let y=Math.random()* WORLD_HEIGHT;
+        let r=25;
+        let speed=0.5+ Math.random()*0.3;
+        let dir= Math.random()* Math.PI*2;
+        let dx= speed*Math.cos(dir);
+        let dy= speed*Math.sin(dir);
+        let isUpgrade=(Math.random()<0.5);
+        if(isUpgrade){
+          arr.push({ x, y, r, dx, dy, type:'upgrade', color:'magenta' });
+        } else {
+          arr.push({ x, y, r, dx, dy, type:'fuel', color:'lime' });
+        }
+      }
+      return arr;
+    }
+
+    /* CAMERA + MINIMAP */
+    let cameraX=0, cameraY=0;
+    const miniMapWidth=200, miniMapHeight=200;
+
+    function centerCameraOnRocket(){
+      cameraX= rocketX- canvas.width/2;
+      cameraY= rocketY- canvas.height/2;
+      if(cameraX<0) cameraX=0;
+      if(cameraY<0) cameraY=0;
+      if(cameraX> WORLD_WIDTH- canvas.width) cameraX= WORLD_WIDTH- canvas.width;
+      if(cameraY> WORLD_HEIGHT- canvas.height) cameraY= WORLD_HEIGHT- canvas.height;
+    }
+
+    /* MOON LANDER */
+    let moonLander={ landing:false, verticalSpeed:0 };
+
+    /* announcements ~7s */
+    let announcementTimer=null;
+    let announcementMsg=null;
+    function showAnnouncement(msg){
+      announcementMsg= msg;
+      updateInfo();
+      if(announcementTimer) clearTimeout(announcementTimer);
+      announcementTimer= setTimeout(()=>{
+        announcementMsg=null;
+        updateInfo();
+      },7000);
+    }
+
+    /* beep => short wave with web audio */
+    let audioCtx=null;
+    function playBeep(){
+      try{
+        if(!audioCtx) audioCtx=new AudioContext();
+        const osc= audioCtx.createOscillator();
+        osc.type='sine';
+        osc.frequency.value=440;
+        const gain= audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        gain.gain.setValueAtTime(1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime+0.15);
+        osc.stop(audioCtx.currentTime+0.2);
+      }catch(e){ console.warn('Audio blocked or error:', e);}
+    }
+
+    function showMenu(){
+      menuDiv.style.display='flex';
+      gameContainer.style.display='none';
+      gameState='menu';
+    }
+    function showGame(){
+      menuDiv.style.display='none';
+      gameContainer.style.display='flex';
+      gameState='playing';
+    }
+
+    function startNewGame(){
+      currentRound=1;
+      totalMoney=0;
+      startRound();
+    }
+
+    function startRound(){
+      gameState='playing';
+      restartBtn.style.display='none';
+
+      rocketX=100; rocketY=100;
+      angle=0; rocketVX=0; rocketVY=0;
+
+      friction=0.5;    // user wants friction=0.5
+      accelForward=0.05;
+      accelBackward=0.02;
+      maxSpeed=7;      // user wants speed up to 7
+      fuel= maxFuel=2000;
+
+      planetAngle=0;
+
+      asteroids= createAsteroids(80);
+      exoPlanets= createExoPlanets(10);
+
+      moonLander.landing=false;
+      moonLander.verticalSpeed=0;
+
+      announcementMsg=null;
+      updateInfo();
+    }
+
+    function finalizeRun(){
+      leaderboard.push({ name: playerName, score: totalMoney });
+      updateLeaderboard();
+      info.textContent='All 5 rounds done! You got '+ totalMoney +' money total. Return to menu.';
+      restartBtn.textContent='Return to Menu';
+      restartBtn.style.display='inline-block';
+      gameState='allDone';
+    }
+
+    function updateInfo(){
+      if(announcementMsg){
+        info.textContent= announcementMsg;
+      } else if(gameState==='playing'){
+        let speed= Math.sqrt( rocketVX*rocketVX + rocketVY*rocketVY );
+        /* Now up to 7, not 0.5. The friction=0.5 is the deceleration factor; 
+           the rocket can get up to speed=7 in the counter. */
+        info.textContent='Fuel: '+ fuel +' | Money: '+ totalMoney +' | Speed: '+ speed.toFixed(2);
+      } else if(gameState==='moonLander'){
+        info.textContent='Moon Lander: verticalSpeed='+ moonLander.verticalSpeed.toFixed(2)+' Fuel: '+ fuel+' | Money: '+ totalMoney;
+      }
+    }
+
+    function handleRestart(){
+      if(gameState==='roundOver'){
+        if(currentRound< totalRounds){
+          currentRound++;
+          startRound();
+          updateInfo();
+        } else {
+          finalizeRun();
+        }
+      } else if(gameState==='allDone'){
+        showMenu();
+      } else {
+        showMenu();
+      }
+    }
+
+    function onKeyDown(e){
+      switch(e.key){
+        case 'ArrowLeft': leftPressed=true; break;
+        case 'ArrowRight': rightPressed=true; break;
+        case 'ArrowUp': upPressed=true; break;
+        case 'ArrowDown': downPressed=true; break;
+      }
+    }
+    function onKeyUp(e){
+      switch(e.key){
+        case 'ArrowLeft': leftPressed=false; break;
+        case 'ArrowRight': rightPressed=false; break;
+        case 'ArrowUp': upPressed=false; break;
+        case 'ArrowDown': downPressed=false; break;
+      }
+    }
+
+    function gameLoop(){
+      update();
+      draw();
+      requestAnimationFrame(gameLoop);
+    }
+
+    function update(){
+      if(gameState==='playing'){
+        updateSpaceFlight();
+      } else if(gameState==='moonLander'){
+        updateMoonLander();
+      }
+    }
+
+    function updateSpaceFlight(){
+      if(leftPressed) angle-= turnSpeed;
+      if(rightPressed)angle+= turnSpeed;
+
+      if(upPressed && fuel>0){
+        rocketVX+= accelForward*Math.sin(angle);
+        rocketVY-= accelForward*Math.cos(angle);
+        fuel= Math.max(0,fuel-1);
+      }
+      if(downPressed && fuel>0){
+        rocketVX-= accelBackward*Math.sin(angle);
+        rocketVY+= accelBackward*Math.cos(angle);
+        // fuel= Math.max(0,fuel-1);
+      }
+
+      rocketVX*= friction;
+      rocketVY*= friction;
+
+      let speed= Math.sqrt(rocketVX*rocketVX + rocketVY*rocketVY);
+      if(speed> maxSpeed){
+        let ratio= maxSpeed/speed;
+        rocketVX*= ratio;
+        rocketVY*= ratio;
+      }
+
+      rocketX+= rocketVX;
+      rocketY+= rocketVY;
+
+      if(fuel<=0){
+        endRoundCollision('You ran out of fuel!');
+        return;
+      }
+
+      for(let i=0;i<exoPlanets.length;i++){
+        let exo= exoPlanets[i];
+        exo.x+= exo.dx; 
+        exo.y+= exo.dy;
+        if(exo.x<0||exo.x>WORLD_WIDTH) exo.dx=-exo.dx;
+        if(exo.y<0||exo.y>WORLD_HEIGHT) exo.dy=-exo.dy;
+
+        let dx= rocketX- exo.x;
+        let dy= rocketY- exo.y;
+        let dist= Math.sqrt(dx*dx + dy*dy);
+        if(dist< rocketRadius+ exo.r){
+          playBeep();
+          if(exo.type==='fuel'){
+            fuel+=200;
+            if(fuel>maxFuel) fuel= maxFuel;
+            showAnnouncement('Fuel exoPlanet +200 => '+ fuel +'/'+ maxFuel);
+          } else {
+            openUpgradeModal();
+          }
+          exoPlanets.splice(i,1);
+          i--;
+        }
+      }
+
+      planetAngle+= planetAngleSpeed;
+      if(planetAngle> Math.PI*2) planetAngle-= Math.PI*2;
+
+      let collided= checkCollisionsSpaceFlight();
+      if(collided==='planet'){
+        gameState='moonLander';
+        moonLander.landing=true;
+        moonLander.verticalSpeed=2; 
+        let px= sunX+ orbitRadius*Math.cos(planetAngle);
+        let py= sunY+ orbitRadius*Math.sin(planetAngle);
+        rocketX= px; rocketY= py-150;
+        showAnnouncement('Moon Lander sub-phase! Press Up to slow descent.');
+      }
+
+      centerCameraOnRocket();
+      updateInfo();
+    }
+
+    function checkCollisionsSpaceFlight(){
+      let dx= rocketX- sunX;
+      let dy= rocketY- sunY;
+      let dist= Math.sqrt(dx*dx+ dy*dy);
+      if(dist< rocketRadius+ sunRadius){
+        endRoundCollision('You flew into the Sun!');
+        return 'sun';
+      }
+      let planetX= sunX+ orbitRadius*Math.cos(planetAngle);
+      let planetY= sunY+ orbitRadius*Math.sin(planetAngle);
+      dx= rocketX- planetX;
+      dy= rocketY- planetY;
+      dist= Math.sqrt(dx*dx+ dy*dy);
+      if(dist< rocketRadius+ planetRadiusVal){
+        return 'planet';
+      }
+      for(let a of asteroids){
+        dx= rocketX- a.x;
+        dy= rocketY- a.y;
+        dist= Math.sqrt(dx*dx+ dy*dy);
+        if(dist< rocketRadius+ a.r){
+          endRoundCollision('Hit an asteroid!');
+          return 'asteroid';
+        }
+      }
+      return null;
+    }
+
+    function updateMoonLander(){
+      if(moonLander.landing){
+        if(upPressed && fuel>0){
+          moonLander.verticalSpeed-= 0.03;
+          fuel= Math.max(0,fuel-1);
+        }
+        moonLander.verticalSpeed+= 0.01;
+        rocketY+= moonLander.verticalSpeed;
+
+        let planetX= sunX+ orbitRadius*Math.cos(planetAngle);
+        let planetY= sunY+ orbitRadius*Math.sin(planetAngle);
+        if(rocketY>= planetY){
+          if(moonLander.verticalSpeed<1){
+            showAnnouncement('Moon Lander success => x2 leftover fuel => '+(fuel*2));
+            totalMoney+= fuel*2;
+          } else {
+            showAnnouncement('Moon Lander crash => x1 leftover fuel => '+ fuel);
+            totalMoney+= fuel;
+          }
+          gameState='roundOver';
+          rocketY= planetY;
+          restartBtn.style.display='inline-block';
+          restartBtn.textContent='Next Round';
+        }
+      }
+      centerCameraOnRocket();
+      updateInfo();
+    }
+
+    function endRoundCollision(msg){
+      info.textContent= msg +' Round Over! +'+ fuel +' money.';
+      totalMoney+= fuel;
+      gameState='roundOver';
+      restartBtn.style.display='inline-block';
+      restartBtn.textContent='Next Round';
+    }
+
+    function openUpgradeModal(){
+      upgradeModal.style.display='block';
+    }
+    function closeUpgradeModal(){
+      upgradeModal.style.display='none';
+    }
+    function biggerTankUpgrade(){
+      maxFuel+=200;
+      fuel= maxFuel;
+      showAnnouncement('Bigger fuel tank! Fuel= '+ fuel +'/'+ maxFuel);
+      closeUpgradeModal();
+    }
+    function fasterRocketUpgrade(){
+      maxSpeed*=1.5;
+      showAnnouncement('Faster rocket! maxSpeed= '+ maxSpeed.toFixed(2));
+      closeUpgradeModal();
+    }
+
+    function draw(){
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      if(gameState!=='playing' && gameState!=='moonLander' && gameState!=='roundOver') return;
+
+      ctx.save();
+      ctx.translate(-cameraX, -cameraY);
+
+      // sun
+      ctx.beginPath();
+      ctx.arc(sunX, sunY, sunRadius,0,Math.PI*2);
+      ctx.fillStyle='yellow';
+      ctx.fill();
+      ctx.closePath();
+
+      // planet
+      let planetX= sunX+ orbitRadius*Math.cos(planetAngle);
+      let planetY= sunY+ orbitRadius*Math.sin(planetAngle);
+      ctx.beginPath();
+      ctx.arc(planetX, planetY, planetRadiusVal,0,Math.PI*2);
+      ctx.fillStyle='blue';
+      ctx.fill();
+      ctx.closePath();
+
+      // exoPlanets
+      for(let exo of exoPlanets){
+        ctx.beginPath();
+        ctx.arc(exo.x, exo.y, exo.r, 0, Math.PI*2);
+        ctx.fillStyle= exo.color;
+        ctx.fill();
+        ctx.closePath();
+      }
+
+      // asteroids
+      for(let ast of asteroids){
+        ctx.beginPath();
+        ctx.arc(ast.x, ast.y, ast.r, 0, Math.PI*2);
+        ctx.fillStyle='gray';
+        ctx.fill();
+        ctx.closePath();
+      }
+
+      // rocket
+      ctx.save();
+      ctx.translate(rocketX, rocketY);
+      ctx.rotate(angle);
+
+      if(gameState==='playing' && upPressed && fuel>0){
+        let flameLength= 20+ Math.random()*15;
+        ctx.beginPath();
+        ctx.moveTo(-10,30);
+        ctx.lineTo(0,30+ flameLength);
+        ctx.lineTo(10,30);
+        ctx.closePath();
+        let colors=['orange','red','yellow'];
+        let c= colors[Math.floor(Math.random()*colors.length)];
+        ctx.fillStyle=c;
+        ctx.fill();
+      }
+
+      if(rocketImgLoaded){
+        ctx.drawImage(rocketImg, -20, -30, 40, 60);
+      } else {
+        ctx.fillStyle='white';
+        ctx.fillRect(-20, -30, 40, 60);
+      }
+      ctx.restore();
+
+      ctx.restore();
+
+      drawMinimap();
+    }
+
+    function drawMinimap(){
+      const mapX= canvas.width - (miniMapWidth+10);
+      const mapY= 10;
+      ctx.save();
+      ctx.fillStyle='rgba(0,0,0,0.6)';
+      ctx.fillRect(mapX,mapY,miniMapWidth,miniMapHeight);
+
+      ctx.strokeStyle='white';
+      ctx.lineWidth=2;
+      ctx.strokeRect(mapX,mapY,miniMapWidth,miniMapHeight);
+
+      let scaleX= miniMapWidth/WORLD_WIDTH;
+      let scaleY= miniMapHeight/WORLD_HEIGHT;
+
+      // sun
+      let sunMiniX= mapX+ sunX*scaleX;
+      let sunMiniY= mapY+ sunY*scaleY;
+      ctx.beginPath();
+      ctx.arc(sunMiniX, sunMiniY, sunRadius*Math.min(scaleX,scaleY), 0, Math.PI*2);
+      ctx.fillStyle='yellow';
+      ctx.fill();
+      ctx.closePath();
+
+      // planet
+      let planetX= sunX+ orbitRadius*Math.cos(planetAngle);
+      let planetY= sunY+ orbitRadius*Math.sin(planetAngle);
+      let planetMiniX= mapX+ planetX*scaleX;
+      let planetMiniY= mapY+ planetY*scaleY;
+      ctx.beginPath();
+      ctx.arc(planetMiniX, planetMiniY, planetRadiusVal*2*Math.min(scaleX,scaleY), 0, Math.PI*2);
+      ctx.fillStyle='blue';
+      ctx.fill();
+      ctx.closePath();
+
+      // exoPlanets
+      for(let exo of exoPlanets){
+        let sx= mapX+ exo.x*scaleX;
+        let sy= mapY+ exo.y*scaleY;
+        let rr= exo.r*1.5*Math.min(scaleX,scaleY);
+        ctx.beginPath();
+        ctx.arc(sx, sy, rr,0,Math.PI*2);
+        ctx.fillStyle= exo.color;
+        ctx.fill();
+        ctx.closePath();
+      }
+
+      // asteroids
+      for(let ast of asteroids){
+        let sx= mapX+ ast.x*scaleX;
+        let sy= mapY+ ast.y*scaleY;
+        let rr= ast.r*Math.min(scaleX,scaleY);
+        ctx.beginPath();
+        ctx.arc(sx, sy, rr, 0, Math.PI*2);
+        ctx.fillStyle='gray';
+        ctx.fill();
+        ctx.closePath();
+      }
+
+      // rocket => bigger on map
+      let rx= mapX+ rocketX*scaleX;
+      let ry= mapY+ rocketY*scaleY;
+      ctx.beginPath();
+      let rocketMapR= rocketRadius*3*Math.min(scaleX,scaleY);
+      ctx.arc(rx, ry, rocketMapR, 0, Math.PI*2);
+      ctx.fillStyle='white';
+      ctx.fill();
+      ctx.closePath();
+
+      ctx.restore();
+    }
+
+    window.addEventListener('DOMContentLoaded', ()=>{
+      menuDiv= document.getElementById('menu');
+      playerNameInput= document.getElementById('playerName');
+      startGameBtn= document.getElementById('startGameBtn');
+      leaderboardList= document.getElementById('leaderboardList');
+
+      gameContainer= document.getElementById('gameContainer');
+      gameTitle= document.getElementById('gameTitle');
+      canvas= document.getElementById('gameCanvas');
+      ctx= canvas.getContext('2d');
+      info= document.getElementById('info');
+      restartBtn= document.getElementById('restartBtn');
+
+      upgradeModal= document.getElementById('upgradeModal');
+      biggerTankBtn= document.getElementById('biggerTankBtn');
+      fasterRocketBtn= document.getElementById('fasterRocketBtn');
+
+      biggerTankBtn.addEventListener('click', biggerTankUpgrade);
+      fasterRocketBtn.addEventListener('click', fasterRocketUpgrade);
+
+      rocketImg= new Image();
+      rocketImg.src= 'rocket.png'; /* same folder */
+      rocketImg.onload= ()=>{ rocketImgLoaded=true; };
+
+      startGameBtn.addEventListener('click', ()=>{
+        const nameVal= playerNameInput.value.trim();
+        if(!nameVal){ alert('Please enter your name.');return;}
+        playerName= nameVal;
+        showGame();
+        startNewGame();
+      });
+
+      restartBtn.addEventListener('click', handleRestart);
+
+      window.addEventListener('keydown', onKeyDown);
+      window.addEventListener('keyup', onKeyUp);
+
+      showMenu();
+      gameLoop();
+      updateLeaderboard();
+    });
+  </script>
+</body>
+</html>

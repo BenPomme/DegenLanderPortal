@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Jeu de Labyrinthe Infini Amélioré</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            background-color: #1e1e1e;
+            overflow: hidden;
+            font-family: 'Roboto', sans-serif;
+            color: #f0f0f0;
+        }
+        canvas {
+            display: block;
+            margin: 0 auto;
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            border-radius: 10px;
+        }
+        #upgradeScreen, #gameOverScreen {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(44, 62, 80, 0.95);
+            padding: 40px;
+            border: 2px solid #2980b9;
+            display: none;
+            text-align: center;
+            z-index: 10;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.7);
+        }
+        #upgradeScreen h2, #gameOverScreen h2 {
+            margin-bottom: 20px;
+            font-size: 28px;
+            color: #ecf0f1;
+        }
+        .upgradeButton, .retryButton {
+            display: block;
+            margin: 15px auto;
+            padding: 15px 30px;
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 18px;
+            border-radius: 8px;
+            position: relative;
+            transition: background 0.3s, transform 0.3s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        .upgradeButton:hover, .retryButton:hover {
+            background: linear-gradient(45deg, #2980b9, #3498db);
+            transform: translateY(-2px);
+        }
+        .upgradeButton:active, .retryButton:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        /* Tooltip container */
+        .upgradeButton .tooltip {
+            visibility: hidden;
+            width: 220px;
+            background-color: rgba(0,0,0,0.8);
+            color: #fff;
+            text-align: left;
+            border-radius: 6px;
+            padding: 10px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%; /* Position above the button */
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 14px;
+        }
+        /* Tooltip arrow */
+        .upgradeButton .tooltip::after {
+            content: "";
+            position: absolute;
+            top: 100%; /* At the bottom of the tooltip */
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 6px;
+            border-style: solid;
+            border-color: rgba(0,0,0,0.8) transparent transparent transparent;
+        }
+        /* Show the tooltip when hovering */
+        .upgradeButton:hover .tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <div id="upgradeScreen">
+        <h2>Choisissez votre Amélioration</h2>
+        <button class="upgradeButton" id="speedUpgrade">
+            Augmenter la Vitesse
+            <div class="tooltip">Augmente la vitesse de déplacement du joueur de 0.5 unités.</div>
+        </button>
+        <button class="upgradeButton" id="boostUpgrade">
+            Boost Temporaire
+            <div class="tooltip">Accélération temporaire de 2 unités pendant 5 secondes.</div>
+        </button>
+        <button class="upgradeButton" id="shieldUpgrade">
+            Bouclier Temporaire
+            <div class="tooltip">Protection temporaire contre les ennemis pendant 5 secondes.</div>
+        </button>
+        <!-- Bouton pour démarrer le niveau suivant -->
+        <button class="upgradeButton" id="nextLevelButton">
+            Commencer le Niveau Suivant
+        </button>
+    </div>
+    <!-- Nouveau écran de Game Over -->
+    <div id="gameOverScreen">
+        <h2>Game Over!</h2>
+        <button class="retryButton" id="retryButton">
+            Retry
+        </button>
+    </div>
+    <script>
+        // ID de l'animation pour la pause (déplacé ici)
+        let animationId;
+
+        // Récupérer le Canvas et le Context
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Éléments des écrans d'amélioration et de Game Over
+        const upgradeScreen = document.getElementById('upgradeScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const speedUpgradeBtn = document.getElementById('speedUpgrade');
+        const boostUpgradeBtn = document.getElementById('boostUpgrade');
+        const shieldUpgradeBtn = document.getElementById('shieldUpgrade');
+        const nextLevelButton = document.getElementById('nextLevelButton');
+        const retryButton = document.getElementById('retryButton');
+
+        // Constantes du jeu
+        const TILE_SIZE = 40;
+        const PLAYER_RADIUS = TILE_SIZE * 0.3;
+        const ENEMY_RADIUS = TILE_SIZE * 0.3;
+        const APPLE_RADIUS = TILE_SIZE * 0.2;
+        const FOV_RADIUS = 10; // Augmenté pour correspondre à la nouvelle taille du labyrinthe
+
+        // Touche enfoncées
+        const keys = {};
+
+        // Écouteurs d'événements pour les touches
+        window.addEventListener('keydown', function(e) {
+            keys[e.key.toLowerCase()] = true;
+        });
+
+        window.addEventListener('keyup', function(e) {
+            keys[e.key.toLowerCase()] = false;
+        });
+
+        // Classe Cell pour le labyrinthe
+        class Cell {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.walls = { top: true, right: true, bottom: true, left: true };
+                this.visited = false;
+            }
+
+            checkNeighbors(cells) {
+                let neighbors = [];
+
+                const top = cells.find(c => c.x === this.x && c.y === this.y - 1);
+                const right = cells.find(c => c.x === this.x + 1 && c.y === this.y);
+                const bottom = cells.find(c => c.x === this.x && c.y === this.y + 1);
+                const left = cells.find(c => c.x === this.x - 1 && c.y === this.y);
+
+                if (top && !top.visited) neighbors.push(top);
+                if (right && !right.visited) neighbors.push(right);
+                if (bottom && !bottom.visited) neighbors.push(bottom);
+                if (left && !left.visited) neighbors.push(left);
+
+                if (neighbors.length > 0) {
+                    const r = Math.floor(Math.random() * neighbors.length);
+                    return neighbors[r];
+                } else {
+                    return undefined;
+                }
+            }
+
+            removeWalls(next, maze) {
+                const x = this.x - next.x;
+                const y = this.y - next.y;
+
+                if (x === 1) {
+                    this.walls.left = false;
+                    next.walls.right = false;
+                    // Ouvrir le mur à gauche
+                    maze[this.y * 2 + 1][this.x * 2] = 1;
+                } else if (x === -1) {
+                    this.walls.right = false;
+                    next.walls.left = false;
+                    // Ouvrir le mur à droite
+                    maze[next.y * 2 + 1][next.x * 2] = 1;
+                }
+
+                if (y === 1) {
+                    this.walls.top = false;
+                    next.walls.bottom = false;
+                    // Ouvrir le mur en haut
+                    maze[this.y * 2][this.x * 2 + 1] = 1;
+                } else if (y === -1) {
+                    this.walls.bottom = false;
+                    next.walls.top = false;
+                    // Ouvrir le mur en bas
+                    maze[next.y * 2][next.x * 2 + 1] = 1;
+                }
+            }
+        }
+
+        // Classe pour générer le labyrinthe avec l'algorithme Recursive Backtracker
+        class MazeGenerator {
+            constructor(cols, rows) {
+                this.cols = cols;
+                this.rows = rows;
+                this.grid = [];
+                this.cells = [];
+                this.stack = [];
+                this.current = null;
+            }
+
+            init() {
+                // Initialiser la grille avec des murs
+                for (let y = 0; y < this.rows * 2 + 1; y++) {
+                    let row = [];
+                    for (let x = 0; x < this.cols * 2 + 1; x++) {
+                        row.push(0); // 0 représente un mur
+                    }
+                    this.grid.push(row);
+                }
+
+                // Créer des cellules logiques
+                for (let y = 0; y < this.rows; y++) {
+                    for (let x = 0; x < this.cols; x++) {
+                        const cell = new Cell(x, y);
+                        this.cells.push(cell);
+                        // Position initiale des passages
+                        this.grid[y * 2 + 1][x * 2 + 1] = 1; // 1 représente un passage
+                    }
+                }
+
+                // Définir le point de départ
+                this.current = this.cells[0];
+                this.current.visited = true;
+                this.stack.push(this.current);
+            }
+
+            generate() {
+                this.init();
+                while (this.stack.length > 0) {
+                    this.current = this.stack.pop();
+                    const next = this.current.checkNeighbors(this.cells);
+                    if (next) {
+                        this.stack.push(this.current);
+                        this.current.removeWalls(next, this.grid);
+                        next.visited = true;
+                        this.stack.push(next);
+                    }
+                }
+                return this.grid;
+            }
+        }
+
+        // Classe Ennemi avec Mouvement Aléatoire (vitesse ajustée)
+        class Enemy {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.speed = 1.0 + (currentLevel * 0.1); // Ralentir la vitesse des ennemis
+                this.direction = this.getRandomDirection();
+                this.changeDirectionInterval = Math.floor(Math.random() * 120) + 60; // Change de direction toutes les 1-3 secondes
+                this.framesSinceLastChange = 0;
+            }
+
+            getRandomDirection() {
+                const dirs = ['up', 'down', 'left', 'right'];
+                return dirs[Math.floor(Math.random() * dirs.length)];
+            }
+
+            move(maze) {
+                this.framesSinceLastChange++;
+
+                // Changer de direction à intervalles aléatoires
+                if (this.framesSinceLastChange >= this.changeDirectionInterval) {
+                    this.direction = this.getRandomDirection();
+                    this.changeDirectionInterval = Math.floor(Math.random() * 120) + 60;
+                    this.framesSinceLastChange = 0;
+                }
+
+                let newX = this.x;
+                let newY = this.y;
+
+                switch(this.direction) {
+                    case 'up':
+                        newY -= this.speed;
+                        break;
+                    case 'down':
+                        newY += this.speed;
+                        break;
+                    case 'left':
+                        newX -= this.speed;
+                        break;
+                    case 'right':
+                        newX += this.speed;
+                        break;
+                }
+
+                if (this.canMove(newX, newY, maze)) {
+                    this.x = newX;
+                    this.y = newY;
+                } else {
+                    // Changer de direction si bloqué
+                    this.direction = this.getRandomDirection();
+                    this.changeDirectionInterval = Math.floor(Math.random() * 120) + 60;
+                    this.framesSinceLastChange = 0;
+                }
+            }
+
+            canMove(x, y, maze) {
+                const col = Math.floor(x / TILE_SIZE);
+                const row = Math.floor(y / TILE_SIZE);
+                if (row < 0 || row >= maze.length || col < 0 || col >= maze[0].length) return false;
+                return maze[row][col] === 1;
+            }
+
+            draw(offsetX, offsetY) {
+                // Ajout d'un dégradé pour l'ennemi
+                const gradient = ctx.createRadialGradient(this.x - offsetX, this.y - offsetY, ENEMY_RADIUS * 0.3, this.x - offsetX, this.y - offsetY, ENEMY_RADIUS);
+                gradient.addColorStop(0, '#e74c3c');
+                gradient.addColorStop(1, '#c0392b');
+
+                ctx.beginPath();
+                ctx.fillStyle = gradient;
+                ctx.shadowColor = '#e74c3c';
+                ctx.shadowBlur = 15;
+                ctx.arc(this.x - offsetX, this.y - offsetY, ENEMY_RADIUS, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0; // Réinitialiser l'ombre
+            }
+        }
+
+        // Joueur
+        const player = {
+            x: TILE_SIZE,
+            y: TILE_SIZE,
+            speed: 2,
+            boost: false,
+            boostTimer: 0,
+            shield: false,
+            shieldTimer: 0
+        };
+
+        // Variables globales
+        let maze = [];
+        let startPos = {x:1, y:1};
+        let endPos = {x:21, y:17};
+        let apples = [];
+        let enemies = [];
+        let currentLevel = 1;
+        let gameOver = false;
+        let win = false;
+        let applesCollected = 0;
+        let totalApples = 0;
+
+        // Initialiser le premier niveau
+        initLevel();
+
+        // Système d'Amélioration
+        function showUpgradeScreen() {
+            upgradeScreen.style.display = 'block';
+            // Pauser la boucle du jeu
+            cancelAnimationFrame(animationId);
+            animationId = null;
+        }
+
+        function hideUpgradeScreen() {
+            upgradeScreen.style.display = 'none';
+            // Reprendre la boucle du jeu
+            gameLoop();
+        }
+
+        // Afficher l'écran de Game Over
+        function showGameOverScreen() {
+            gameOverScreen.style.display = 'block';
+            // Pauser la boucle du jeu
+            cancelAnimationFrame(animationId);
+            animationId = null;
+        }
+
+        function hideGameOverScreen() {
+            gameOverScreen.style.display = 'none';
+            // Reprendre la boucle du jeu
+            gameLoop();
+        }
+
+        // Passer au Niveau Suivant
+        function nextLevel() {
+            currentLevel++;
+            initLevel();
+        }
+
+        // Initialisation du Niveau
+        function initLevel() {
+            // Adapter la taille du labyrinthe en fonction du niveau pour augmenter la difficulté
+            const baseCols = 10;
+            const baseRows = 8;
+            const extraCols = Math.floor(currentLevel / 2);
+            const extraRows = Math.floor(currentLevel / 2);
+            const cols = baseCols + extraCols;
+            const rows = baseRows + extraRows;
+
+            // Générer un nouveau labyrinthe
+            const generator = new MazeGenerator(cols, rows);
+            maze = generator.generate();
+
+            // Définir le point de départ et d'arrivée
+            startPos = { x: 1, y: 1 };
+            endPos = { x: cols * 2 - 1, y: rows * 2 - 1 };
+
+            // Réinitialiser la position du joueur
+            player.x = startPos.x * TILE_SIZE;
+            player.y = startPos.y * TILE_SIZE;
+
+            // Placer les pommes aléatoirement dans le labyrinthe
+            apples = [];
+            let applesToPlace = 5 + currentLevel; // Augmenter le nombre de pommes avec les niveaux
+            while (apples.length < applesToPlace) {
+                let randX = Math.floor(Math.random() * cols) * 2 + 1;
+                let randY = Math.floor(Math.random() * rows) * 2 + 1;
+                if (maze[randY][randX] === 1 && !(randX === startPos.x && randY === startPos.y) && !(randX === endPos.x && randY === endPos.y)) {
+                    // Vérifier si une pomme existe déjà à cette position
+                    if (!apples.some(a => a.x === randX && a.y === randY)) {
+                        apples.push({x: randX, y: randY});
+                    }
+                }
+            }
+
+            // Placer les ennemis aléatoirement dans le labyrinthe
+            enemies = [];
+            let enemiesToPlace = currentLevel + 2; // Augmenter le nombre d'ennemis avec les niveaux
+            while (enemies.length < enemiesToPlace) {
+                let randX = Math.floor(Math.random() * cols) * 2 + 1;
+                let randY = Math.floor(Math.random() * rows) * 2 + 1;
+                if (maze[randY][randX] === 1 && !(randX === startPos.x && randY === startPos.y) && !(randX === endPos.x && randY === endPos.y)) {
+                    // Vérifier si un ennemi existe déjà à cette position
+                    let enemyX = randX * TILE_SIZE;
+                    let enemyY = randY * TILE_SIZE;
+                    if (!enemies.some(e => Math.hypot(e.x - enemyX, e.y - enemyY) < TILE_SIZE)) {
+                        enemies.push(new Enemy(enemyX, enemyY));
+                    }
+                }
+            }
+
+            // Réinitialiser les compteurs
+            applesCollected = 0;
+            totalApples = apples.length;
+
+            // Réinitialiser les états du joueur
+            player.boost = false;
+            player.boostTimer = 0;
+            player.shield = false;
+            player.shieldTimer = 0;
+
+            // Réinitialiser l'état de victoire et de jeu
+            gameOver = false;
+            win = false;
+
+            // Réinitialiser les boutons d'amélioration
+            resetUpgradeButtons();
+
+            // Redémarrer la boucle de jeu si nécessaire
+            if (!animationId) {
+                gameLoop();
+            }
+        }
+
+        // Réinitialiser les boutons d'amélioration
+        function resetUpgradeButtons() {
+            speedUpgradeBtn.disabled = false;
+            speedUpgradeBtn.style.background = 'linear-gradient(45deg, #3498db, #2980b9)';
+            speedUpgradeBtn.style.cursor = 'pointer';
+
+            boostUpgradeBtn.disabled = false;
+            boostUpgradeBtn.style.background = 'linear-gradient(45deg, #3498db, #2980b9)';
+            boostUpgradeBtn.style.cursor = 'pointer';
+
+            shieldUpgradeBtn.disabled = false;
+            shieldUpgradeBtn.style.background = 'linear-gradient(45deg, #3498db, #2980b9)';
+            shieldUpgradeBtn.style.cursor = 'pointer';
+        }
+
+        // Gestionnaires d'Améliorations
+        speedUpgradeBtn.addEventListener('click', function() {
+            player.speed += 0.5;
+            // Désactiver le bouton après sélection
+            speedUpgradeBtn.disabled = true;
+            speedUpgradeBtn.style.background = 'linear-gradient(45deg, #7f8c8d, #95a5a6)';
+            speedUpgradeBtn.style.cursor = 'not-allowed';
+        });
+
+        boostUpgradeBtn.addEventListener('click', function() {
+            player.boost = true;
+            player.boostTimer = 300; // Frames (~5 secondes à 60fps)
+            // Désactiver le bouton après sélection
+            boostUpgradeBtn.disabled = true;
+            boostUpgradeBtn.style.background = 'linear-gradient(45deg, #7f8c8d, #95a5a6)';
+            boostUpgradeBtn.style.cursor = 'not-allowed';
+        });
+
+        shieldUpgradeBtn.addEventListener('click', function() {
+            player.shield = true;
+            player.shieldTimer = 300; // Frames (~5 secondes à 60fps)
+            // Désactiver le bouton après sélection
+            shieldUpgradeBtn.disabled = true;
+            shieldUpgradeBtn.style.background = 'linear-gradient(45deg, #7f8c8d, #95a5a6)';
+            shieldUpgradeBtn.style.cursor = 'not-allowed';
+        });
+
+        // Gestionnaire d'événements pour le bouton "Commencer le Niveau Suivant"
+        nextLevelButton.addEventListener('click', function() {
+            hideUpgradeScreen();
+            nextLevel();
+        });
+
+        // Gestionnaire d'événements pour le bouton "Retry"
+        retryButton.addEventListener('click', function() {
+            hideGameOverScreen();
+            initLevel();
+        });
+
+        // Boucle de Jeu
+        function gameLoop() {
+            if (!gameOver && !win) {
+                update();
+                draw();
+                animationId = requestAnimationFrame(gameLoop);
+            } else {
+                draw(); // Dessiner l'état final
+                // Afficher le message de fin de jeu ou de niveau complété
+                if (win) {
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                    ctx.fillRect(canvas.width / 2 - 150, canvas.height / 2 - 50, 300, 100);
+                    ctx.fillStyle = '#ecf0f1';
+                    ctx.font = '36px Roboto';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(`Niveau ${currentLevel} Complété!`, canvas.width / 2, canvas.height / 2 - 10);
+                    ctx.font = '24px Roboto';
+                    ctx.fillText('Choisissez votre amélioration...', canvas.width / 2, canvas.height / 2 + 30);
+                    showUpgradeScreen();
+                } else if (gameOver) {
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                    ctx.fillRect(canvas.width / 2 - 150, canvas.height / 2 - 50, 300, 100);
+                    ctx.fillStyle = '#ecf0f1';
+                    ctx.font = '36px Roboto';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('Game Over!', canvas.width / 2, canvas.height / 2);
+                    showGameOverScreen();
+                }
+            }
+        }
+
+        // Mettre à Jour l'État du Jeu
+        function update() {
+            // Mouvement du Joueur
+            let newX = player.x;
+            let newY = player.y;
+
+            let currentSpeed = player.speed;
+            if (player.boost) {
+                currentSpeed += 2;
+                player.boostTimer--;
+                if (player.boostTimer <= 0) {
+                    player.boost = false;
+                }
+            }
+
+            if (keys['arrowup'] || keys['w']) {
+                newY -= currentSpeed;
+            }
+            if (keys['arrowdown'] || keys['s']) {
+                newY += currentSpeed;
+            }
+            if (keys['arrowleft'] || keys['a']) {
+                newX -= currentSpeed;
+            }
+            if (keys['arrowright'] || keys['d']) {
+                newX += currentSpeed;
+            }
+
+            // Détection de Collision avec les Murs
+            if (canMoveTo(newX, newY)) {
+                player.x = newX;
+                player.y = newY;
+            }
+
+            // Vérifier la Collection des Pommes
+            for (let i = 0; i < apples.length; i++) {
+                const apple = apples[i];
+                const appleX = apple.x * TILE_SIZE + TILE_SIZE / 2;
+                const appleY = apple.y * TILE_SIZE + TILE_SIZE / 2;
+                const dist = Math.hypot(player.x - appleX, player.y - appleY);
+                if (dist < PLAYER_RADIUS + APPLE_RADIUS) {
+                    apples.splice(i, 1);
+                    applesCollected++;
+                    break;
+                }
+            }
+
+            if (applesCollected === totalApples) {
+                win = true;
+            }
+
+            // Déplacer les Ennemis
+            enemies.forEach(enemy => enemy.move(maze));
+
+            // Vérifier la Collision avec les Ennemis
+            enemies.forEach(enemy => {
+                const dist = Math.hypot(player.x - enemy.x, player.y - enemy.y);
+                if (dist < PLAYER_RADIUS + ENEMY_RADIUS) {
+                    if (!player.shield) {
+                        gameOver = true;
+                    }
+                }
+            });
+
+            // Mettre à Jour le Timer du Bouclier
+            if (player.shield) {
+                player.shieldTimer--;
+                if (player.shieldTimer <= 0) {
+                    player.shield = false;
+                }
+            }
+        }
+
+        // Vérifier si le Joueur Peut Se Déplacer à la Nouvelle Position
+        function canMoveTo(x, y) {
+            const col = Math.floor(x / TILE_SIZE);
+            const row = Math.floor(y / TILE_SIZE);
+            if (row < 0 || row >= maze.length || col < 0 || col >= maze[0].length) return false;
+            return maze[row][col] === 1;
+        }
+
+        // Dessiner Tout
+        function draw() {
+            // Effacer le Canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Calculer la Position en Tuiles du Joueur
+            const playerCol = Math.floor(player.x / TILE_SIZE);
+            const playerRow = Math.floor(player.y / TILE_SIZE);
+
+            // Déterminer la Zone Visible
+            const startRow = Math.max(playerRow - FOV_RADIUS, 0);
+            const endRow = Math.min(playerRow + FOV_RADIUS + 1, maze.length);
+            const startCol = Math.max(playerCol - FOV_RADIUS, 0);
+            const endCol = Math.min(playerCol + FOV_RADIUS + 1, maze[0].length);
+
+            // Décalage pour Centrer la Vue
+            const offsetX = player.x - canvas.width / 2;
+            const offsetY = player.y - canvas.height / 2;
+
+            // Dessiner les Tuiles du Labyrinthe Visibles
+            for (let row = startRow; row < endRow; row++) {
+                for (let col = startCol; col < endCol; col++) {
+                    if (maze[row][col] === 0) {
+                        // Dégradé pour les murs
+                        const wallGradient = ctx.createLinearGradient(col * TILE_SIZE - offsetX, row * TILE_SIZE - offsetY, (col + 1) * TILE_SIZE - offsetX, (row + 1) * TILE_SIZE - offsetY);
+                        wallGradient.addColorStop(0, '#7f8c8d');
+                        wallGradient.addColorStop(1, '#95a5a6');
+                        ctx.fillStyle = wallGradient;
+                        // Ajouter une ombre légère
+                        ctx.shadowColor = 'rgba(0,0,0,0.3)';
+                        ctx.shadowBlur = 5;
+                        ctx.fillRect(col * TILE_SIZE - offsetX, row * TILE_SIZE - offsetY, TILE_SIZE, TILE_SIZE);
+                        ctx.shadowBlur = 0; // Réinitialiser l'ombre
+                    } else {
+                        // Dégradé pour le sol
+                        const floorGradient = ctx.createLinearGradient(col * TILE_SIZE - offsetX, row * TILE_SIZE - offsetY, (col + 1) * TILE_SIZE - offsetX, (row + 1) * TILE_SIZE - offsetY);
+                        floorGradient.addColorStop(0, '#34495e');
+                        floorGradient.addColorStop(1, '#2c3e50');
+                        ctx.fillStyle = floorGradient;
+                        ctx.fillRect(col * TILE_SIZE - offsetX, row * TILE_SIZE - offsetY, TILE_SIZE, TILE_SIZE);
+                    }
+                }
+            }
+
+            // Dessiner les Pommes dans la Zone Visible
+            apples.forEach(apple => {
+                const appleX = apple.x * TILE_SIZE + TILE_SIZE / 2;
+                const appleY = apple.y * TILE_SIZE + TILE_SIZE / 2;
+                if (isWithinFOV(appleX, appleY)) {
+                    // Dégradé pour les pommes
+                    const appleGradient = ctx.createRadialGradient(appleX - offsetX, appleY - offsetY, 0, appleX - offsetX, appleY - offsetY, APPLE_RADIUS);
+                    appleGradient.addColorStop(0, '#f1c40f');
+                    appleGradient.addColorStop(1, '#e67e22');
+                    ctx.beginPath();
+                    ctx.fillStyle = appleGradient;
+                    ctx.shadowColor = '#f1c40f';
+                    ctx.shadowBlur = 10;
+                    ctx.arc(appleX - offsetX, appleY - offsetY, APPLE_RADIUS, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.shadowBlur = 0; // Réinitialiser l'ombre
+                }
+            });
+
+            // Dessiner les Ennemis dans la Zone Visible
+            enemies.forEach(enemy => {
+                if (isWithinFOV(enemy.x, enemy.y)) {
+                    enemy.draw(offsetX, offsetY);
+                }
+            });
+
+            // Dessiner le Joueur au Centre
+            const playerGradient = ctx.createRadialGradient(canvas.width / 2, canvas.height / 2, PLAYER_RADIUS * 0.3, canvas.width / 2, canvas.height / 2, PLAYER_RADIUS);
+            playerGradient.addColorStop(0, player.shield ? '#1abc9c' : '#2980b9');
+            playerGradient.addColorStop(1, player.shield ? '#16a085' : '#3498db');
+
+            ctx.beginPath();
+            ctx.fillStyle = playerGradient;
+            ctx.shadowColor = player.shield ? '#1abc9c' : '#2980b9';
+            ctx.shadowBlur = 15;
+            ctx.arc(canvas.width / 2, canvas.height / 2, PLAYER_RADIUS, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0; // Réinitialiser l'ombre
+
+            // Afficher le Score et les Améliorations
+            ctx.fillStyle = '#ecf0f1';
+            ctx.font = '18px Roboto';
+            ctx.textAlign = 'left';
+            ctx.fillText(`Niveau: ${currentLevel}`, 10, 25);
+            ctx.fillText(`Pommes Collectées: ${applesCollected} / ${totalApples}`, 10, 50);
+
+            // Afficher l'État du Bouclier
+            if (player.shield) {
+                ctx.fillStyle = '#1abc9c';
+                ctx.font = '16px Roboto';
+                ctx.fillText(`Bouclier: ${Math.ceil(player.shieldTimer / 60)}s`, 10, 75);
+            }
+
+            // Afficher l'État du Boost
+            if (player.boost) {
+                ctx.fillStyle = '#e67e22';
+                ctx.font = '16px Roboto';
+                ctx.fillText(`Boost: ${Math.ceil(player.boostTimer / 60)}s`, 10, 100);
+            }
+        }
+
+        // Vérifier si une position est dans le Champ de Vision
+        function isWithinFOV(x, y) {
+            const dx = Math.abs(x - player.x);
+            const dy = Math.abs(y - player.y);
+            return dx <= FOV_RADIUS * TILE_SIZE && dy <= FOV_RADIUS * TILE_SIZE;
+        }
+
+        // Démarrer la Boucle de Jeu
+        gameLoop();
+    </script>
+</body>
+</html>

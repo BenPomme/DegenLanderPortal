@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Advanced Ant Simulation with Intelligent Super Ant</title>
+    <!-- Google Fonts for Modern Typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Chart.js for Real-Time Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Include Panzoom for Zoom and Pan functionality -->
+    <script src="https://unpkg.com/@panzoom/panzoom@4.4.3/dist/panzoom.min.js"></script>
+    <!-- Include TensorFlow.js -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.11.0/dist/tf.min.js"></script>
+    <!-- Tailwind CSS CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.3.2/dist/tailwind.min.css" rel="stylesheet">
+   <style>
+        /* Reset and Base Styles */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: #f0f2f5;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            color: #333;
+        }
+
+        /* Simulation Canvas Styling */
+        #simulationContainer {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #simulation {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #ffffff, #e0e0e0);
+            cursor: crosshair;
+            transform-origin: 0 0; /* For Panzoom */
+        }
+
+        /* UI Panel Styling */
+        .ui {
+            width: 400px;
+            padding: 25px;
+            background: #ffffff;
+            border-left: 1px solid #ddd;
+            box-shadow: -2px 0 10px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow-y: auto;
+        }
+
+        /* Headings */
+        .ui h3, .ui h4 {
+            color: #444;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        /* Statistics Display */
+        .stat {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            transition: background 0.3s;
+        }
+
+        .stat:hover {
+            background: #e6f7ff;
+        }
+
+        .stat span {
+            font-weight: 500;
+            color: #007bff;
+        }
+
+        /* Buttons */
+        .ui button {
+            padding: 12px 20px;
+            font-size: 16px;
+            color: #fff;
+            background: #007bff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s, transform 0.2s, box-shadow 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            position: relative;
+        }
+
+        .ui button:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .ui button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .ui button:disabled {
+            background: #a0c4ff;
+            cursor: not-allowed;
+        }
+
+        /* Leaderboard and Stats */
+        #leaderboard ul, #smartyStatsContainer div, #analyticsContainer div, #controlPanel div {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        #leaderboard li, .smartyStat, .antStat, .superAntStat, .smartyLifeStat {
+            padding: 10px 15px;
+            background: #f1f3f5;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        #leaderboard li:hover {
+            background: #007bff;
+            color: #fff;
+        }
+
+        .smartyStat, .antStat, .superAntStat, .smartyLifeStat {
+            background: #fafafa;
+            border: 1px solid #ddd;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .smartyStat strong, .antStat strong, .superAntStat strong, .smartyLifeStat strong {
+            color: #333;
+        }
+
+        /* Timer Styling */
+        #timer {
+            font-size: 18px;
+            font-weight: 600;
+            color: #28a745;
+        }
+
+        /* Scrollbar Styling for UI */
+        .ui::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .ui::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 8px;
+        }
+
+        .ui::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 8px;
+        }
+
+        .ui::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+        /* End Summary Modal */
+        #endSummary {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        #endSummaryContent {
+            background: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            width: 80%;
+            max-width: 800px;
+            max-height: 80%;
+            overflow-y: auto;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        #endSummaryContent h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        #endSummaryContent div {
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #f1f1f1;
+            border-radius: 6px;
+        }
+
+        #closeSummary {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background: #dc3545;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        #closeSummary:hover {
+            background: #c82333;
+        }
+
+        /* Analytics Charts */
+        #analyticsContainer {
+            margin-top: 20px;
+        }
+
+        #analyticsContainer canvas {
+            background: #f9f9f9;
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        /* Customization Panel */
+        #customizationPanel {
+            padding: 12px 16px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        #customizationPanel label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+            color: #555;
+        }
+
+        #customizationPanel input[type="range"] {
+            width: 100%;
+        }
+
+        #customizationPanel select {
+            width: 100%;
+            padding: 6px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            margin-bottom: 12px;
+        }
+
+        /* Control Panel */
+        #controlPanel {
+            padding: 12px 16px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        #controlPanel label {
+            display: block;
+            margin-top: 10px;
+            margin-bottom: 6px;
+            font-weight: 500;
+            color: #555;
+        }
+
+        /* Themes */
+        .theme-light {
+            --background-color: #ffffff;
+            --text-color: #333333;
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+            --info-color: #17a2b8;
+            --light-color: #f8f9fa;
+            --dark-color: #343a40;
+        }
+
+        .theme-dark {
+            --background-color: #343a40;
+            --text-color: #f8f9fa;
+            --primary-color: #17a2b8;
+            --secondary-color: #6c757d;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+            --info-color: #17a2b8;
+            --light-color: #f8f9fa;
+            --dark-color: #343a40;
+        }
+
+        /* Apply theme variables */
+        body.theme-light {
+            background: #f0f2f5;
+            color: var(--text-color);
+        }
+
+        body.theme-dark {
+            background: #212529;
+            color: var(--text-color);
+        }
+
+        .ui.theme-light {
+            background: var(--light-color);
+            border-left: 1px solid #444;
+            box-shadow: -2px 0 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .ui.theme-dark {
+            background: #495057;
+            border-left: 1px solid #6c757d;
+            box-shadow: -2px 0 10px rgba(0, 0, 0, 0.7);
+        }
+
+        .ui.theme-dark .stat {
+            background: #6c757d;
+            color: var(--text-color);
+        }
+
+        .ui.theme-dark .stat:hover {
+            background: #17a2b8;
+        }
+
+        .ui.theme-dark button {
+            background: var(--primary-color);
+        }
+
+        .ui.theme-dark button:hover {
+            background: #117a8b;
+        }
+
+        /* Tooltip Styles */
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            cursor: help;
+        }
+
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 220px;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            text-align: left;
+            border-radius: 6px;
+            padding: 10px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%; /* Position above the element */
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 14px;
+        }
+
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .tooltip .tooltiptext::after {
+            content: "";
+            position: absolute;
+            top: 100%; /* At the bottom of the tooltip */
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: rgba(0, 0, 0, 0.8) transparent transparent transparent;
+        }
+
+        /* Dynamic Background */
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        #simulation {
+            animation: gradientShift 15s ease infinite;
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background-size: 400% 400%;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+            }
+
+            .ui {
+                width: 100%;
+                height: 40vh;
+                overflow-y: scroll;
+            }
+
+            #simulationContainer {
+                height: 60vh;
+            }
+        }
+
+        /* Bullet Styling */
+        .bullet {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background-color: #ff0000;
+            border-radius: 50%;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="theme-light">
+    <!-- Simulation Container -->
+    <div id="simulationContainer">
+        <canvas id="simulation"></canvas>
+    </div>
+    
+    <!-- UI Panel -->
+    <div class="ui theme-light">
+        <!-- Statistics -->
+        <h3>Statistics</h3>
+        <div class="stat">Ants: <span id="antCount">0</span></div>
+        <div class="stat">Smarties: <span id="smartyCount">0</span></div>
+        <div class="stat">Resources Collected: <span id="collectedResources">0</span></div>
+        <div class="stat">Smarties' Life Points: <span id="smartyLifePoints">0</span></div>
+        <div class="stat">Soldier Ants' Life Points: <span id="soldierLifePoints">0</span></div>
+        <div class="stat">Super Ants' Life Points: <span id="superAntLifePoints">0</span></div>
+        <div id="timer">Time Elapsed: <span id="timeElapsed">0</span>s</div>
+    <!-- Control Panel -->
+<div class="ui fixed top-0 right-0 m-4 p-4 bg-white bg-opacity-80 rounded-lg shadow-lg flex flex-col space-y-2">
+    <h3 class="text-xl font-semibold mb-2">Control Panel</h3>
+    <div class="space-y-1">
+        <label class="block text-sm font-medium text-gray-700">Simulation Speed</label>
+        <input type="range" id="simulationSpeed" min="0.5" max="2" step="0.1" value="1" class="w-full">
+    </div>
+    <!-- Repeat for other controls -->
+</div>
+    
+        <!-- Powers -->
+        <h4>Powers</h4>
+        <button id="slowPower" class="tooltip">
+            <!-- SVG Icon -->
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-speedometer2" viewBox="0 0 16 16">
+                <path d="M8 4a.5.5 0 0 1 .5.5v4.792l2.146 2.147a.5.5 0 1 1-.708.708L8.5 9.207V4.5A.5.5 0 0 1 8 4z"/>
+                <path fill-rule="evenodd" d="M2 8a6 6 0 1 1 12 0A6 6 0 0 1 2 8zm6-5a5 5 0 0 0-4.546 2.916.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/>
+            </svg>
+            Slow Down Smarties
+            <span class="tooltiptext">Press 's' or click to reduce smarties' speed by 50% for 5 seconds. Costs 10 resources.</span>
+        </button>
+        <button id="startButton">Start Simulation</button>
+
+        <button id="placeWall" class="tooltip">
+            <!-- SVG Icon -->
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-bar-chart-line" viewBox="0 0 16 16">
+                <path d="M0 0h1v16H0V0zm2 6h1v10H2V6zm4-4h1v14H6V2zm4 8h1v6h-1V10z"/>
+            </svg>
+            Place Wall
+            <span class="tooltiptext">Press 'w' or click to create a permanent wall between two points. Costs 15 resources.</span>
+        </button>
+        <button id="spawnSmarty" class="tooltip">
+            <!-- SVG Icon -->
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-circle" viewBox="0 0 16 16">
+                <path d="M8 15A7 7 0 1 0 8 1a7 7 0 0 0 0 14z"/>
+                <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
+            </svg>
+            Spawn Smarty
+            <span class="tooltiptext">Click to spawn a new smarty at a random location. Costs 20 resources.</span>
+        </button>
+        <button id="restartSimulation" class="tooltip">
+            <!-- SVG Icon -->
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-counterclockwise" viewBox="0 0 16 16">
+                <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
+                <path d="M8 4a.5.5 0 0 1 .5.5V6h1.5a.5.5 0 0 1 0 1H8.5A.5.5 0 0 1 8 6.5V5a.5.5 0 0 1 .5-.5z"/>
+            </svg>
+            Restart Simulation
+            <span class="tooltiptext">Press 'r' or click to reset the simulation to its initial state.</span>
+        </button>
+
+        <!-- Control Panel -->
+        <div id="controlPanel">
+            <h4>Simulation Controls</h4>
+            <button id="pauseSimulation" class="tooltip">
+                <!-- SVG Icon -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pause-circle" viewBox="0 0 16 16">
+                    <path d="M8 15A7 7 0 1 0 8 1a7 7 0 0 0 0 14z"/>
+                    <path d="M6 4.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-7zM9 4.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-7z"/>
+                </svg>
+                Pause
+                <span class="tooltiptext">Press 'p' or click to pause the simulation.</span>
+            </button>
+            <button id="resumeSimulation" class="tooltip" disabled>
+                <!-- SVG Icon -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-play-circle" viewBox="0 0 16 16">
+                    <path d="M8 15A7 7 0 1 0 8 1a7 7 0 0 0 0 14z"/>
+                    <path d="M6.271 5.055a.5.5 0 0 1 .52-.038l3 2.5a.5.5 0 0 1 0 .814l-3 2.5a.5.5 0 0 1-.78-.406V5.463a.5.5 0 0 1 .26-.408z"/>
+                </svg>
+                Resume
+                <span class="tooltiptext">Click to resume the simulation.</span>
+            </button>
+            <label for="simulationSpeed">Simulation Speed:</label>
+            <input type="range" id="simulationSpeed" min="0.5" max="2" value="1" step="0.1">
+        </div>
+
+        <!-- Leaderboard -->
+        <div id="leaderboard">
+            <h4>Leaderboard</h4>
+            <ul id="leaderboardList"></ul>
+        </div>
+
+        <!-- Smarties Stats -->
+        <div id="smartyStatsContainer">
+            <h4>Smarties Stats</h4>
+            <div id="smartyStats"></div>
+        </div>
+
+        <!-- Analytics Charts -->
+        <div id="analyticsContainer">
+            <h4>Real-Time Analytics</h4>
+            <canvas id="resourceChart" width="350" height="150"></canvas>
+            <canvas id="antChart" width="350" height="150"></canvas>
+            <canvas id="pheromoneChart" width="350" height="150"></canvas>
+            <canvas id="bulletChart" width="350" height="150"></canvas>
+        </div>
+
+        <!-- Customization Panel -->
+        <div id="customizationPanel">
+            <h4>Customization</h4>
+            <label for="themeSelect">Theme:</label>
+            <select id="themeSelect">
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+            </select>
+
+            <label for="antSpeed">Ant Speed:</label>
+            <input type="range" id="antSpeed" min="1" max="5" value="2" step="0.1">
+
+            <label for="smartyIntelligence">Smarty Intelligence:</label>
+            <input type="range" id="smartyIntelligence" min="100" max="500" value="200" step="10">
+        </div>
+    </div>
+
+    <!-- End Summary Modal -->
+    <div id="endSummary">
+        <div id="endSummaryContent">
+            <h2>Simulation Summary</h2>
+            <div id="summaryContent"></div>
+            <button id="closeSummary">Close</button>
+        </div>
+    </div>
+
+    <!-- Audio Elements for Sound Effects -->
+    <audio id="collectSound" src="https://www.soundjay.com/buttons/sounds/button-09.mp3" preload="auto"></audio>
+    <audio id="captureSound" src="https://www.soundjay.com/buttons/sounds/button-10.mp3" preload="auto"></audio>
+    <audio id="wallSound" src="https://www.soundjay.com/buttons/sounds/button-4.mp3" preload="auto"></audio>
+    <audio id="shootSound" src="https://www.soundjay.com/mechanical/sounds/mechanical-bullet-1.mp3" preload="auto"></audio>
+    <audio id="hitSound" src="https://www.soundjay.com/mechanical/sounds/mechanical-bullet-impact-1.mp3" preload="auto"></audio>
+
+    <!-- Link to External JavaScript File -->
+    <script src="script.js"></script>
+</body>
+</html>
