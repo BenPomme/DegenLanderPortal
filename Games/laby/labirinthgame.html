@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Labyrinthe Degen 18+ Ultra Moderne</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    /* Reset & Base */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      margin: 0;
+      background-color: #1e1e1e;
+      overflow: hidden;
+      font-family: 'Roboto', sans-serif;
+      color: #f0f0f0;
+    }
+    /* Canvas styling with animated neon gradient */
+    canvas {
+      display: block;
+      margin: 0 auto;
+      background: linear-gradient(135deg, #00ffea, #ff00ff, #ffea00);
+      background-size: 400% 400%;
+      animation: neonShift 10s ease infinite;
+      box-shadow: 0 0 20px rgba(0,255,255,0.7);
+      border-radius: 10px;
+    }
+    @keyframes neonShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    /* Upgrade & Game Over Screens – degen neon UI */
+    #upgradeScreen, #gameOverScreen {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(44, 62, 80, 0.95);
+      padding: 40px;
+      border: 2px solid #2980b9;
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(0,255,255,0.7);
+      text-align: center;
+      z-index: 10;
+      display: none;
+    }
+    #upgradeScreen h2, #gameOverScreen h2 {
+      margin-bottom: 20px;
+      font-size: 28px;
+      color: #ecf0f1;
+    }
+    .upgradeButton, .retryButton {
+      display: block;
+      margin: 15px auto;
+      padding: 15px 30px;
+      background: linear-gradient(45deg, #3498db, #2980b9);
+      border: none;
+      color: white;
+      cursor: pointer;
+      font-size: 18px;
+      border-radius: 8px;
+      transition: background 0.3s, transform 0.3s;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+      position: relative;
+    }
+    .upgradeButton:hover, .retryButton:hover {
+      background: linear-gradient(45deg, #2980b9, #3498db);
+      transform: translateY(-2px);
+    }
+    .upgradeButton:active, .retryButton:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    /* Tooltip styles on upgrade buttons */
+    .upgradeButton .tooltip {
+      visibility: hidden;
+      width: 220px;
+      background-color: rgba(0,0,0,0.8);
+      color: #fff;
+      text-align: left;
+      border-radius: 6px;
+      padding: 10px;
+      position: absolute;
+      z-index: 1;
+      bottom: 125%;
+      left: 50%;
+      transform: translateX(-50%);
+      opacity: 0;
+      transition: opacity 0.3s;
+      font-size: 14px;
+    }
+    .upgradeButton .tooltip::after {
+      content: "";
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border-width: 6px;
+      border-style: solid;
+      border-color: rgba(0,0,0,0.8) transparent transparent transparent;
+    }
+    .upgradeButton:hover .tooltip {
+      visibility: visible;
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas" width="800" height="600"></canvas>
+  <div id="upgradeScreen">
+    <h2>Choisissez votre Amélioration</h2>
+    <button class="upgradeButton" id="speedUpgrade">
+      Augmenter la Vitesse
+      <div class="tooltip">Augmente la vitesse du joueur de 0.5 unités.</div>
+    </button>
+    <button class="upgradeButton" id="boostUpgrade">
+      Boost Temporaire
+      <div class="tooltip">Accélération temporaire de 2 unités pendant 5 secondes.</div>
+    </button>
+    <button class="upgradeButton" id="shieldUpgrade">
+      Bouclier Temporaire
+      <div class="tooltip">Protection temporaire pendant 5 secondes.</div>
+    </button>
+    <button class="upgradeButton" id="nextLevelButton">
+      Commencer le Niveau Suivant
+    </button>
+  </div>
+  <div id="gameOverScreen">
+    <h2>Game Over!</h2>
+    <p id="finalScore">Final Score: 0</p>
+    <input type="text" id="playerName" placeholder="Entrez votre nom">
+    <button class="retryButton" id="submitScore">Submit Score</button>
+    <button class="retryButton" id="retryButton">Retry</button>
+  </div>
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      // Variable de contrôle
+      let controls = "keyboard"; // contrôle par défaut
+
+      // Déclaration d'un son "fart" (récupéré en ligne)
+      const fartSound = new Audio("https://www.soundjay.com/mechanical/sounds/fart-01.mp3");
+      fartSound.volume = 0.5;
+
+      // Toutes les fonctions et variables du jeu sont encapsulées dans une IIFE
+      (function() {
+        // ----- Global Variables & DOM Elements -----
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Éléments des écrans Upgrade et Game Over
+        const upgradeScreen = document.getElementById('upgradeScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const speedUpgradeBtn = document.getElementById('speedUpgrade');
+        const boostUpgradeBtn = document.getElementById('boostUpgrade');
+        const shieldUpgradeBtn = document.getElementById('shieldUpgrade');
+        const nextLevelButton = document.getElementById('nextLevelButton');
+        const retryButton = document.getElementById('retryButton');
+        const submitScoreBtn = document.getElementById('submitScore');
+        const finalScoreEl = document.getElementById('finalScore');
+        const playerNameInput = document.getElementById('playerName');
+
+        // Constantes du jeu
+        const TILE_SIZE = 40;
+        const PLAYER_RADIUS = TILE_SIZE * 0.3;
+        const ENEMY_RADIUS = TILE_SIZE * 0.3;
+        const APPLE_RADIUS = TILE_SIZE * 0.2;
+        const FOV_RADIUS = 10; // Champ de vision en tuiles
+
+        let currentLevel = 1;
+        let gameOver = false;
+        let win = false;
+        let applesCollected = 0;
+        let totalApples = 0;
+        let score = 0;
+
+        // Gestion des touches
+        const keys = {};
+        window.addEventListener('keydown', e => { keys[e.key.toLowerCase()] = true; });
+        window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+
+        // ----- Classes pour la génération du labyrinthe -----
+        class Cell {
+          constructor(x, y) {
+            this.x = x;
+            this.y = y;
+            this.walls = { top: true, right: true, bottom: true, left: true };
+            this.visited = false;
+          }
+          checkNeighbors(cells) {
+            let neighbors = [];
+            const top = cells.find(c => c.x === this.x && c.y === this.y - 1);
+            const right = cells.find(c => c.x === this.x + 1 && c.y === this.y);
+            const bottom = cells.find(c => c.x === this.x && c.y === this.y + 1);
+            const left = cells.find(c => c.x === this.x - 1 && c.y === this.y);
+            if (top && !top.visited) neighbors.push(top);
+            if (right && !right.visited) neighbors.push(right);
+            if (bottom && !bottom.visited) neighbors.push(bottom);
+            if (left && !left.visited) neighbors.push(left);
+            return neighbors.length ? neighbors[Math.floor(Math.random() * neighbors.length)] : undefined;
+          }
+          removeWalls(next, maze) {
+            const x = this.x - next.x;
+            const y = this.y - next.y;
+            if (x === 1) {
+              this.walls.left = false;
+              next.walls.right = false;
+              maze[this.y * 2 + 1][this.x * 2] = 1;
+            } else if (x === -1) {
+              this.walls.right = false;
+              next.walls.left = false;
+              maze[next.y * 2 + 1][next.x * 2] = 1;
+            }
+            if (y === 1) {
+              this.walls.top = false;
+              next.walls.bottom = false;
+              maze[this.y * 2][this.x * 2 + 1] = 1;
+            } else if (y === -1) {
+              this.walls.bottom = false;
+              next.walls.top = false;
+              maze[next.y * 2][next.x * 2 + 1] = 1;
+            }
+          }
+        }
+        class MazeGenerator {
+          constructor(cols, rows) {
+            this.cols = cols;
+            this.rows = rows;
+            this.grid = [];
+            this.cells = [];
+            this.stack = [];
+            this.current = null;
+          }
+          init() {
+            for (let y = 0; y < this.rows * 2 + 1; y++) {
+              let row = [];
+              for (let x = 0; x < this.cols * 2 + 1; x++) {
+                row.push(0);
+              }
+              this.grid.push(row);
+            }
+            for (let y = 0; y < this.rows; y++) {
+              for (let x = 0; x < this.cols; x++) {
+                const cell = new Cell(x, y);
+                this.cells.push(cell);
+                this.grid[y * 2 + 1][x * 2 + 1] = 1;
+              }
+            }
+            this.current = this.cells[0];
+            this.current.visited = true;
+            this.stack.push(this.current);
+          }
+          generate() {
+            this.init();
+            while (this.stack.length > 0) {
+              this.current = this.stack.pop();
+              let next = this.current.checkNeighbors(this.cells);
+              if (next) {
+                this.stack.push(this.current);
+                this.current.removeWalls(next, this.grid);
+                next.visited = true;
+                this.stack.push(next);
+              }
+            }
+            return this.grid;
+          }
+        }
+
+        // ----- Classe Enemy -----
+        class Enemy {
+          constructor(x, y) {
+            this.x = x;
+            this.y = y;
+            this.speed = 1.0 + (currentLevel * 0.1);
+            this.direction = this.getRandomDirection();
+            this.changeDirectionInterval = Math.floor(Math.random() * 120) + 60;
+            this.framesSinceLastChange = 0;
+          }
+          getRandomDirection() {
+            const dirs = ['up', 'down', 'left', 'right'];
+            return dirs[Math.floor(Math.random() * dirs.length)];
+          }
+          move(maze) {
+            this.framesSinceLastChange++;
+            if (this.framesSinceLastChange >= this.changeDirectionInterval) {
+              this.direction = this.getRandomDirection();
+              this.changeDirectionInterval = Math.floor(Math.random() * 120) + 60;
+              this.framesSinceLastChange = 0;
+            }
+            let newX = this.x, newY = this.y;
+            switch(this.direction) {
+              case 'up': newY -= this.speed; break;
+              case 'down': newY += this.speed; break;
+              case 'left': newX -= this.speed; break;
+              case 'right': newX += this.speed; break;
+            }
+            if (this.canMove(newX, newY, maze)) {
+              this.x = newX;
+              this.y = newY;
+            } else {
+              this.direction = this.getRandomDirection();
+              this.changeDirectionInterval = Math.floor(Math.random() * 120) + 60;
+              this.framesSinceLastChange = 0;
+            }
+          }
+          canMove(x, y, maze) {
+            const col = Math.floor(x / TILE_SIZE);
+            const row = Math.floor(y / TILE_SIZE);
+            if (row < 0 || row >= maze.length || col < 0 || col >= maze[0].length) return false;
+            return maze[row][col] === 1;
+          }
+          draw(offsetX, offsetY) {
+            ctx.beginPath();
+            ctx.fillStyle = '#ff0000';
+            ctx.shadowColor = '#ff0000';
+            ctx.shadowBlur = 10;
+            ctx.arc(this.x - offsetX, this.y - offsetY, ENEMY_RADIUS, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+          }
+        }
+
+        // ----- Variables globales pour le labyrinthe, le joueur, les ennemis et les pommes -----
+        let maze = [];
+        let startPos = { x: 1, y: 1 };
+        let endPos = { x: 21, y: 17 };
+        let apples = [];
+        let enemies = [];
+        const player = { x: 0, y: 0, speed: 2, boost: false, boostTimer: 0, shield: false, shieldTimer: 0 };
+
+        // Gestion du déplacement du joueur (vérifie la collision AVANT mise à jour)
+        function handlePlayerMovement() {
+          let newX = player.x, newY = player.y;
+          if (controls === 'keyboard') {
+            if (keys['arrowup'] || keys['w']) newY -= player.speed;
+            if (keys['arrowdown'] || keys['s']) newY += player.speed;
+            if (keys['arrowleft'] || keys['a']) newX -= player.speed;
+            if (keys['arrowright'] || keys['d']) newX += player.speed;
+          }
+          if (canMoveTo(newX, newY)) {
+            player.x = newX;
+            player.y = newY;
+          }
+        }
+
+        // Fonctions de rendu
+        function drawMaze() {
+          const playerCol = Math.floor(player.x / TILE_SIZE);
+          const playerRow = Math.floor(player.y / TILE_SIZE);
+          const startRow = Math.max(playerRow - FOV_RADIUS, 0);
+          const endRow = Math.min(playerRow + FOV_RADIUS + 1, maze.length);
+          const startCol = Math.max(playerCol - FOV_RADIUS, 0);
+          const endCol = Math.min(playerCol + FOV_RADIUS + 1, maze[0].length);
+          const offsetX = player.x - canvas.width / 2;
+          const offsetY = player.y - canvas.height / 2;
+
+          for (let row = startRow; row < endRow; row++) {
+            for (let col = startCol; col < endCol; col++) {
+              if (maze[row][col] === 0) {
+                const wallGradient = ctx.createLinearGradient(
+                  col * TILE_SIZE - offsetX,
+                  row * TILE_SIZE - offsetY,
+                  (col + 1) * TILE_SIZE - offsetX,
+                  (row + 1) * TILE_SIZE - offsetY
+                );
+                wallGradient.addColorStop(0, '#00ffe1');
+                wallGradient.addColorStop(1, '#ff00ff');
+                ctx.fillStyle = wallGradient;
+                ctx.shadowColor = '#ff00ff';
+                ctx.shadowBlur = 8;
+                ctx.fillRect(col * TILE_SIZE - offsetX, row * TILE_SIZE - offsetY, TILE_SIZE, TILE_SIZE);
+                ctx.shadowBlur = 0;
+              } else {
+                const floorGradient = ctx.createLinearGradient(
+                  col * TILE_SIZE - offsetX,
+                  row * TILE_SIZE - offsetY,
+                  (col + 1) * TILE_SIZE - offsetX,
+                  (row + 1) * TILE_SIZE - offsetY
+                );
+                floorGradient.addColorStop(0, '#2c3e50');
+                floorGradient.addColorStop(1, '#34495e');
+                ctx.fillStyle = floorGradient;
+                ctx.fillRect(col * TILE_SIZE - offsetX, row * TILE_SIZE - offsetY, TILE_SIZE, TILE_SIZE);
+              }
+            }
+          }
+        }
+
+        function drawApples(offsetX, offsetY) {
+          apples.forEach(apple => {
+            const appleX = apple.x * TILE_SIZE + TILE_SIZE / 2;
+            const appleY = apple.y * TILE_SIZE + TILE_SIZE / 2;
+            if (isWithinFOV(appleX, appleY)) {
+              const appleGradient = ctx.createRadialGradient(
+                appleX - offsetX,
+                appleY - offsetY,
+                0,
+                appleX - offsetX,
+                appleY - offsetY,
+                APPLE_RADIUS
+              );
+              appleGradient.addColorStop(0, '#f1c40f');
+              appleGradient.addColorStop(1, '#e67e22');
+              ctx.beginPath();
+              ctx.fillStyle = appleGradient;
+              ctx.shadowColor = '#f1c40f';
+              ctx.shadowBlur = 10;
+              ctx.arc(appleX - offsetX, appleY - offsetY, APPLE_RADIUS, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.shadowBlur = 0;
+            }
+          });
+        }
+
+        function drawEnemies(offsetX, offsetY) {
+          enemies.forEach(enemy => {
+            if (isWithinFOV(enemy.x, enemy.y)) {
+              enemy.draw(offsetX, offsetY);
+            }
+          });
+        }
+
+        function drawPlayer() {
+          const gradient = ctx.createRadialGradient(
+            canvas.width/2 - 5,
+            canvas.height/2 - 5,
+            PLAYER_RADIUS * 0.3,
+            canvas.width/2,
+            canvas.height/2,
+            PLAYER_RADIUS
+          );
+          gradient.addColorStop(0, player.shield ? '#1abc9c' : '#2980b9');
+          gradient.addColorStop(1, player.shield ? '#16a085' : '#3498db');
+          ctx.beginPath();
+          ctx.fillStyle = gradient;
+          ctx.shadowColor = player.shield ? '#1abc9c' : '#2980b9';
+          ctx.shadowBlur = 15;
+          ctx.arc(canvas.width/2, canvas.height/2, PLAYER_RADIUS, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+        }
+
+        function drawHUD() {
+          ctx.fillStyle = '#ecf0f1';
+          ctx.font = '18px Roboto';
+          ctx.textAlign = 'left';
+          ctx.fillText(`Niveau: ${currentLevel}`, 10, 25);
+          ctx.fillText(`Pommes: ${applesCollected}/${totalApples}`, 10, 50);
+          ctx.fillText(`Score: ${score}`, 10, 75);
+          if (player.shield) {
+            ctx.fillStyle = '#1abc9c';
+            ctx.font = '16px Roboto';
+            ctx.fillText(`Bouclier: ${Math.ceil(player.shieldTimer / 60)}s`, 10, 100);
+          }
+          if (player.boost) {
+            ctx.fillStyle = '#e67e22';
+            ctx.font = '16px Roboto';
+            ctx.fillText(`Boost: ${Math.ceil(player.boostTimer / 60)}s`, 10, 125);
+          }
+        }
+
+        function isWithinFOV(x, y) {
+          const dx = Math.abs(x - player.x);
+          const dy = Math.abs(y - player.y);
+          return dx <= FOV_RADIUS * TILE_SIZE && dy <= FOV_RADIUS * TILE_SIZE;
+        }
+
+        // ----- Leaderboard Integration -----
+        function submitScore() {
+          const name = playerNameInput.value.trim();
+          if (!name) {
+            alert("Entrez votre nom, degen!");
+            return;
+          }
+          let leaderboard = JSON.parse(localStorage.getItem("labyrinthLeaderboard") || "[]");
+          leaderboard.push({ name, score });
+          leaderboard.sort((a, b) => b.score - a.score);
+          localStorage.setItem("labyrinthLeaderboard", JSON.stringify(leaderboard));
+          alert("Score soumis!");
+        }
+
+        // ----- Upgrade Screen Handlers -----
+        speedUpgradeBtn.addEventListener('click', () => {
+          player.speed += 0.5;
+          speedUpgradeBtn.disabled = true;
+          speedUpgradeBtn.style.background = 'linear-gradient(45deg, #7f8c8d, #95a5a6)';
+        });
+        boostUpgradeBtn.addEventListener('click', () => {
+          player.boost = true;
+          player.boostTimer = 300;
+          boostUpgradeBtn.disabled = true;
+          boostUpgradeBtn.style.background = 'linear-gradient(45deg, #7f8c8d, #95a5a6)';
+        });
+        shieldUpgradeBtn.addEventListener('click', () => {
+          player.shield = true;
+          player.shieldTimer = 300;
+          shieldUpgradeBtn.disabled = true;
+          shieldUpgradeBtn.style.background = 'linear-gradient(45deg, #7f8c8d, #95a5a6)';
+        });
+        nextLevelButton.addEventListener('click', () => {
+          upgradeScreen.style.display = 'none';
+          currentLevel++;
+          initLevel();
+          gameLoop(); // Relancer la boucle de jeu
+        });
+
+        // ----- Game Over Screen Handler -----
+        retryButton.addEventListener('click', () => {
+          gameOverScreen.style.display = 'none';
+          initLevel();
+          gameOver = false;
+          gameLoop();
+        });
+        submitScoreBtn.addEventListener("click", submitScore);
+
+        // ----- Initialisation du niveau -----
+        function initLevel() {
+          const baseCols = 10, baseRows = 8;
+          const extraCols = Math.floor(currentLevel / 2);
+          const extraRows = Math.floor(currentLevel / 2);
+          const cols = baseCols + extraCols;
+          const rows = baseRows + extraRows;
+          const generator = new MazeGenerator(cols, rows);
+          maze = generator.generate();
+          startPos = { x: 1, y: 1 };
+          endPos = { x: cols * 2 - 1, y: rows * 2 - 1 };
+          player.x = startPos.x * TILE_SIZE;
+          player.y = startPos.y * TILE_SIZE;
+          apples = [];
+          let applesToPlace = 5 + currentLevel;
+          while (apples.length < applesToPlace) {
+            let randX = Math.floor(Math.random() * cols) * 2 + 1;
+            let randY = Math.floor(Math.random() * rows) * 2 + 1;
+            if (maze[randY][randX] === 1 &&
+                !(randX === startPos.x && randY === startPos.y) &&
+                !(randX === endPos.x && randY === endPos.y)) {
+              if (!apples.some(a => a.x === randX && a.y === randY)) {
+                apples.push({ x: randX, y: randY });
+              }
+            }
+          }
+          enemies = [];
+          let enemiesToPlace = currentLevel + 2;
+          while (enemies.length < enemiesToPlace) {
+            let randX = Math.floor(Math.random() * cols) * 2 + 1;
+            let randY = Math.floor(Math.random() * rows) * 2 + 1;
+            if (maze[randY][randX] === 1 &&
+                !(randX === startPos.x && randY === startPos.y) &&
+                !(randX === endPos.x && randY === endPos.y)) {
+              let enemyX = randX * TILE_SIZE;
+              let enemyY = randY * TILE_SIZE;
+              if (!enemies.some(e => Math.hypot(e.x - enemyX, e.y - enemyY) < TILE_SIZE)) {
+                enemies.push(new Enemy(enemyX, enemyY));
+              }
+            }
+          }
+          applesCollected = 0;
+          totalApples = apples.length;
+          score = 0;
+          gameOver = false;
+          win = false;
+        }
+
+        // ----- Boucle de jeu -----
+        function gameLoop() {
+          if (!gameOver && !win) {
+            handlePlayerMovement();
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+          } else {
+            draw();
+            if (win) {
+              upgradeScreen.style.display = 'block';
+            } else if (gameOver) {
+              gameOverScreen.style.display = 'block';
+            }
+          }
+        }
+
+        // Fonction update
+        function update() {
+          // Gestion des déplacements
+          // La fonction handlePlayerMovement() vérifie la collision grâce à canMoveTo
+          // et met à jour la position du joueur uniquement si c'est possible.
+          // Traitement des pommes
+          for (let i = 0; i < apples.length; i++) {
+            const apple = apples[i];
+            const appleX = apple.x * TILE_SIZE + TILE_SIZE / 2;
+            const appleY = apple.y * TILE_SIZE + TILE_SIZE / 2;
+            const dist = Math.hypot(player.x - appleX, player.y - appleY);
+            if (dist < PLAYER_RADIUS + APPLE_RADIUS) {
+              // Jouer un son de fart à la collecte d'une pomme
+              fartSound.currentTime = 0;
+              fartSound.play();
+              apples.splice(i, 1);
+              applesCollected++;
+              score += 100;
+              break;
+            }
+          }
+          // Si toutes les pommes ont été collectées, le niveau est gagné
+          if (applesCollected === totalApples) win = true;
+          // Déplacement des ennemis
+          enemies.forEach(enemy => enemy.move(maze));
+          enemies.forEach(enemy => {
+            const dist = Math.hypot(player.x - enemy.x, player.y - enemy.y);
+            if (dist < PLAYER_RADIUS + ENEMY_RADIUS) {
+              if (!player.shield) gameOver = true;
+            }
+          });
+          // Gestion des timers
+          if (player.shield) {
+            player.shieldTimer--;
+            if (player.shieldTimer <= 0) player.shield = false;
+          }
+          if (player.boost) {
+            player.boostTimer--;
+            if (player.boostTimer <= 0) player.boost = false;
+          }
+        }
+
+        // Fonction canMoveTo vérifie que la position (x,y) est accessible (ne traverse pas les murs)
+        function canMoveTo(x, y) {
+          const col = Math.floor(x / TILE_SIZE);
+          const row = Math.floor(y / TILE_SIZE);
+          if (row < 0 || row >= maze.length || col < 0 || col >= maze[0].length) return false;
+          return maze[row][col] === 1;
+        }
+
+        // Fonctions de dessin
+        function draw() {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          const offsetX = player.x - canvas.width / 2;
+          const offsetY = player.y - canvas.height / 2;
+          drawMaze();
+          drawApples(offsetX, offsetY);
+          drawEnemies(offsetX, offsetY);
+          drawPlayer();
+          drawHUD();
+        }
+
+        function drawMaze() {
+          const playerCol = Math.floor(player.x / TILE_SIZE);
+          const playerRow = Math.floor(player.y / TILE_SIZE);
+          const startRow = Math.max(playerRow - FOV_RADIUS, 0);
+          const endRow = Math.min(playerRow + FOV_RADIUS + 1, maze.length);
+          const startCol = Math.max(playerCol - FOV_RADIUS, 0);
+          const endCol = Math.min(playerCol + FOV_RADIUS + 1, maze[0].length);
+          const offsetX = player.x - canvas.width / 2;
+          const offsetY = player.y - canvas.height / 2;
+
+          for (let row = startRow; row < endRow; row++) {
+            for (let col = startCol; col < endCol; col++) {
+              if (maze[row][col] === 0) {
+                const wallGradient = ctx.createLinearGradient(
+                  col * TILE_SIZE - offsetX,
+                  row * TILE_SIZE - offsetY,
+                  (col + 1) * TILE_SIZE - offsetX,
+                  (row + 1) * TILE_SIZE - offsetY
+                );
+                wallGradient.addColorStop(0, '#00ffe1');
+                wallGradient.addColorStop(1, '#ff00ff');
+                ctx.fillStyle = wallGradient;
+                ctx.shadowColor = '#ff00ff';
+                ctx.shadowBlur = 8;
+                ctx.fillRect(col * TILE_SIZE - offsetX, row * TILE_SIZE - offsetY, TILE_SIZE, TILE_SIZE);
+                ctx.shadowBlur = 0;
+              } else {
+                const floorGradient = ctx.createLinearGradient(
+                  col * TILE_SIZE - offsetX,
+                  row * TILE_SIZE - offsetY,
+                  (col + 1) * TILE_SIZE - offsetX,
+                  (row + 1) * TILE_SIZE - offsetY
+                );
+                floorGradient.addColorStop(0, '#2c3e50');
+                floorGradient.addColorStop(1, '#34495e');
+                ctx.fillStyle = floorGradient;
+                ctx.fillRect(col * TILE_SIZE - offsetX, row * TILE_SIZE - offsetY, TILE_SIZE, TILE_SIZE);
+              }
+            }
+          }
+        }
+
+        function drawApples(offsetX, offsetY) {
+          apples.forEach(apple => {
+            const appleX = apple.x * TILE_SIZE + TILE_SIZE / 2;
+            const appleY = apple.y * TILE_SIZE + TILE_SIZE / 2;
+            if (isWithinFOV(appleX, appleY)) {
+              const appleGradient = ctx.createRadialGradient(
+                appleX - offsetX,
+                appleY - offsetY,
+                0,
+                appleX - offsetX,
+                appleY - offsetY,
+                APPLE_RADIUS
+              );
+              appleGradient.addColorStop(0, '#f1c40f');
+              appleGradient.addColorStop(1, '#e67e22');
+              ctx.beginPath();
+              ctx.fillStyle = appleGradient;
+              ctx.shadowColor = '#f1c40f';
+              ctx.shadowBlur = 10;
+              ctx.arc(appleX - offsetX, appleY - offsetY, APPLE_RADIUS, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.shadowBlur = 0;
+            }
+          });
+        }
+
+        function drawEnemies(offsetX, offsetY) {
+          enemies.forEach(enemy => {
+            if (isWithinFOV(enemy.x, enemy.y)) {
+              enemy.draw(offsetX, offsetY);
+            }
+          });
+        }
+
+        function drawPlayer() {
+          const gradient = ctx.createRadialGradient(
+            canvas.width/2 - 5,
+            canvas.height/2 - 5,
+            PLAYER_RADIUS * 0.3,
+            canvas.width/2,
+            canvas.height/2,
+            PLAYER_RADIUS
+          );
+          gradient.addColorStop(0, player.shield ? '#1abc9c' : '#2980b9');
+          gradient.addColorStop(1, player.shield ? '#16a085' : '#3498db');
+          ctx.beginPath();
+          ctx.fillStyle = gradient;
+          ctx.shadowColor = player.shield ? '#1abc9c' : '#2980b9';
+          ctx.shadowBlur = 15;
+          ctx.arc(canvas.width/2, canvas.height/2, PLAYER_RADIUS, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+        }
+
+        function drawHUD() {
+          ctx.fillStyle = '#ecf0f1';
+          ctx.font = '18px Roboto';
+          ctx.textAlign = 'left';
+          ctx.fillText(`Niveau: ${currentLevel}`, 10, 25);
+          ctx.fillText(`Pommes: ${applesCollected}/${totalApples}`, 10, 50);
+          ctx.fillText(`Score: ${score}`, 10, 75);
+          if (player.shield) {
+            ctx.fillStyle = '#1abc9c';
+            ctx.font = '16px Roboto';
+            ctx.fillText(`Bouclier: ${Math.ceil(player.shieldTimer / 60)}s`, 10, 100);
+          }
+          if (player.boost) {
+            ctx.fillStyle = '#e67e22';
+            ctx.font = '16px Roboto';
+            ctx.fillText(`Boost: ${Math.ceil(player.boostTimer / 60)}s`, 10, 125);
+          }
+        }
+
+        // ----- Leaderboard Integration -----
+        function submitScore() {
+          const name = playerNameInput.value.trim();
+          if (!name) {
+            alert("Entrez votre nom, degen!");
+            return;
+          }
+          let leaderboard = JSON.parse(localStorage.getItem("labyrinthLeaderboard") || "[]");
+          leaderboard.push({ name, score });
+          leaderboard.sort((a, b) => b.score - a.score);
+          localStorage.setItem("labyrinthLeaderboard", JSON.stringify(leaderboard));
+          alert("Score soumis!");
+        }
+
+        // ----- Upgrade Screen Handlers -----
+        speedUpgradeBtn.addEventListener('click', () => {
+          player.speed += 0.5;
+          speedUpgradeBtn.disabled = true;
+          speedUpgradeBtn.style.background = 'linear-gradient(45deg, #7f8c8d, #95a5a6)';
+        });
+        boostUpgradeBtn.addEventListener('click', () => {
+          player.boost = true;
+          player.boostTimer = 300;
+          boostUpgradeBtn.disabled = true;
+          boostUpgradeBtn.style.background = 'linear-gradient(45deg, #7f8c8d, #95a5a6)';
+        });
+        shieldUpgradeBtn.addEventListener('click', () => {
+          player.shield = true;
+          player.shieldTimer = 300;
+          shieldUpgradeBtn.disabled = true;
+          shieldUpgradeBtn.style.background = 'linear-gradient(45deg, #7f8c8d, #95a5a6)';
+        });
+        nextLevelButton.addEventListener('click', () => {
+          upgradeScreen.style.display = 'none';
+          currentLevel++;
+          initLevel();
+          gameLoop();
+        });
+
+        // ----- Game Over Screen Handler -----
+        retryButton.addEventListener('click', () => {
+          gameOverScreen.style.display = 'none';
+          initLevel();
+          gameOver = false;
+          gameLoop();
+        });
+        submitScoreBtn.addEventListener("click", submitScore);
+
+        // ----- Initialisation du niveau et boucle de jeu -----
+        function initLevel() {
+          const baseCols = 10, baseRows = 8;
+          const extraCols = Math.floor(currentLevel / 2);
+          const extraRows = Math.floor(currentLevel / 2);
+          const cols = baseCols + extraCols;
+          const rows = baseRows + extraRows;
+          const generator = new MazeGenerator(cols, rows);
+          maze = generator.generate();
+          startPos = { x: 1, y: 1 };
+          endPos = { x: cols * 2 - 1, y: rows * 2 - 1 };
+          player.x = startPos.x * TILE_SIZE;
+          player.y = startPos.y * TILE_SIZE;
+          apples = [];
+          let applesToPlace = 5 + currentLevel;
+          while (apples.length < applesToPlace) {
+            let randX = Math.floor(Math.random() * cols) * 2 + 1;
+            let randY = Math.floor(Math.random() * rows) * 2 + 1;
+            if (maze[randY][randX] === 1 &&
+                !(randX === startPos.x && randY === startPos.y) &&
+                !(randX === endPos.x && randY === endPos.y)) {
+              if (!apples.some(a => a.x === randX && a.y === randY)) {
+                apples.push({ x: randX, y: randY });
+              }
+            }
+          }
+          enemies = [];
+          let enemiesToPlace = currentLevel + 2;
+          while (enemies.length < enemiesToPlace) {
+            let randX = Math.floor(Math.random() * cols) * 2 + 1;
+            let randY = Math.floor(Math.random() * rows) * 2 + 1;
+            if (maze[randY][randX] === 1 &&
+                !(randX === startPos.x && randY === startPos.y) &&
+                !(randX === endPos.x && randY === endPos.y)) {
+              let enemyX = randX * TILE_SIZE;
+              let enemyY = randY * TILE_SIZE;
+              if (!enemies.some(e => Math.hypot(e.x - enemyX, e.y - enemyY) < TILE_SIZE)) {
+                enemies.push(new Enemy(enemyX, enemyY));
+              }
+            }
+          }
+          applesCollected = 0;
+          totalApples = apples.length;
+          score = 0;
+          gameOver = false;
+          win = false;
+        }
+
+        function gameLoop() {
+          if (!gameOver && !win) {
+            handlePlayerMovement();
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+          } else {
+            draw();
+            if (win) {
+              upgradeScreen.style.display = 'block';
+            } else if (gameOver) {
+              gameOverScreen.style.display = 'block';
+            }
+          }
+        }
+
+        function update() {
+          // Vérifie les déplacements du joueur et les collisions avec les pommes et ennemis.
+          for (let i = 0; i < apples.length; i++) {
+            const apple = apples[i];
+            const appleX = apple.x * TILE_SIZE + TILE_SIZE / 2;
+            const appleY = apple.y * TILE_SIZE + TILE_SIZE / 2;
+            const dist = Math.hypot(player.x - appleX, player.y - appleY);
+            if (dist < PLAYER_RADIUS + APPLE_RADIUS) {
+              // Jouer un son de fart lors de la collecte d'une pomme
+              fartSound.currentTime = 0;
+              fartSound.play();
+              apples.splice(i, 1);
+              applesCollected++;
+              score += 100;
+              break;
+            }
+          }
+          if (applesCollected === totalApples) win = true;
+          enemies.forEach(enemy => enemy.move(maze));
+          enemies.forEach(enemy => {
+            const dist = Math.hypot(player.x - enemy.x, player.y - enemy.y);
+            if (dist < PLAYER_RADIUS + ENEMY_RADIUS) {
+              if (!player.shield) gameOver = true;
+            }
+          });
+          if (player.shield) {
+            player.shieldTimer--;
+            if (player.shieldTimer <= 0) player.shield = false;
+          }
+          if (player.boost) {
+            player.boostTimer--;
+            if (player.boostTimer <= 0) player.boost = false;
+          }
+        }
+
+        function draw() {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          const offsetX = player.x - canvas.width / 2;
+          const offsetY = player.y - canvas.height / 2;
+          drawMaze();
+          drawApples(offsetX, offsetY);
+          drawEnemies(offsetX, offsetY);
+          drawPlayer();
+          drawHUD();
+        }
+
+        // Lancement initial
+        initLevel();
+        gameLoop();
+      })();
+    });
+  </script>
+</body>
+</html>

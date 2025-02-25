@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Modern Pen Football Game - Degen Edition</title>
+  <!-- Use a retro degen font -->
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <style>
+    /* Reset */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; font-family: 'Press Start 2P', cursive; }
+    body { background-color: #111; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+    /* Game Container with degen neon border */
+    #gameContainer {
+      position: relative;
+      width: 90vw;
+      max-width: 1000px;
+      aspect-ratio: 2 / 1;
+      background: radial-gradient(circle, #111, #000);
+      border: 5px solid #0f0;
+      border-radius: 10px;
+      box-shadow: 0 0 20px #0f0;
+      overflow: hidden;
+    }
+    /* Canvas fills container */
+    canvas { width: 100%; height: 100%; display: block; }
+    /* Score Board with degen style */
+    #scoreBoard {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.8);
+      padding: 10px 20px;
+      border-radius: 20px;
+      box-shadow: 0 0 10px #0f0;
+      font-size: 24px;
+      font-weight: bold;
+      color: #0f0;
+      display: flex;
+      gap: 50px;
+      z-index: 10;
+    }
+    /* Start Screen */
+    #startScreen {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.95);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      color: #0f0;
+      z-index: 20;
+      transition: opacity 0.5s ease;
+    }
+    #startScreen.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+    #startButton, #settingsButton {
+      margin-top: 20px;
+      padding: 10px 30px;
+      font-size: 20px;
+      border: none;
+      border-radius: 5px;
+      background-color: #0f0;
+      color: #000;
+      cursor: pointer;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+    #startButton:hover, #settingsButton:hover {
+      background-color: #f00;
+      color: #fff;
+    }
+    /* Settings Menu */
+    #settingsMenu {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.95);
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 20px #0f0;
+      z-index: 30;
+      display: none;
+      flex-direction: column;
+      gap: 20px;
+    }
+    #settingsMenu.active { display: flex; }
+    #settingsMenu h2 { text-align: center; margin-bottom: 10px; color: #0f0; }
+    .setting { display: flex; justify-content: space-between; align-items: center; }
+    .setting label { font-size: 18px; color: #0f0; }
+    .setting input[type="range"], .setting select { width: 150px; }
+    #closeSettings {
+      align-self: center;
+      padding: 8px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+      background-color: #0f0;
+      color: #000;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    #closeSettings:hover { background-color: #f00; color: #fff; }
+    /* Pause Button */
+    #pauseButton {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(255, 255, 255, 0.8);
+      border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      cursor: pointer;
+      font-size: 18px;
+      box-shadow: 0 0 5px #0f0;
+      z-index: 10;
+    }
+    #pauseButton:hover { background: rgba(255, 255, 255, 1); }
+    /* Pause Overlay */
+    #pauseOverlay {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #f00;
+      font-size: 36px;
+      z-index: 15;
+      display: none;
+    }
+    /* Game Over Screen with Leaderboard Submission */
+    #gameOverScreen {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.8);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      color: #0f0;
+      z-index: 40;
+      transition: opacity 0.5s ease;
+      opacity: 0;
+      pointer-events: none;
+    }
+    #gameOverScreen.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+    #gameOverScreen h1 { margin-bottom: 20px; color: #f00; }
+    #gameOverScreen p { font-size: 20px; margin-bottom: 20px; }
+    #gameOverScreen input[type="text"] {
+      padding: 10px;
+      font-size: 18px;
+      border: 2px solid #0f0;
+      border-radius: 5px;
+      background: #000;
+      color: #0f0;
+      margin-bottom: 20px;
+    }
+    #gameOverScreen button {
+      margin-top: 10px;
+      padding: 10px 30px;
+      font-size: 20px;
+      border: none;
+      border-radius: 5px;
+      background-color: #0f0;
+      color: #000;
+      cursor: pointer;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+    #gameOverScreen button:hover {
+      background-color: #f00;
+      color: #fff;
+    }
+    /* Bonus Notification Overlay */
+    #bonusNotification {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 48px;
+      color: #f00;
+      text-shadow: 0 0 10px #f00;
+      z-index: 35;
+      display: none;
+    }
+    /* Goal Notification Overlay */
+    #goalNotification {
+      position: absolute;
+      top: 30%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 48px;
+      color: #fff;
+      text-shadow: 0 0 10px #f00;
+      z-index: 35;
+      display: none;
+    }
+    /* Energy Bar for Bot */
+    #botEnergyBar {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 200px;
+      height: 20px;
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 0 5px #0f0;
+      z-index: 10;
+    }
+    #botEnergyFill {
+      height: 100%;
+      background: #FFD700;
+      width: 100%;
+      transition: width 0.2s ease;
+    }
+    /* Responsive */
+    @media (max-width: 600px) {
+      #scoreBoard { flex-direction: column; gap: 10px; }
+      #scoreBoard div { font-size: 20px; }
+      #settingsMenu { width: 80%; }
+      .setting input[type="range"], .setting select { width: 100px; }
+      #pauseButton { width: 35px; height: 35px; font-size: 16px; }
+      #botEnergyBar { width: 150px; height: 15px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="gameContainer">
+    <!-- Start Screen -->
+    <div id="startScreen">
+      <h1>Pen Football</h1>
+      <button id="startButton">Start Game</button>
+      <button id="settingsButton">Settings</button>
+    </div>
+    <!-- Settings Menu -->
+    <div id="settingsMenu">
+      <h2>Settings</h2>
+      <div class="setting">
+        <label for="volume">Volume</label>
+        <input type="range" id="volume" min="0" max="1" step="0.1" value="0.5">
+      </div>
+      <div class="setting">
+        <label for="difficulty">Difficulty</label>
+        <select id="difficulty">
+          <option value="easy">Easy</option>
+          <option value="medium" selected>Medium</option>
+          <option value="hard">Hard</option>
+        </select>
+      </div>
+      <div class="setting">
+        <label for="controls">Controls</label>
+        <select id="controls">
+          <option value="keyboard" selected>Keyboard</option>
+          <option value="touch">Touch</option>
+        </select>
+      </div>
+      <button id="closeSettings">Close</button>
+    </div>
+    <!-- Score Board -->
+    <div id="scoreBoard">
+      <div id="playerScore">Player: 0</div>
+      <div id="botScore">Bot: 0</div>
+    </div>
+    <!-- Bonus Notification Overlay -->
+    <div id="bonusNotification"></div>
+    <!-- Goal Notification Overlay -->
+    <div id="goalNotification"></div>
+    <!-- Bot Energy Bar -->
+    <div id="botEnergyBar">
+      <div id="botEnergyFill"></div>
+    </div>
+    <!-- Pause Button -->
+    <button id="pauseButton">||</button>
+    <!-- Pause Overlay -->
+    <div id="pauseOverlay">Paused</div>
+    <!-- Game Over Screen with Leaderboard Submission -->
+    <div id="gameOverScreen">
+      <h1>Game Over</h1>
+      <p id="finalScore">Final Score</p>
+      <input type="text" id="playerName" placeholder="Enter your name">
+      <button id="submitScore">Submit Score</button>
+      <button id="restartButton">Restart Game</button>
+      <button id="returnSettings">Settings</button>
+    </div>
+    <!-- Canvas -->
+    <canvas id="gameCanvas"></canvas>
+  </div>
+  
+  <script>
+    (function() {
+      // Wrap all game code in this IIFE to prevent duplicate global declarations
+
+      // Select DOM elements
+      const canvas = document.getElementById("gameCanvas");
+      const ctx = canvas.getContext("2d");
+      const scoreBoard = document.getElementById("scoreBoard");
+      const playerScoreEl = document.getElementById("playerScore");
+      const botScoreEl = document.getElementById("botScore");
+      const startScreen = document.getElementById("startScreen");
+      const startButton = document.getElementById("startButton");
+      const settingsButton = document.getElementById("settingsButton");
+      const settingsMenu = document.getElementById("settingsMenu");
+      const closeSettings = document.getElementById("closeSettings");
+      const volumeControl = document.getElementById("volume");
+      const difficultySelect = document.getElementById("difficulty");
+      const controlsSelect = document.getElementById("controls");
+      const pauseButtonEl = document.getElementById("pauseButton");
+      const pauseOverlay = document.getElementById("pauseOverlay");
+      const gameOverScreen = document.getElementById("gameOverScreen");
+      const finalScoreEl = document.getElementById("finalScore");
+      const restartButtonEl = document.getElementById("restartButton");
+      const returnSettingsButton = document.getElementById("returnSettings");
+      const botEnergyFill = document.getElementById("botEnergyFill");
+      const bonusNotification = document.getElementById("bonusNotification");
+      const goalNotification = document.getElementById("goalNotification");
+
+      // Set canvas size based on container
+      const gameContainer = document.getElementById("gameContainer");
+      function resizeCanvas() {
+        canvas.width = gameContainer.clientWidth;
+        canvas.height = gameContainer.clientHeight;
+      }
+      window.addEventListener('resize', resizeCanvas);
+      resizeCanvas();
+
+      // Game Constants and Variables
+      let gravity = 0.25;
+      const playerRadius = 25;
+      const ballRadius = 15;
+      const goalHeight = 120;
+      const goalWidth = 15;
+      let maxGoals = 5;
+      let difficulty = 'medium';
+      let controls = 'keyboard';
+      let gameRunning = false;
+      let isPaused = false;
+      // Global game variables (declared once)
+      let player, bot, ball;
+      let playerScore = 0, botScore = 0;
+      let playerStreak = 0, botStreak = 0, lastGoalTime = 0;
+      const baseGoalPoints = 100;
+      let bonusActive = false, bonusTimer = 0;
+
+      // Audio Effects
+      const kickSound = new Audio('https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3');
+      const scoreSound = new Audio('https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3');
+      kickSound.volume = volumeControl.value;
+      scoreSound.volume = volumeControl.value;
+      volumeControl.addEventListener('input', () => {
+        kickSound.volume = volumeControl.value;
+        scoreSound.volume = volumeControl.value;
+      });
+
+      // Utility functions for overlays
+      function randomDegenMessage() {
+        const messages = ["FUCK YEAH!", "BOOM!", "SCORE, BITCH!", "HOLY SHIT!", "DAMN!"];
+        return messages[Math.floor(Math.random() * messages.length)];
+      }
+      function showGoalNotification(message) {
+        goalNotification.textContent = message;
+        goalNotification.style.display = "block";
+        setTimeout(() => { goalNotification.style.display = "none"; }, 2000);
+      }
+      function showBonusNotification(message) {
+        bonusNotification.textContent = message;
+        bonusNotification.style.display = "block";
+      }
+      function hideBonusNotification() {
+        bonusNotification.style.display = "none";
+      }
+
+      // Entity Classes
+      class Entity {
+        constructor(x, y, radius, color) {
+          this.x = x;
+          this.y = y;
+          this.radius = radius;
+          this.color = color;
+          this.dx = 0;
+          this.dy = 0;
+          this.jumping = false;
+          this.doubleJumpAvailable = true;
+          this.energy = 100;
+          this.maxEnergy = 100;
+          this.energyRechargeRate = 0.2;
+          this.energyDepletionRate = 0.5;
+        }
+        draw() {
+          const gradient = ctx.createRadialGradient(this.x - 5, this.y - 5, this.radius * 0.1, this.x, this.y, this.radius);
+          gradient.addColorStop(0, '#fff');
+          gradient.addColorStop(1, this.color);
+          ctx.fillStyle = gradient;
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.shadowColor = "rgba(0,0,0,0.3)";
+          ctx.shadowBlur = 4;
+          ctx.fill();
+          ctx.shadowBlur = 0;
+        }
+        move() {
+          this.x += this.dx;
+          this.y += this.dy;
+          if (this.y + this.radius < canvas.height) {
+            this.dy += gravity;
+          } else {
+            this.y = canvas.height - this.radius;
+            this.dy = 0;
+            this.jumping = false;
+            this.doubleJumpAvailable = true;
+          }
+          if (this.x - this.radius < 0) {
+            this.x = this.radius;
+            this.dx = 0;
+          }
+          if (this.x + this.radius > canvas.width) {
+            this.x = canvas.width - this.radius;
+            this.dx = 0;
+          }
+          if (this instanceof Bot) {
+            if (this.energy < this.maxEnergy) {
+              this.energy += this.energyRechargeRate;
+              if (this.energy > this.maxEnergy) this.energy = this.maxEnergy;
+            }
+          }
+        }
+      }
+      class Player extends Entity {
+        constructor(x, y, color) { super(x, y, playerRadius, color); }
+        update() { this.move(); }
+      }
+      class Bot extends Entity {
+        constructor(x, y, color, difficulty) {
+          super(x, y, playerRadius, color);
+          this.strategy = { playerGoals: 0, botGoals: 0, adjustPosition: 0 };
+          this.difficulty = difficulty;
+        }
+        ai(ball) {
+          let speed, jumpProbability;
+          switch(this.difficulty) {
+            case 'easy': speed = 1; jumpProbability = 0.005; break;
+            case 'medium': speed = 1.5; jumpProbability = 0.01; break;
+            case 'hard': speed = 2; jumpProbability = 0.02; break;
+            default: speed = 1.5; jumpProbability = 0.01;
+          }
+          const predictionFrames = 60;
+          const predictedX = ball.x + ball.dx * predictionFrames;
+          const predictedY = ball.y + ball.dy * predictionFrames + 0.5 * gravity * Math.pow(predictionFrames, 2);
+          const clampedPredictedX = Math.max(ball.radius, Math.min(predictedX, canvas.width - ball.radius));
+          if (clampedPredictedX > this.x + this.strategy.adjustPosition && this.energy > 10) {
+            this.dx = speed;
+            this.energy -= this.energyDepletionRate;
+          } else if (clampedPredictedX < this.x - this.strategy.adjustPosition && this.energy > 10) {
+            this.dx = -speed;
+            this.energy -= this.energyDepletionRate;
+          } else { this.dx = 0; }
+          if (predictedY < this.y && Math.random() < jumpProbability && this.energy > 20 && !this.jumping) {
+            this.dy = -8;
+            this.jumping = true;
+            this.energy -= 20;
+          }
+        }
+        update(ball) { this.ai(ball); this.move(); }
+      }
+      class Ball {
+        constructor(x, y, radius, color) {
+          this.x = x;
+          this.y = y;
+          this.radius = radius;
+          this.color = color;
+          this.dx = 0;
+          this.dy = 0;
+          this.spin = 0;
+        }
+        draw() {
+          const gradient = ctx.createRadialGradient(this.x - 3, this.y - 3, this.radius * 0.1, this.x, this.y, this.radius);
+          gradient.addColorStop(0, '#fff');
+          gradient.addColorStop(1, this.color);
+          ctx.fillStyle = gradient;
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.shadowColor = "rgba(0,0,0,0.2)";
+          ctx.shadowBlur = 3;
+          ctx.fill();
+          ctx.shadowBlur = 0;
+        }
+        move() {
+          this.x += this.dx;
+          this.y += this.dy + this.spin * 0.05;
+          this.dy += gravity;
+          if (this.y + this.radius > canvas.height) {
+            this.y = canvas.height - this.radius;
+            this.dy *= -0.7;
+            this.spin *= 0.9;
+          }
+          if (this.x - this.radius < 0) {
+            if (this.y > canvas.height - goalHeight) { scoreGoal("bot"); }
+            else { this.x = this.radius; this.dx *= -1; this.spin *= -0.5; }
+          }
+          if (this.x + this.radius > canvas.width) {
+            if (this.y > canvas.height - goalHeight) { scoreGoal("player"); }
+            else { this.x = canvas.width - this.radius; this.dx *= -1; this.spin *= -0.5; }
+          }
+        }
+        reset() { this.x = canvas.width / 2; this.y = canvas.height / 2; this.dx = 0; this.dy = 0; this.spin = 0; }
+        checkCollision(entity) {
+          const distX = this.x - entity.x;
+          const distY = this.y - entity.y;
+          const distance = Math.hypot(distX, distY);
+          if (distance < this.radius + entity.radius) {
+            kickSound.currentTime = 0;
+            kickSound.play();
+            const angle = Math.atan2(distY, distX);
+            const speed = Math.hypot(this.dx, this.dy);
+            this.dx = speed * Math.cos(angle);
+            this.dy = speed * Math.sin(angle);
+            const impactPoint = (this.x - entity.x) / entity.radius;
+            this.spin += impactPoint * 2;
+          }
+        }
+        update(entity1, entity2) {
+          this.move();
+          this.checkCollision(entity1);
+          this.checkCollision(entity2);
+        }
+      }
+
+      // Global game variables for scoring and bonus (declared only once)
+      // (player, bot, ball, playerScore, botScore, playerStreak, botStreak, lastGoalTime, bonusActive, bonusTimer have been declared above)
+
+      function scoreGoal(scoringSide) {
+        const currentTime = Date.now();
+        if (currentTime - lastGoalTime < 10000) {
+          scoringSide === "player" ? playerStreak++ : botStreak++;
+        } else {
+          scoringSide === "player" ? playerStreak = 1 : botStreak = 1;
+        }
+        lastGoalTime = currentTime;
+        let points = baseGoalPoints * (scoringSide === "player" ? playerStreak : botStreak);
+        if (bonusActive) points *= 2;
+        if (scoringSide === "player") {
+          playerScore += points;
+          playerScoreEl.textContent = `Player: ${playerScore}`;
+          scoreSound.currentTime = 0;
+          scoreSound.play();
+          showGoalNotification("PLAYER SCORED! " + randomDegenMessage());
+        } else {
+          botScore += points;
+          botScoreEl.textContent = `Bot: ${botScore}`;
+          scoreSound.currentTime = 0;
+          scoreSound.play();
+          showGoalNotification("BOT SCORED! " + randomDegenMessage());
+        }
+        ball.reset();
+        checkGameOver();
+      }
+
+      function checkForBonus() {
+        if (!bonusActive && Math.random() < 0.005) {
+          bonusActive = true;
+          bonusTimer = Date.now();
+          showBonusNotification("DEGEN BONUS: Score x2!");
+        }
+        if (bonusActive && Date.now() - bonusTimer > 10000) {
+          bonusActive = false;
+          hideBonusNotification();
+        }
+      }
+
+      function submitLeaderboard() {
+        const playerName = document.getElementById("playerName").value.trim();
+        if (playerName === "") { alert("Enter your name, you degen!"); return; }
+        let leaderboard = JSON.parse(localStorage.getItem("footballLeaderboard") || "[]");
+        leaderboard.push({ name: playerName, score: playerScore });
+        leaderboard.sort((a, b) => b.score - a.score);
+        localStorage.setItem("footballLeaderboard", JSON.stringify(leaderboard));
+      }
+
+      function drawField() {
+        const fieldGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        fieldGradient.addColorStop(0, "#000");
+        fieldGradient.addColorStop(1, "#111");
+        ctx.fillStyle = fieldGradient;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = "#0f0";
+        ctx.lineWidth = 2;
+        ctx.setLineDash([15, 15]);
+        ctx.beginPath();
+        ctx.moveTo(canvas.width / 2, 0);
+        ctx.lineTo(canvas.width / 2, canvas.height);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.beginPath();
+        ctx.arc(canvas.width / 2, canvas.height / 2, 60, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = "#0f0";
+        ctx.fillRect(0, canvas.height - goalHeight, goalWidth, goalHeight);
+        ctx.fillRect(canvas.width - goalWidth, canvas.height - goalHeight, goalWidth, goalHeight);
+      }
+
+      function initializeGame() {
+        player = new Player(100, canvas.height - playerRadius, "#1E90FF");
+        bot = new Bot(canvas.width - 100, canvas.height - playerRadius, "#32CD32", difficulty);
+        ball = new Ball(canvas.width / 2, canvas.height / 2, ballRadius, "#FFD700");
+        playerScore = 0; botScore = 0;
+        playerScoreEl.textContent = `Player: 0`;
+        botScoreEl.textContent = `Bot: 0`;
+        playerStreak = 0; botStreak = 0; lastGoalTime = 0;
+        bonusActive = false;
+        hideBonusNotification();
+        gameOverScreen.classList.remove("active");
+      }
+
+      const keys = { ArrowLeft: false, ArrowRight: false, Space: false };
+      window.addEventListener("keydown", (e) => {
+        if (controls !== 'keyboard') return;
+        if (e.code === "ArrowLeft") keys.ArrowLeft = true;
+        if (e.code === "ArrowRight") keys.ArrowRight = true;
+        if (e.code === "Space") {
+          if (!player.jumping) { player.dy = -8; player.jumping = true; }
+          else if (player.doubleJumpAvailable) { player.dy = -8; player.doubleJumpAvailable = false; }
+        }
+      });
+      window.addEventListener("keyup", (e) => {
+        if (controls !== 'keyboard') return;
+        if (e.code === "ArrowLeft") keys.ArrowLeft = false;
+        if (e.code === "ArrowRight") keys.ArrowRight = false;
+      });
+      let touchStartX = null, touchStartY = null;
+      canvas.addEventListener("touchstart", (e) => {
+        if (controls !== 'touch') return;
+        const touch = e.touches[0];
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+      });
+      canvas.addEventListener("touchend", (e) => {
+        if (controls !== 'touch' || touchStartX === null) return;
+        const touch = e.changedTouches[0];
+        const deltaX = touch.clientX - touchStartX;
+        const deltaY = touch.clientY - touchStartY;
+        if (Math.abs(deltaX) > Math.abs(deltaY)) {
+          if (deltaX > 30) player.dx = 3;
+          else if (deltaX < -30) player.dx = -3;
+        } else {
+          if (deltaY < -30) {
+            if (!player.jumping) { player.dy = -8; player.jumping = true; }
+            else if (player.doubleJumpAvailable) { player.dy = -8; player.doubleJumpAvailable = false; }
+          }
+        }
+        touchStartX = null;
+        touchStartY = null;
+      });
+      canvas.addEventListener("touchmove", (e) => { if (controls === 'touch') e.preventDefault(); }, { passive: false });
+      function handlePlayerMovement() {
+        if (controls === 'keyboard') {
+          if (keys.ArrowLeft) player.dx = -3;
+          else if (keys.ArrowRight) player.dx = 3;
+          else player.dx = 0;
+        }
+      }
+
+      function gameLoop() {
+        if (!gameRunning || isPaused) return;
+        requestAnimationFrame(gameLoop);
+        checkForBonus();
+        drawField();
+        handlePlayerMovement();
+        player.update();
+        bot.update(ball);
+        ball.update(player, bot);
+        player.draw();
+        bot.draw();
+        ball.draw();
+      }
+
+      function checkGameOver() {
+        if (playerScore >= maxGoals || botScore >= maxGoals) {
+          gameRunning = false;
+          gameOverScreen.classList.add("active");
+          finalScoreEl.textContent = `Final Score - Player: ${playerScore} | Bot: ${botScore}`;
+        }
+      }
+
+      document.getElementById("submitScore").addEventListener("click", submitLeaderboard);
+      startButton.addEventListener("click", () => {
+        initializeGame();
+        startScreen.classList.add("hidden");
+        gameRunning = true;
+        gameLoop();
+      });
+      settingsButton.addEventListener("click", () => { settingsMenu.classList.add("active"); });
+      closeSettings.addEventListener("click", () => { settingsMenu.classList.remove("active"); });
+      difficultySelect.addEventListener("change", (e) => { difficulty = e.target.value; if (bot) bot.difficulty = difficulty; });
+      controlsSelect.addEventListener("change", (e) => { controls = e.target.value; });
+      restartButton.addEventListener("click", () => {
+        gameOverScreen.classList.remove("active");
+        initializeGame();
+        gameRunning = true;
+        gameLoop();
+      });
+      returnSettingsButton.addEventListener("click", () => {
+        gameOverScreen.classList.remove("active");
+        settingsMenu.classList.add("active");
+      });
+      pauseButtonEl.addEventListener("click", () => {
+        if (!gameRunning) return;
+        isPaused = !isPaused;
+        if (isPaused) pauseOverlay.style.display = "flex";
+        else { pauseOverlay.style.display = "none"; gameLoop(); }
+      });
+    })();
+  </script>
+</body>
+</html>
