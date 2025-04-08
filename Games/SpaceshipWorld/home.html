@@ -15,7 +15,7 @@
       color: #fff;
       text-align: center;
       /* Instead of radial gradients, we use the starrybg.pnj image: */
-      background: url('starrybg.pnj') no-repeat center center fixed; 
+      background: url('homeback.jpg') no-repeat center center fixed; 
       background-size: cover; /* so the image covers the screen */
     }
 
@@ -170,6 +170,137 @@
       background-color: #666;
       box-shadow: 0 0 8px rgba(255,255,255,0.2);
     }
+
+    /* Mobile responsiveness */
+    @media (max-width: 768px) {
+      #menu h1 {
+        font-size: 2rem;
+      }
+      #gameCanvas {
+        width: 100%;
+        height: auto;
+        max-width: 400px;
+      }
+      #upgradeModal {
+        width: 90%;
+        max-width: 320px;
+      }
+    }
+    
+    /* Touch Controls for mobile */
+    #touchControls {
+      display: none; /* Hide by default, show on mobile */
+    }
+    @media (max-width: 768px) {
+      #touchControls {
+        display: flex;
+        position: fixed;
+        bottom: 20px;
+        left: 0;
+        right: 0;
+        justify-content: center;
+        gap: 20px;
+        z-index: 100;
+      }
+    }
+    .touchBtn {
+      width: 60px;
+      height: 60px;
+      background-color: rgba(80, 80, 80, 0.7);
+      border: 2px solid #fff;
+      border-radius: 50%;
+      color: #fff;
+      font-size: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .touchBtn:active {
+      background-color: rgba(120, 120, 120, 0.9);
+    }
+    
+    /* Enhanced explosion animation */
+    @keyframes explode {
+      0% { transform: scale(0.1); opacity: 1; }
+      50% { transform: scale(1.2); opacity: 0.8; }
+      100% { transform: scale(2); opacity: 0; }
+    }
+    .explosion {
+      position: absolute;
+      width: 100px;
+      height: 100px;
+      background: radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(255,165,0,1) 50%, rgba(255,0,0,1) 100%);
+      border-radius: 50%;
+      animation: explode 0.5s ease-out forwards;
+      z-index: 999;
+    }
+    
+    /* Tutorial panel */
+    #tutorialPanel {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(30, 30, 30, 0.95);
+      border: 2px solid #fff;
+      border-radius: 8px;
+      padding: 20px;
+      z-index: 1000;
+      text-align: left;
+      max-width: 90%;
+      width: 500px;
+      display: none;
+    }
+    #tutorialPanel h2 {
+      color: #fff;
+      text-align: center;
+      margin-bottom: 15px;
+    }
+    #tutorialPanel p {
+      margin: 10px 0;
+    }
+    #tutorialPanel button {
+      display: block;
+      margin: 20px auto 0;
+      padding: 8px 16px;
+    }
+    .tutorialKey {
+      display: inline-block;
+      background: #333;
+      border: 1px solid #fff;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: monospace;
+      margin: 0 3px;
+    }
+    .game-link {
+      display: block;
+      padding: 10px 0;
+      color: #0f0;
+      text-decoration: none;
+      transition: all 0.3s ease;
+    }
+    .game-link:hover {
+      color: #fff;
+      transform: translateX(10px);
+    }
+    .game-link.new::after {
+      content: " [NEW]";
+      color: #f00;
+    }
+    .other-games {
+      margin: 20px 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    #back-to-portal {
+      margin-top: 20px;
+      background: #333;
+      color: #0f0;
+    }
   </style>
 </head>
 <body>
@@ -200,6 +331,54 @@
     <button class="upgradeBtn" id="fasterRocketBtn">Faster Rocket</button>
   </div>
 
+  <!-- Touch Controls for mobile -->
+  <div id="touchControls">
+    <div class="touchBtn" id="touchLeft">←</div>
+    <div class="touchBtn" id="touchUp">↑</div>
+    <div class="touchBtn" id="touchDown">↓</div>
+    <div class="touchBtn" id="touchRight">→</div>
+  </div>
+  
+  <!-- Tutorial Panel -->
+  <div id="tutorialPanel">
+    <h2>How to Play</h2>
+    <p><span class="tutorialKey">↑</span> Accelerate forward</p>
+    <p><span class="tutorialKey">↓</span> Accelerate backward</p>
+    <p><span class="tutorialKey">←</span> <span class="tutorialKey">→</span> Rotate ship</p>
+    <p>Your goal is to explore the universe and collect all upgrades while managing your fuel.</p>
+    <p>Complete all 5 rounds to win!</p>
+    <button id="closeTutorial">Got it!</button>
+  </div>
+
+  <div id="game-container">
+    <div id="game-header">
+      <div id="score-container">Score: <span id="score">0</span></div>
+      <div id="high-score-container">High Score: <span id="high-score">0</span></div>
+      <div id="level-container">Level: <span id="level">1</span></div>
+    </div>
+    <canvas id="game-canvas"></canvas>
+    <div id="game-controls">
+      <button id="restart-btn">Restart Game</button>
+      <button id="back-btn">Back to Home</button>
+    </div>
+  </div>
+
+  <div id="main-menu" class="menu">
+    <h1>SPACESHIP WORLD</h1>
+    <button id="play-btn">PLAY GAME</button>
+    <button id="settings-btn">SETTINGS</button>
+    <h2>OTHER GAMES</h2>
+    <div class="other-games">
+        <a href="../degenlander/index.html" class="game-link">Degenlander</a>
+        <a href="../AntsSimulator/index.html" class="game-link">Ants Simulator</a>
+        <a href="../NerdSoccer/PenFootballGameWithWallBounce.html" class="game-link">Nerd Soccer</a>
+        <a href="../CryptoShitter/index.html" class="game-link new">CryptoShitter</a>
+        <a href="../RugpullRoulette/index.html" class="game-link new">Rugpull Roulette</a>
+        <a href="../DegenerateSlots/index.html" class="game-link new">Degenerate Slots</a>
+    </div>
+    <button id="back-to-portal">BACK TO PORTAL</button>
+  </div>
+
   <script>
     /* LOCAL SCOREBOARD */
     let leaderboard = [];
@@ -217,6 +396,8 @@
     let menuDiv, playerNameInput, startGameBtn, leaderboardList;
     let gameContainer, gameTitle, canvas, ctx, info, restartBtn;
     let upgradeModal, biggerTankBtn, fasterRocketBtn;
+    let touchControls, touchLeft, touchUp, touchDown, touchRight;
+    let tutorialPanel, closeTutorial;
 
     /* GAME STATE */
     let totalRounds = 5;
@@ -757,46 +938,253 @@
       ctx.restore();
     }
 
-    window.addEventListener('DOMContentLoaded', ()=>{
-      menuDiv= document.getElementById('menu');
-      playerNameInput= document.getElementById('playerName');
-      startGameBtn= document.getElementById('startGameBtn');
-      leaderboardList= document.getElementById('leaderboardList');
-
-      gameContainer= document.getElementById('gameContainer');
-      gameTitle= document.getElementById('gameTitle');
-      canvas= document.getElementById('gameCanvas');
-      ctx= canvas.getContext('2d');
-      info= document.getElementById('info');
-      restartBtn= document.getElementById('restartBtn');
-
-      upgradeModal= document.getElementById('upgradeModal');
-      biggerTankBtn= document.getElementById('biggerTankBtn');
-      fasterRocketBtn= document.getElementById('fasterRocketBtn');
-
-      biggerTankBtn.addEventListener('click', biggerTankUpgrade);
-      fasterRocketBtn.addEventListener('click', fasterRocketUpgrade);
-
-      rocketImg= new Image();
-      rocketImg.src= 'rocket.png'; /* same folder */
-      rocketImg.onload= ()=>{ rocketImgLoaded=true; };
-
-      startGameBtn.addEventListener('click', ()=>{
-        const nameVal= playerNameInput.value.trim();
-        if(!nameVal){ alert('Please enter your name.');return;}
-        playerName= nameVal;
-        showGame();
-        startNewGame();
+    function initialize() {
+      // DOM Elements
+      menuDiv = document.getElementById('menu');
+      playerNameInput = document.getElementById('playerName');
+      startGameBtn = document.getElementById('startGameBtn');
+      leaderboardList = document.getElementById('leaderboardList');
+      
+      gameContainer = document.getElementById('gameContainer');
+      gameTitle = document.getElementById('gameTitle');
+      canvas = document.getElementById('gameCanvas');
+      ctx = canvas.getContext('2d');
+      info = document.getElementById('info');
+      restartBtn = document.getElementById('restartBtn');
+      
+      upgradeModal = document.getElementById('upgradeModal');
+      biggerTankBtn = document.getElementById('biggerTankBtn');
+      fasterRocketBtn = document.getElementById('fasterRocketBtn');
+      
+      // Touch controls
+      touchControls = document.getElementById('touchControls');
+      touchLeft = document.getElementById('touchLeft');
+      touchUp = document.getElementById('touchUp');
+      touchDown = document.getElementById('touchDown');
+      touchRight = document.getElementById('touchRight');
+      
+      // Tutorial
+      tutorialPanel = document.getElementById('tutorialPanel');
+      closeTutorial = document.getElementById('closeTutorial');
+      
+      // Show tutorial if first time
+      if (!localStorage.getItem('spaceshipTutorialSeen')) {
+        tutorialPanel.style.display = 'block';
+        localStorage.setItem('spaceshipTutorialSeen', 'true');
+      }
+      
+      // Touch events for mobile controls
+      touchLeft.addEventListener('touchstart', function(e) {
+        e.preventDefault();
+        leftPressed = true;
       });
-
-      restartBtn.addEventListener('click', handleRestart);
-
-      window.addEventListener('keydown', onKeyDown);
-      window.addEventListener('keyup', onKeyUp);
-
+      touchLeft.addEventListener('touchend', function(e) {
+        e.preventDefault();
+        leftPressed = false;
+      });
+      
+      touchRight.addEventListener('touchstart', function(e) {
+        e.preventDefault();
+        rightPressed = true;
+      });
+      touchRight.addEventListener('touchend', function(e) {
+        e.preventDefault();
+        rightPressed = false;
+      });
+      
+      touchUp.addEventListener('touchstart', function(e) {
+        e.preventDefault();
+        upPressed = true;
+      });
+      touchUp.addEventListener('touchend', function(e) {
+        e.preventDefault();
+        upPressed = false;
+      });
+      
+      touchDown.addEventListener('touchstart', function(e) {
+        e.preventDefault();
+        downPressed = true;
+      });
+      touchDown.addEventListener('touchend', function(e) {
+        e.preventDefault();
+        downPressed = false;
+      });
+      
+      // Close tutorial button
+      closeTutorial.addEventListener('click', function() {
+        tutorialPanel.style.display = 'none';
+      });
+      
+      // Enhanced particles system for better visual effects
+      createParticlesSystem();
+      
+      // Original initialization code
+      gameContainer.style.display = 'none';
       showMenu();
-      gameLoop();
       updateLeaderboard();
+      startGameBtn.addEventListener('click', startGame);
+      restartBtn.addEventListener('click', showMenu);
+      
+      // Upgrade buttons
+      biggerTankBtn.addEventListener('click', upgradeTank);
+      fasterRocketBtn.addEventListener('click', upgradeRocket);
+      
+      window.addEventListener('keydown', handleKeyDown);
+      window.addEventListener('keyup', handleKeyUp);
+    }
+
+    // Add a particle system for better visual effects
+    let particles = [];
+    
+    function createParticlesSystem() {
+      // Initialize particles array
+      particles = [];
+    }
+    
+    function addParticle(x, y, vx, vy, life = 30, color = '#ffaa00') {
+      particles.push({
+        x, y, vx, vy, life,
+        originalLife: life,
+        color
+      });
+    }
+    
+    function updateParticles() {
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life--;
+        
+        if (p.life <= 0) {
+          particles.splice(i, 1);
+        }
+      }
+    }
+    
+    function drawParticles() {
+      for (const p of particles) {
+        const alpha = p.life / p.originalLife;
+        ctx.fillStyle = p.color + Math.floor(alpha * 255).toString(16).padStart(2, '0');
+        ctx.beginPath();
+        ctx.arc(p.x - cameraX, p.y - cameraY, 3 * alpha, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    
+    // Update the thruster function to add particles
+    function applyThrust() {
+      if (upPressed && fuel > 0) {
+        const thrustPower = accelForward;
+        rocketVX += Math.sin(angle) * thrustPower;
+        rocketVY -= Math.cos(angle) * thrustPower;
+        fuel--;
+        
+        // Add exhaust particles for visual effect
+        const particleCount = 3;
+        for (let i = 0; i < particleCount; i++) {
+          const particleAngle = angle + (Math.random() - 0.5) * 0.5;
+          const particleSpeed = 2 + Math.random() * 2;
+          const vx = -Math.sin(particleAngle) * particleSpeed;
+          const vy = Math.cos(particleAngle) * particleSpeed;
+          
+          // Position the particle at the back of the rocket
+          const pX = rocketX - Math.sin(angle) * rocketRadius;
+          const pY = rocketY + Math.cos(angle) * rocketRadius;
+          
+          // Random color between yellow and red
+          const r = Math.floor(255).toString(16).padStart(2, '0');
+          const g = Math.floor(Math.random() * 200).toString(16).padStart(2, '0');
+          const b = '00';
+          const color = `#${r}${g}${b}`;
+          
+          addParticle(pX, pY, vx, vy, 10 + Math.random() * 20, color);
+        }
+      }
+      
+      if (downPressed && fuel > 0) {
+        const thrustPower = accelBackward;
+        rocketVX -= Math.sin(angle) * thrustPower;
+        rocketVY += Math.cos(angle) * thrustPower;
+        fuel--;
+        
+        // Add front thruster particles
+        const particleCount = 2;
+        for (let i = 0; i < particleCount; i++) {
+          const particleAngle = angle + Math.PI + (Math.random() - 0.5) * 0.3;
+          const particleSpeed = 1 + Math.random() * 1;
+          const vx = -Math.sin(particleAngle) * particleSpeed;
+          const vy = Math.cos(particleAngle) * particleSpeed;
+          
+          // Position the particle at the front of the rocket
+          const pX = rocketX + Math.sin(angle) * rocketRadius;
+          const pY = rocketY - Math.cos(angle) * rocketRadius;
+          
+          addParticle(pX, pY, vx, vy, 5 + Math.random() * 10, '#aaaaff');
+        }
+      }
+    }
+    
+    // Update the update function to include particles
+    function update() {
+      // ... existing code ...
+      
+      // Update particles
+      updateParticles();
+      
+      // ... rest of the existing update code ...
+    }
+    
+    // Update the draw function to include particles
+    function draw() {
+      // ... existing drawing code ...
+      
+      // Draw particles
+      drawParticles();
+      
+      // ... rest of the existing drawing code ...
+    }
+    
+    // Explosion effect
+    function createExplosion(x, y) {
+      const explosionElement = document.createElement('div');
+      explosionElement.className = 'explosion';
+      explosionElement.style.left = (x - 50) + 'px';
+      explosionElement.style.top = (y - 50) + 'px';
+      document.body.appendChild(explosionElement);
+      
+      // Create particles
+      for (let i = 0; i < 30; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 1 + Math.random() * 3;
+        const vx = Math.cos(angle) * speed;
+        const vy = Math.sin(angle) * speed;
+        addParticle(x, y, vx, vy, 30 + Math.random() * 30, '#ff5500');
+      }
+      
+      // Remove explosion element after animation completes
+      setTimeout(() => {
+        document.body.removeChild(explosionElement);
+      }, 500);
+    }
+
+    document.getElementById('back-to-portal').addEventListener('click', function() {
+      window.location.href = '../../index.html';
+    });
+    
+    // Add links to library scripts
+    function addScriptToHead(src) {
+      const script = document.createElement('script');
+      script.src = src;
+      document.head.appendChild(script);
+    }
+    
+    // Add shared DegenlanderPortal libraries
+    addScriptToHead('../../js/degen-theme.js');
+    addScriptToHead('../../js/sound-effects.js');
+
+    window.addEventListener('DOMContentLoaded', ()=>{
+      initialize();
     });
   </script>
 </body>
