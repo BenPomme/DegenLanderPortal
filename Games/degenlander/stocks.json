@@ -1,0 +1,17 @@
+[
+    {
+        "ticker": "AAPL",
+        "name": "Apple Inc.",
+        "price": 181.46
+    },
+    {
+        "ticker": "MSFT",
+        "name": "Microsoft Corporation",
+        "price": 357.86
+    },
+    {
+        "ticker": "GOOGL",
+        "name": "Alphabet Inc.",
+        "price": 146.75
+    }
+]

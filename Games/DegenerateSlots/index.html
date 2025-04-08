@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Degenerate Slots - The Ultimate Degen Gambling Experience</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <!-- Import shared DegenlanderPortal libraries -->
+  <script src="/js/degen-theme.js"></script>
+  <script src="/js/sound-effects.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      background-color: var(--bg-color, #0a0a0a);
+      font-family: 'Press Start 2P', cursive;
+      color: var(--text-color, #33ff33);
+      min-height: 100vh;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    header {
+      width: 100%;
+      padding: 20px;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    h1 {
+      font-size: 2.5rem;
+      color: #ff3333;
+      text-shadow: 0 0 10px rgba(255, 51, 51, 0.7);
+      margin-bottom: 10px;
+      animation: glowText 1.5s ease-in-out infinite alternate;
+    }
+    @keyframes glowText {
+      from { text-shadow: 0 0 5px rgba(255, 51, 51, 0.7); }
+      to { text-shadow: 0 0 15px #ff3333, 0 0 20px #ff3333; }
+    }
+    .subtitle {
+      font-size: 1rem;
+      color: var(--text-color, #33ff33);
+      margin-bottom: 20px;
+    }
+    #game-container {
+      position: relative;
+      width: 90vw;
+      max-width: 800px;
+      height: 600px;
+      border: 5px solid var(--accent-color, #33ff33);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 0 20px rgba(51, 255, 51, 0.5);
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-secondary, #111);
+    }
+    #slot-machine {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+    }
+    .display-area {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+    }
+    .machine-frame {
+      width: 90%;
+      max-width: 600px;
+      height: 250px;
+      background: #222;
+      border: 10px solid #444;
+      border-radius: 20px;
+      display: flex;
+      padding: 10px;
+      position: relative;
+      box-shadow: 0 0 30px rgba(0, 0, 0, 0.8) inset, 0 10px 20px rgba(0, 0, 0, 0.5);
+    }
+    .reel-container {
+      flex: 1;
+      display: flex;
+      justify-content: space-between;
+      overflow: hidden;
+      perspective: 1000px;
+    }
+    .reel {
+      flex: 1;
+      height: 100%;
+      margin: 0 5px;
+      background: #000;
+      border-radius: 10px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 0 10px rgba(255, 255, 0, 0.5) inset;
+    }
+    .reel-content {
+      position: absolute;
+      width: 100%;
+      height: 500%; /* 5x height for 5 symbols */
+      animation-duration: 3s;
+      animation-timing-function: cubic-bezier(0.5, 0, 0.5, 1);
+      animation-fill-mode: forwards;
+      display: flex;
+      flex-direction: column;
+    }
+    .reel-item {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      color: #fff;
+      text-shadow: 0 0 5px #000;
+    }
+    .reel-1 .reel-content {
+      animation-name: spin1;
+    }
+    .reel-2 .reel-content {
+      animation-name: spin2;
+    }
+    .reel-3 .reel-content {
+      animation-name: spin3;
+    }
+    
+    /* Highlight winning lines */
+    .win-line {
+      position: absolute;
+      background: rgba(255, 215, 0, 0.5);
+      height: 20%;
+      width: 100%;
+      left: 0;
+      pointer-events: none;
+      transform: scaleX(0);
+      transform-origin: left;
+      z-index: 10;
+      box-shadow: 0 0 20px #ffcc00;
+    }
+    .win-line.middle {
+      top: 40%;
+    }
+    .win-line.top {
+      top: 10%;
+    }
+    .win-line.bottom {
+      top: 70%;
+    }
+    .win-line.active {
+      animation: highlight 1s ease-in-out infinite alternate;
+    }
+    @keyframes highlight {
+      from { transform: scaleX(0); opacity: 0.3; }
+      to { transform: scaleX(1); opacity: 0.7; }
+    }
+    
+    /* Lever design */
+    .lever-container {
+      position: absolute;
+      right: -80px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 80px;
+      height: 200px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .lever {
+      width: 30px;
+      height: 120px;
+      background: linear-gradient(90deg, #ff3333, #cc0000);
+      border-radius: 15px;
+      position: relative;
+      transform-origin: bottom center;
+      cursor: pointer;
+      box-shadow: 0 0 10px rgba(255, 0, 0, 0.7);
+      transition: transform 0.3s;
+    }
+    .lever:hover {
+      transform: rotate(-5deg);
+    }
+    .lever.pulled {
+      animation: pullLever 0.5s ease-in-out;
+    }
+    .lever-knob {
+      width: 50px;
+      height: 50px;
+      background: linear-gradient(135deg, #ffcc00, #cc9900);
+      border-radius: 50%;
+      position: absolute;
+      top: -25px;
+      left: 50%;
+      transform: translateX(-50%);
+      box-shadow: 0 0 15px rgba(255, 204, 0, 0.8);
+    }
+    @keyframes pullLever {
+      0% { transform: rotate(0deg); }
+      50% { transform: rotate(-30deg); }
+      100% { transform: rotate(0deg); }
+    }
+    
+    /* Control panel */
+    .control-panel {
+      height: 150px;
+      background: #222;
+      border-top: 5px solid #444;
+      padding: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .balance-display {
+      background: #000;
+      border: 3px solid var(--accent-color, #33ff33);
+      border-radius: 10px;
+      padding: 15px;
+      color: var(--text-color, #33ff33);
+      text-shadow: 0 0 10px rgba(51, 255, 51, 0.7);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 200px;
+    }
+    .balance-display p {
+      margin-bottom: 10px;
+      font-size: 0.8rem;
+    }
+    .balance-amount {
+      font-size: 1.5rem;
+    }
+    .bet-controls {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .bet-amount {
+      font-size: 1.2rem;
+      margin-bottom: 10px;
+      color: #ffcc00;
+    }
+    .bet-buttons {
+      display: flex;
+      gap: 10px;
+    }
+    .small-btn {
+      padding: 8px 15px;
+      background: #444;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      font-family: 'Press Start 2P', cursive;
+      font-size: 0.7rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .small-btn:hover {
+      background: #555;
+      transform: translateY(-2px);
+    }
+    .spin-btn {
+      padding: 15px 30px;
+      background: #ff3333;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-family: 'Press Start 2P', cursive;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 5px 0 #cc0000;
+    }
+    .spin-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 0 #cc0000;
+    }
+    .spin-btn:active {
+      transform: translateY(0);
+      box-shadow: 0 0 0 #cc0000;
+    }
+    .spin-btn:disabled {
+      background: #555;
+      color: #888;
+      box-shadow: 0 5px 0 #444;
+      cursor: not-allowed;
+    }
+    
+    /* Win display */
+    .win-display {
+      position: absolute;
+      top: 20px;
+      left: 0;
+      width: 100%;
+      text-align: center;
+      font-size: 1.5rem;
+      color: #ffcc00;
+      text-shadow: 0 0 10px rgba(255, 204, 0, 0.8);
+      opacity: 0;
+      transform: translateY(-20px);
+      transition: all 0.3s;
+      z-index: 20;
+    }
+    .win-display.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    
+    /* Notification */
+    .notification {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.8);
+      color: var(--text-color, #33ff33);
+      padding: 15px 20px;
+      border-radius: 5px;
+      font-size: 1rem;
+      z-index: 150;
+      opacity: 0;
+      transition: opacity 0.3s;
+      text-align: center;
+      max-width: 80%;
+      pointer-events: none;
+    }
+    .notification.show {
+      opacity: 1;
+    }
+    
+    /* Particle effects canvas */
+    #particles-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 50;
+    }
+    
+    /* Game controls (back and restart) */
+    .game-controls {
+      display: flex;
+      gap: 20px;
+      margin-top: 20px;
+    }
+    .game-btn {
+      padding: 10px 20px;
+      background: var(--accent-color, #33ff33);
+      color: #000;
+      border: none;
+      border-radius: 5px;
+      font-family: 'Press Start 2P', cursive;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .game-btn:hover {
+      background: #55ff55;
+      transform: translateY(-2px);
+    }
+    .game-btn.red {
+      background: #ff3333;
+      color: #fff;
+    }
+    .game-btn.red:hover {
+      background: #ff5555;
+    }
+    
+    /* Start Screen */
+    #start-screen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      z-index: 100;
+    }
+    #start-screen h2 {
+      font-size: 2rem;
+      color: #ff3333;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    #start-screen p {
+      font-size: 0.8rem;
+      margin-bottom: 15px;
+      max-width: 600px;
+      text-align: center;
+      line-height: 1.5;
+    }
+    #start-btn {
+      padding: 15px 30px;
+      font-size: 1.2rem;
+      background: var(--accent-color, #33ff33);
+      color: #000;
+      margin-top: 30px;
+      font-family: 'Press Start 2P', cursive;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    #start-btn:hover {
+      background: #55ff55;
+      transform: translateY(-3px);
+      box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
+    }
+    
+    /* Animations for reels */
+    @keyframes spin1 {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(calc(-80% + var(--stop-position-1, 0%))); }
+    }
+    @keyframes spin2 {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(calc(-80% + var(--stop-position-2, 0%))); }
+    }
+    @keyframes spin3 {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(calc(-80% + var(--stop-position-3, 0%))); }
+    }
+    
+    /* Responsive styling */
+    @media (max-width: 768px) {
+      h1 {
+        font-size: 1.8rem;
+      }
+      .subtitle {
+        font-size: 0.8rem;
+      }
+      .machine-frame {
+        width: 95%;
+        height: 200px;
+      }
+      .lever-container {
+        right: -60px;
+        width: 60px;
+      }
+      .lever {
+        width: 20px;
+        height: 80px;
+      }
+      .lever-knob {
+        width: 35px;
+        height: 35px;
+        top: -18px;
+      }
+      .control-panel {
+        height: 180px;
+        flex-direction: column;
+        gap: 15px;
+      }
+      .balance-display {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>DEGENERATE SLOTS</h1>
+    <div class="subtitle">Pull the lever and get fucking rich!</div>
+  </header>
+  
+  <div id="game-container">
+    <div id="slot-machine">
+      <div class="display-area">
+        <div class="machine-frame">
+          <div class="reel-container">
+            <div class="reel reel-1">
+              <div class="reel-content">
+                <div class="reel-item">🚀</div>
+                <div class="reel-item">💰</div>
+                <div class="reel-item">🔥</div>
+                <div class="reel-item">💎</div>
+                <div class="reel-item">🦍</div>
+              </div>
+            </div>
+            <div class="reel reel-2">
+              <div class="reel-content">
+                <div class="reel-item">🚀</div>
+                <div class="reel-item">💰</div>
+                <div class="reel-item">🔥</div>
+                <div class="reel-item">💎</div>
+                <div class="reel-item">🦍</div>
+              </div>
+            </div>
+            <div class="reel reel-3">
+              <div class="reel-content">
+                <div class="reel-item">🚀</div>
+                <div class="reel-item">💰</div>
+                <div class="reel-item">🔥</div>
+                <div class="reel-item">💎</div>
+                <div class="reel-item">🦍</div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Win lines -->
+          <div class="win-line top"></div>
+          <div class="win-line middle"></div>
+          <div class="win-line bottom"></div>
+          
+          <!-- Lever -->
+          <div class="lever-container">
+            <div class="lever" id="lever">
+              <div class="lever-knob"></div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Win display -->
+        <div class="win-display" id="win-display">BIG WIN! +$1000</div>
+      </div>
+      
+      <div class="control-panel">
+        <div class="balance-display">
+          <p>BALANCE</p>
+          <div class="balance-amount" id="balance">$1000</div>
+        </div>
+        
+        <div class="bet-controls">
+          <div class="bet-amount">BET: $<span id="bet-value">10</span></div>
+          <div class="bet-buttons">
+            <button class="small-btn" id="min-bet">MIN</button>
+            <button class="small-btn" id="bet-down">-</button>
+            <button class="small-btn" id="bet-up">+</button>
+            <button class="small-btn" id="max-bet">MAX</button>
+          </div>
+        </div>
+        
+        <button class="spin-btn" id="spin-btn">SPIN</button>
+      </div>
+    </div>
+    
+    <div id="start-screen">
+      <h2>DEGENERATE SLOTS</h2>
+      <p>Welcome to the most addictive slot machine in the Metaverse!</p>
+      <p>Match symbols across the reels to win big fucking prizes!</p>
+      <p>🚀 ROCKET = 5x your bet</p>
+      <p>💰 MONEY BAG = 10x your bet</p>
+      <p>🔥 FIRE = 15x your bet</p>
+      <p>💎 DIAMOND = 25x your bet</p>
+      <p>🦍 APE = 50x your bet</p>
+      <p>Match 3 APEs to win the JACKPOT!</p>
+      <button id="start-btn">START GAMBLING</button>
+    </div>
+    
+    <div class="notification" id="notification"></div>
+    <canvas id="particles-canvas"></canvas>
+  </div>
+  
+  <div class="game-controls">
+    <button class="game-btn" id="back-btn">BACK TO HOME</button>
+    <button class="game-btn red" id="restart-btn">RESTART GAME</button>
+  </div>
+
+  <script>
+    // Game Constants
+    const STARTING_BALANCE = 1000;
+    const MIN_BET = 10;
+    const MAX_BET = 100;
+    const BET_STEP = 10;
+    
+    // Symbol payouts (multiplier)
+    const SYMBOL_PAYOUTS = {
+      '🚀': 5,   // Rocket
+      '💰': 10,  // Money Bag
+      '🔥': 15,  // Fire
+      '💎': 25,  // Diamond
+      '🦍': 50   // Ape (Jackpot)
+    };
+    
+    // Game Variables
+    let balance = STARTING_BALANCE;
+    let currentBet = MIN_BET;
+    let isSpinning = false;
+    let particles = [];
+    let animationFrame = null;
+    
+    // DOM Elements
+    const reelContent = document.querySelectorAll('.reel-content');
+    const reels = document.querySelectorAll('.reel');
+    const winLines = document.querySelectorAll('.win-line');
+    const leverElem = document.getElementById('lever');
+    const spinBtn = document.getElementById('spin-btn');
+    const balanceDisplay = document.getElementById('balance');
+    const betValueDisplay = document.getElementById('bet-value');
+    const winDisplay = document.getElementById('win-display');
+    const minBetBtn = document.getElementById('min-bet');
+    const maxBetBtn = document.getElementById('max-bet');
+    const betUpBtn = document.getElementById('bet-up');
+    const betDownBtn = document.getElementById('bet-down');
+    const startBtn = document.getElementById('start-btn');
+    const startScreen = document.getElementById('start-screen');
+    const notification = document.getElementById('notification');
+    const backBtn = document.getElementById('back-btn');
+    const restartBtn = document.getElementById('restart-btn');
+    const particlesCanvas = document.getElementById('particles-canvas');
+    const particlesCtx = particlesCanvas.getContext('2d');
+    
+    // Symbol array (matching the HTML structure)
+    const symbols = ['🚀', '💰', '🔥', '💎', '🦍'];
+    
+    // Initialize the game
+    function initGame() {
+      // Clear any existing animation frame
+      if (animationFrame) {
+        cancelAnimationFrame(animationFrame);
+      }
+      
+      balance = STARTING_BALANCE;
+      currentBet = MIN_BET;
+      isSpinning = false;
+      particles = [];
+      
+      // Initialize canvas size
+      particlesCanvas.width = particlesCanvas.offsetWidth;
+      particlesCanvas.height = particlesCanvas.offsetHeight;
+      
+      // Start particle animation
+      animateParticles();
+      
+      updateUI();
+      startScreen.style.display = 'none';
+      
+      // Play sound effect
+      playSoundEffect('gameStart');
+      
+      showNotification('Game started! Place your bets and pull the lever!');
+    }
+    
+    // Update UI elements
+    function updateUI() {
+      balanceDisplay.textContent = `$${balance}`;
+      betValueDisplay.textContent = currentBet;
+      spinBtn.disabled = isSpinning || balance < currentBet;
+      
+      // Reset win lines
+      winLines.forEach(line => line.classList.remove('active'));
+    }
+    
+    // Spin the reels
+    function spinReels() {
+      if (isSpinning || balance < currentBet) return;
+      
+      // Deduct bet from balance
+      balance -= currentBet;
+      updateUI();
+      
+      isSpinning = true;
+      
+      // Play spin sound
+      playSoundEffect('spin');
+      
+      // Pull lever animation
+      leverElem.classList.add('pulled');
+      setTimeout(() => {
+        leverElem.classList.remove('pulled');
+      }, 500);
+      
+      // Generate random results for each reel
+      const results = [
+        Math.floor(Math.random() * symbols.length),
+        Math.floor(Math.random() * symbols.length),
+        Math.floor(Math.random() * symbols.length)
+      ];
+      
+      // Set CSS variables for reel stopping positions
+      document.documentElement.style.setProperty('--stop-position-1', `${results[0] * 20}%`);
+      document.documentElement.style.setProperty('--stop-position-2', `${results[1] * 20}%`);
+      document.documentElement.style.setProperty('--stop-position-3', `${results[2] * 20}%`);
+      
+      // Add spinning animation
+      reelContent.forEach((reel, i) => {
+        reel.style.animationDuration = `${3 + i * 0.5}s`;
+        reel.classList.remove('reel-1', 'reel-2', 'reel-3');
+        void reel.offsetWidth; // Force reflow
+        reel.classList.add(`reel-${i+1}`);
+        
+        // Play reel stop sound with delay for each reel
+        setTimeout(() => {
+          playSoundEffect('reelStop');
+        }, 3000 + i * 500);
+      });
+      
+      // Check results after animation
+      setTimeout(() => {
+        checkWin(results);
+        isSpinning = false;
+        updateUI();
+      }, 4500); // Wait a bit longer than the longest animation
+    }
+    
+    // Check if there are any winning combinations
+    function checkWin(results) {
+      // Get the actual symbols from the results indices
+      const resultSymbols = results.map(index => symbols[index]);
+      
+      // Check for wins
+      let totalWin = 0;
+      let winningLines = [];
+      
+      // Check for 3 of a kind
+      if (resultSymbols[0] === resultSymbols[1] && resultSymbols[1] === resultSymbols[2]) {
+        const symbol = resultSymbols[0];
+        const multiplier = SYMBOL_PAYOUTS[symbol];
+        totalWin = currentBet * multiplier;
+        winningLines.push(1); // Middle line
+      }
+      
+      // If we have a win, update balance and show win animation
+      if (totalWin > 0) {
+        balance += totalWin;
+        
+        // Show win display
+        winDisplay.textContent = `BIG WIN! +$${totalWin}`;
+        winDisplay.classList.add('show');
+        
+        // Highlight winning lines
+        winningLines.forEach(line => {
+          if (line === 0) winLines[0].classList.add('active'); // Top
+          if (line === 1) winLines[1].classList.add('active'); // Middle
+          if (line === 2) winLines[2].classList.add('active'); // Bottom
+        });
+        
+        // Create win particles
+        createWinParticles(totalWin, resultSymbols[0]);
+        
+        // Play win sound
+        if (resultSymbols[0] === '🦍' && totalWin >= currentBet * 50) {
+          playSoundEffect('jackpot');
+          showNotification('🔥🔥🔥 JACKPOT!!! 🔥🔥🔥', 'success');
+        } else {
+          playSoundEffect('win');
+          showNotification(`You won $${totalWin}!`, 'success');
+        }
+        
+        setTimeout(() => {
+          winDisplay.classList.remove('show');
+        }, 3000);
+      } else {
+        // Play lose sound
+        playSoundEffect('lose');
+        showNotification('No win. Spin again!');
+      }
+      
+      updateUI();
+      
+      // Game over if balance is too low
+      if (balance < MIN_BET) {
+        playSoundEffect('gameOver');
+        showNotification('Game Over! You\'re broke!');
+        
+        // Create game over particles
+        createGameOverParticles(false);
+        
+        setTimeout(() => {
+          resetGame();
+        }, 3000);
+      }
+    }
+    
+    // Reset the game
+    function resetGame() {
+      balance = STARTING_BALANCE;
+      currentBet = MIN_BET;
+      isSpinning = false;
+      
+      // Reset reels
+      reelContent.forEach(reel => {
+        reel.style.transform = 'translateY(0)';
+      });
+      
+      updateUI();
+      playSoundEffect('reset');
+      showNotification('Game restarted!');
+    }
+    
+    // Show notification
+    function showNotification(message, type = '') {
+      notification.textContent = message;
+      notification.className = 'notification ' + type;
+      notification.classList.add('show');
+      
+      setTimeout(() => {
+        notification.classList.remove('show');
+      }, 3000);
+    }
+    
+    // Change bet amount
+    function changeBet(amount) {
+      currentBet += amount;
+      if (currentBet < MIN_BET) currentBet = MIN_BET;
+      if (currentBet > MAX_BET) currentBet = MAX_BET;
+      if (currentBet > balance) currentBet = balance;
+      
+      // Play UI sound
+      playSoundEffect('ui');
+      
+      updateUI();
+    }
+    
+    // Particle effects system
+    function createParticle(x, y, color, text = null, size = null, lifespan = 60) {
+      particles.push({
+        x,
+        y,
+        size: size || (text ? 20 : Math.random() * 10 + 5),
+        color,
+        speed: Math.random() * 3 + 1,
+        angle: Math.random() * Math.PI * 2,
+        life: lifespan,
+        text
+      });
+    }
+    
+    function createWinParticles(amount, symbol) {
+      const containerRect = document.querySelector('.machine-frame').getBoundingClientRect();
+      const centerX = containerRect.width / 2;
+      const centerY = containerRect.height / 2;
+      
+      // Create money particles
+      for (let i = 0; i < 50; i++) {
+        createParticle(
+          centerX + (Math.random() - 0.5) * containerRect.width,
+          centerY + (Math.random() - 0.5) * containerRect.height,
+          '#ffcc00'
+        );
+      }
+      
+      // Create text particle showing the win amount
+      createParticle(
+        centerX,
+        centerY - 50,
+        '#ffcc00',
+        `+$${amount}`,
+        40,
+        120
+      );
+      
+      // Create symbol particles
+      for (let i = 0; i < 10; i++) {
+        createParticle(
+          centerX + (Math.random() - 0.5) * containerRect.width * 0.8,
+          centerY + (Math.random() - 0.5) * containerRect.height * 0.8,
+          '#ffffff',
+          symbol,
+          30,
+          120
+        );
+      }
+    }
+    
+    function createGameOverParticles(isWinner) {
+      const containerRect = document.getElementById('game-container').getBoundingClientRect();
+      const centerX = containerRect.width / 2;
+      const centerY = containerRect.height / 2;
+      
+      const color = isWinner ? '#ffcc00' : '#ff3333';
+      const emojis = isWinner ? 
+        ['💰', '💎', '💵', '🚀', '🔥', '💯', '🏆'] : 
+        ['💩', '👎', '🤡', '😭', '🗑️', '💸'];
+      
+      // Create explosion particles
+      for (let i = 0; i < 50; i++) {
+        createParticle(
+          centerX + (Math.random() - 0.5) * containerRect.width,
+          centerY + (Math.random() - 0.5) * containerRect.height,
+          color,
+          null,
+          Math.random() * 15 + 5,
+          120
+        );
+      }
+      
+      // Create emoji particles
+      for (let i = 0; i < 10; i++) {
+        createParticle(
+          centerX + (Math.random() - 0.5) * containerRect.width * 0.8,
+          centerY + (Math.random() - 0.5) * containerRect.height * 0.8,
+          '#ffffff',
+          emojis[Math.floor(Math.random() * emojis.length)],
+          30,
+          120
+        );
+      }
+    }
+    
+    function updateParticles() {
+      particles = particles.filter(p => p.life > 0);
+      
+      particles.forEach(p => {
+        // Move the particle
+        p.x += Math.cos(p.angle) * p.speed;
+        p.y += Math.sin(p.angle) * p.speed;
+        
+        // Reduce life
+        p.life--;
+      });
+    }
+    
+    function drawParticles() {
+      particlesCtx.clearRect(0, 0, particlesCanvas.width, particlesCanvas.height);
+      
+      particles.forEach(p => {
+        if (p.text) {
+          // Draw text particle
+          const alpha = p.life / 60;
+          particlesCtx.globalAlpha = alpha;
+          particlesCtx.fillStyle = p.color;
+          particlesCtx.font = `${p.size}px "Press Start 2P"`;
+          particlesCtx.textAlign = 'center';
+          particlesCtx.fillText(p.text, p.x, p.y);
+        } else {
+          // Draw circle particle
+          const alpha = p.life / 60;
+          particlesCtx.globalAlpha = alpha;
+          particlesCtx.beginPath();
+          particlesCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          particlesCtx.fillStyle = p.color;
+          particlesCtx.fill();
+        }
+      });
+      
+      particlesCtx.globalAlpha = 1;
+    }
+    
+    function animateParticles() {
+      updateParticles();
+      drawParticles();
+      
+      animationFrame = requestAnimationFrame(animateParticles);
+    }
+    
+    // Sound effects integration
+    function playSoundEffect(action) {
+      if (typeof DegenSound !== 'undefined') {
+        switch(action) {
+          case 'ui':
+            DegenSound.play('ui', 'click');
+            break;
+          case 'spin':
+            DegenSound.play('game', 'jump');
+            break;
+          case 'reelStop':
+            DegenSound.play('ui', 'select');
+            break;
+          case 'win':
+            DegenSound.play('game', 'collect');
+            break;
+          case 'jackpot':
+            DegenSound.play('game', 'levelUp');
+            break;
+          case 'lose':
+            DegenSound.play('game', 'hit');
+            break;
+          case 'gameStart':
+            DegenSound.play('game', 'start');
+            break;
+          case 'gameOver':
+            DegenSound.play('game', 'explosion');
+            break;
+          case 'reset':
+            DegenSound.play('ui', 'back');
+            break;
+        }
+      }
+    }
+    
+    // Event Listeners
+    startBtn.addEventListener('click', () => {
+      initGame();
+      playSoundEffect('ui');
+    });
+    
+    spinBtn.addEventListener('click', () => {
+      spinReels();
+      playSoundEffect('ui');
+    });
+    
+    leverElem.addEventListener('click', spinReels);
+    
+    minBetBtn.addEventListener('click', () => {
+      currentBet = MIN_BET;
+      playSoundEffect('ui');
+      updateUI();
+    });
+    
+    maxBetBtn.addEventListener('click', () => {
+      currentBet = Math.min(MAX_BET, balance);
+      playSoundEffect('ui');
+      updateUI();
+    });
+    
+    betUpBtn.addEventListener('click', () => changeBet(BET_STEP));
+    betDownBtn.addEventListener('click', () => changeBet(-BET_STEP));
+    
+    restartBtn.addEventListener('click', () => {
+      resetGame();
+      playSoundEffect('ui');
+    });
+    
+    backBtn.addEventListener('click', () => {
+      playSoundEffect('ui');
+      window.location.href = '../../index.html';
+    });
+    
+    // Resize handling for the particles canvas
+    window.addEventListener('resize', () => {
+      particlesCanvas.width = particlesCanvas.offsetWidth;
+      particlesCanvas.height = particlesCanvas.offsetHeight;
+    });
+    
+    // Initialize UI
+    updateUI();
+    
+    // Initialize canvas size
+    particlesCanvas.width = particlesCanvas.offsetWidth;
+    particlesCanvas.height = particlesCanvas.offsetHeight;
+  </script>
+</body>
+</html>
