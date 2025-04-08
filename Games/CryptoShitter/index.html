@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CryptoShitter - Dump Your Bags Before The Rug Pull</title>
+  <!-- Use Press Start 2P for that degen retro feel -->
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <!-- Import shared DegenlanderPortal libraries -->
+  <script src="/js/degen-theme.js"></script>
+  <script src="/js/sound-effects.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      background-color: var(--bg-color, #111);
+      font-family: 'Press Start 2P', cursive;
+      color: var(--text-color, #0f0);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow-x: hidden;
+    }
+    header {
+      width: 100%;
+      padding: 20px;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    h1 {
+      font-size: 2.5rem;
+      color: #f00;
+      text-shadow: 0 0 10px rgba(255, 0, 0, 0.7);
+      margin-bottom: 10px;
+      animation: glowText 1.5s ease-in-out infinite alternate;
+    }
+    @keyframes glowText {
+      from { text-shadow: 0 0 5px rgba(255, 0, 0, 0.7); }
+      to { text-shadow: 0 0 15px #f00, 0 0 20px #f00; }
+    }
+    .subtitle {
+      font-size: 1rem;
+      color: #0f0;
+      margin-bottom: 20px;
+    }
+    #game-container {
+      position: relative;
+      width: 90vw;
+      max-width: 1000px;
+      height: 600px;
+      border: 5px solid #0f0;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+      background: #000;
+    }
+    #game-screen {
+      display: flex;
+      width: 100%;
+      height: 100%;
+    }
+    #market-area {
+      width: 70%;
+      height: 100%;
+      position: relative;
+      overflow: hidden;
+    }
+    #chart-container {
+      width: 100%;
+      height: 70%;
+      border-bottom: 2px solid #333;
+      position: relative;
+    }
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+    #particles-canvas {
+      z-index: 50;
+      pointer-events: none;
+    }
+    #shitcoin-list {
+      width: 100%;
+      height: 30%;
+      padding: 10px;
+      overflow-y: auto;
+    }
+    .shitcoin {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px;
+      margin-bottom: 5px;
+      border: 1px solid #333;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .shitcoin:hover {
+      background: #222;
+      transform: translateX(5px);
+    }
+    .shitcoin.selected {
+      border-color: #0f0;
+      background: rgba(0, 255, 0, 0.1);
+    }
+    .coin-name {
+      font-size: 0.8rem;
+      color: #0f0;
+    }
+    .coin-price {
+      font-size: 0.8rem;
+    }
+    .coin-change {
+      font-size: 0.8rem;
+      padding: 2px 5px;
+      border-radius: 3px;
+    }
+    .positive { color: #0f0; }
+    .negative { color: #f00; }
+    #player-info {
+      width: 30%;
+      height: 100%;
+      border-left: 2px solid #333;
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+    }
+    #player-stats {
+      margin-bottom: 20px;
+    }
+    .stat-item {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      font-size: 0.8rem;
+    }
+    .stat-value {
+      color: #ff0;
+    }
+    #controls {
+      margin-top: auto;
+    }
+    .control-group {
+      margin-bottom: 15px;
+    }
+    .control-label {
+      font-size: 0.8rem;
+      margin-bottom: 5px;
+      color: #0f0;
+    }
+    .slider-container {
+      display: flex;
+      align-items: center;
+    }
+    input[type="range"] {
+      width: 100%;
+      margin-right: 10px;
+      -webkit-appearance: none;
+      height: 10px;
+      background: #222;
+      border-radius: 5px;
+      outline: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px;
+      height: 20px;
+      background: #0f0;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+    .slider-value {
+      font-size: 0.8rem;
+      color: #0f0;
+      width: 50px;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      margin: 5px 0;
+      border: none;
+      border-radius: 5px;
+      font-family: 'Press Start 2P', cursive;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    #buy-btn {
+      background: #0f0;
+      color: #000;
+    }
+    #sell-btn {
+      background: #f00;
+      color: #fff;
+    }
+    #shill-btn {
+      background: #ff0;
+      color: #000;
+    }
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    }
+    button:disabled {
+      background: #555;
+      color: #888;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    #start-screen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      z-index: 100;
+    }
+    #start-screen h2 {
+      font-size: 2rem;
+      color: #f00;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    #start-screen p {
+      font-size: 0.9rem;
+      margin-bottom: 15px;
+      max-width: 600px;
+      text-align: center;
+      line-height: 1.5;
+    }
+    #start-btn {
+      padding: 15px 30px;
+      font-size: 1.2rem;
+      background: #0f0;
+      color: #000;
+      margin-top: 30px;
+    }
+    #game-over {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      z-index: 100;
+    }
+    #game-over h2 {
+      font-size: 2rem;
+      color: #f00;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    #game-over p {
+      font-size: 1.2rem;
+      margin-bottom: 15px;
+      max-width: 600px;
+      text-align: center;
+    }
+    #final-score {
+      font-size: 2.5rem;
+      color: #ff0;
+      margin: 30px 0;
+    }
+    #restart-btn {
+      padding: 15px 30px;
+      font-size: 1.2rem;
+      background: #0f0;
+      color: #000;
+      margin-top: 30px;
+    }
+    .notification {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.8);
+      color: #0f0;
+      padding: 15px 20px;
+      border-radius: 5px;
+      font-size: 1rem;
+      z-index: 150;
+      opacity: 0;
+      transition: opacity 0.3s;
+      text-align: center;
+      max-width: 80%;
+      pointer-events: none;
+    }
+    .notification.show {
+      opacity: 1;
+    }
+    /* Game controls (back and restart) */
+    .game-controls {
+      display: flex;
+      gap: 20px;
+      margin-top: 20px;
+    }
+    .game-btn {
+      width: auto;
+      padding: 10px 20px;
+      background: #33ff33;
+      color: #000;
+      border: none;
+      border-radius: 5px;
+      font-family: 'Press Start 2P', cursive;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .game-btn:hover {
+      background: #55ff55;
+      transform: translateY(-2px);
+    }
+    .game-btn.red {
+      background: #ff3333;
+      color: #fff;
+    }
+    .game-btn.red:hover {
+      background: #ff5555;
+    }
+    /* Responsive styling */
+    @media (max-width: 768px) {
+      #game-screen {
+        flex-direction: column;
+      }
+      #market-area, #player-info {
+        width: 100%;
+        height: 50%;
+      }
+      #player-info {
+        border-left: none;
+        border-top: 2px solid #333;
+      }
+      .shitcoin {
+        padding: 5px;
+      }
+      h1 {
+        font-size: 1.8rem;
+      }
+      .subtitle {
+        font-size: 0.8rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>CRYPTO SHITTER</h1>
+    <div class="subtitle">Dump your fucking bags before the goddamn rug pull, bitch!</div>
+  </header>
+  
+  <div id="game-container">
+    <div id="game-screen">
+      <div id="market-area">
+        <div id="chart-container">
+          <canvas id="chart-canvas"></canvas>
+          <canvas id="particles-canvas"></canvas>
+        </div>
+        <div id="shitcoin-list">
+          <!-- Shitcoins will be added here dynamically -->
+        </div>
+      </div>
+      
+      <div id="player-info">
+        <div id="player-stats">
+          <div class="stat-item">
+            <span>Cash:</span>
+            <span class="stat-value" id="wallet-value">$10,000</span>
+          </div>
+          <div class="stat-item">
+            <span>Shitcoins:</span>
+            <span class="stat-value" id="portfolio-value">$0</span>
+          </div>
+          <div class="stat-item">
+            <span>Ass-ets:</span>
+            <span class="stat-value" id="total-value">$10,000</span>
+          </div>
+          <div class="stat-item">
+            <span>Retard Power:</span>
+            <span class="stat-value" id="influence-value">0</span>
+          </div>
+        </div>
+        
+        <div id="controls">
+          <div class="control-group">
+            <div class="control-label">Amount:</div>
+            <div class="slider-container">
+              <input type="range" id="amount-slider" min="0" max="100" value="50">
+              <span class="slider-value" id="amount-value">50%</span>
+            </div>
+          </div>
+          
+          <button id="buy-btn" disabled>BUY THIS SHIT</button>
+          <button id="sell-btn" disabled>DUMP ON THOSE FUCKERS</button>
+          <button id="shill-btn" disabled>SHILL LIKE A BITCH</button>
+        </div>
+      </div>
+    </div>
+    
+    <div id="start-screen">
+      <h2>WELCOME, SHITCOIN TRADER!</h2>
+      <p>Ready to make some motherfucking money in this horseshit crypto market? Buy low, shill like a whore, and sell high!</p>
+      <p>Remember these golden rules, dickhead:</p>
+      <p>1. Don't be the last fucking bagholder or you're totally fucked</p>
+      <p>2. Shill your coins to every goddamn idiot to pump the price</p>
+      <p>3. Dump everything before the cocksuckers pull the rug</p>
+      <p>4. Not your keys, not your shit, asshole</p>
+      <button id="start-btn">LET'S GET FUCKING RICH!</button>
+    </div>
+    
+    <div id="game-over">
+      <h2>THE MARKET CRASHED, BITCH!</h2>
+      <p>Your final score, dickhead:</p>
+      <div id="final-score">$0</div>
+      <p id="performance-text">You're a fucking paper-handed bitch!</p>
+      <button id="restart-btn">TRY AGAIN, DIPSHIT</button>
+    </div>
+    
+    <div class="notification" id="notification"></div>
+  </div>
+  
+  <div class="game-controls">
+    <button class="game-btn" id="back-btn">BACK TO FUCKING HOME</button>
+    <button class="game-btn red" id="game-restart-btn">RESTART THIS SHIT</button>
+  </div>
+
+  <script>
+    // Game Constants
+    const GAME_DURATION = 120; // 2 minutes in seconds
+    const COIN_COUNT = 7;
+    const STARTING_CASH = 10000;
+    const RUGPULL_CHANCE = 0.15; // 15% chance of rugpull each turn
+    const SHILL_COOLDOWN = 10; // 10 seconds
+    
+    // Game Variables
+    let gameActive = false;
+    let gameTimer;
+    let secondsRemaining = GAME_DURATION;
+    let selectedCoin = null;
+    let coins = [];
+    let playerCash = STARTING_CASH;
+    let playerHoldings = {};
+    let playerInfluence = 0;
+    let shillCooldown = 0;
+    let animationFrame = null;
+    
+    // DOM Elements
+    const chartCanvas = document.getElementById('chart-canvas');
+    const ctx = chartCanvas.getContext('2d');
+    const particlesCanvas = document.getElementById('particles-canvas');
+    const particlesCtx = particlesCanvas.getContext('2d');
+    const shitcoinList = document.getElementById('shitcoin-list');
+    const walletValue = document.getElementById('wallet-value');
+    const portfolioValue = document.getElementById('portfolio-value');
+    const totalValue = document.getElementById('total-value');
+    const influenceValue = document.getElementById('influence-value');
+    const amountSlider = document.getElementById('amount-slider');
+    const amountValue = document.getElementById('amount-value');
+    const buyBtn = document.getElementById('buy-btn');
+    const sellBtn = document.getElementById('sell-btn');
+    const shillBtn = document.getElementById('shill-btn');
+    const startBtn = document.getElementById('start-btn');
+    const startScreen = document.getElementById('start-screen');
+    const gameOver = document.getElementById('game-over');
+    const finalScore = document.getElementById('final-score');
+    const performanceText = document.getElementById('performance-text');
+    const restartBtn = document.getElementById('restart-btn');
+    const notification = document.getElementById('notification');
+    const backBtn = document.getElementById('back-btn');
+    const gameRestartBtn = document.getElementById('game-restart-btn');
+    
+    // Coin Names Generator
+    const coinPrefixes = ['Moon', 'Doge', 'Safe', 'Baby', 'Cum', 'Elon', 'Shib', 'Ape', 'Pepe', 'Chad', 'Shit', 'Pussy', 'Cock', 'Bitch', 'Fuck', 'Cum', 'ASS', 'MILF', 'Tits', 'Dick'];
+    const coinSuffixes = ['Coin', 'Token', 'Swap', 'Moon', 'Rocket', 'Cash', 'Inu', 'Doge', 'Floki', 'Elon', 'Mars', 'Cum', 'Shit', 'Dick', 'Fuck', 'Pussy', 'Ass'];
+    
+    function getRandomCoinName() {
+      const prefix = coinPrefixes[Math.floor(Math.random() * coinPrefixes.length)];
+      const suffix = coinSuffixes[Math.floor(Math.random() * coinSuffixes.length)];
+      return `${prefix}${suffix}`;
+    }
+    
+    // Price History Generator
+    function generatePriceHistory(volatility) {
+      const points = 50;
+      const history = [];
+      let price = Math.random() * 10;
+      
+      for (let i = 0; i < points; i++) {
+        // Add some randomness to price
+        const change = (Math.random() - 0.5) * volatility;
+        price = Math.max(0.001, price * (1 + change));
+        history.push(price);
+      }
+      
+      return history;
+    }
+    
+    // Generate a new shitcoin
+    function createShitcoin() {
+      const name = getRandomCoinName();
+      const symbol = name.substring(0, 3).toUpperCase();
+      const volatility = 0.1 + Math.random() * 0.4; // Between 10-50% volatility
+      const priceHistory = generatePriceHistory(volatility);
+      const rugPullFactor = Math.random(); // Higher means more likely to rugpull
+      
+      return {
+        name,
+        symbol,
+        volatility,
+        priceHistory,
+        currentPrice: priceHistory[priceHistory.length - 1],
+        previousPrice: priceHistory[priceHistory.length - 2],
+        rugPullFactor,
+        rugPulled: false,
+        shilled: 0
+      };
+    }
+    
+    // Generate initial coins
+    function generateCoins() {
+      coins = [];
+      for (let i = 0; i < COIN_COUNT; i++) {
+        coins.push(createShitcoin());
+      }
+    }
+    
+    // Update coin prices
+    function updateCoinPrices() {
+      coins.forEach(coin => {
+        if (coin.rugPulled) return;
+        
+        // Check for rugpull
+        if (Math.random() < RUGPULL_CHANCE * coin.rugPullFactor) {
+          coin.rugPulled = true;
+          coin.previousPrice = coin.currentPrice;
+          coin.currentPrice = coin.currentPrice * 0.01; // 99% drop
+          
+          // Play rugpull sound effect
+          playSoundEffect('rugpull');
+          
+          // Create rugpull particles
+          createRugpullParticles(coin);
+          
+          showNotification(`${coin.name} RUGPULLED! All holders are TOTALLY FUCKED IN THE ASS!`, 'warning');
+          return;
+        }
+        
+        // Normal price update
+        const baseChange = (Math.random() - 0.5) * coin.volatility;
+        let totalChange = baseChange;
+        
+        // Add shill effect
+        if (coin.shilled > 0) {
+          const shillEffect = (coin.shilled / 100) * 0.2; // Up to 20% boost from shilling
+          totalChange += shillEffect;
+          coin.shilled *= 0.9; // Decay shill effect
+        }
+        
+        coin.previousPrice = coin.currentPrice;
+        coin.currentPrice = Math.max(0.001, coin.currentPrice * (1 + totalChange));
+      });
+      
+      // Update price history for each coin
+      coins.forEach(coin => {
+        coin.priceHistory.push(coin.currentPrice);
+        if (coin.priceHistory.length > 50) {
+          coin.priceHistory.shift();
+        }
+      });
+    }
+    
+    // Render the coin list
+    function renderCoinList() {
+      shitcoinList.innerHTML = '';
+      
+      coins.forEach(coin => {
+        const percentChange = ((coin.currentPrice - coin.previousPrice) / coin.previousPrice * 100).toFixed(2);
+        const isPositive = percentChange >= 0;
+        
+        const coinElement = document.createElement('div');
+        coinElement.className = `shitcoin ${selectedCoin === coin ? 'selected' : ''}`;
+        coinElement.innerHTML = `
+          <div class="coin-name">${coin.symbol} - ${coin.name}</div>
+          <div class="coin-price">$${coin.currentPrice.toFixed(5)}</div>
+          <div class="coin-change ${isPositive ? 'positive' : 'negative'}">
+            ${isPositive ? '+' : ''}${percentChange}%
+          </div>
+        `;
+        
+        coinElement.addEventListener('click', () => {
+          selectCoin(coin);
+        });
+        
+        shitcoinList.appendChild(coinElement);
+      });
+    }
+    
+    // Chart rendering
+    function renderChart() {
+      if (!selectedCoin) return;
+      
+      const width = chartCanvas.width = chartCanvas.offsetWidth;
+      const height = chartCanvas.height = chartCanvas.offsetHeight;
+      
+      ctx.clearRect(0, 0, width, height);
+      
+      // Background
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, width, height);
+      
+      // Grid lines
+      ctx.strokeStyle = '#333';
+      ctx.lineWidth = 1;
+      
+      // Horizontal grid lines
+      for (let i = 0; i < 5; i++) {
+        const y = height * i / 4;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
+      }
+      
+      // Vertical grid lines
+      for (let i = 0; i < 10; i++) {
+        const x = width * i / 9;
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, height);
+        ctx.stroke();
+      }
+      
+      // Find min/max for scaling
+      const prices = selectedCoin.priceHistory;
+      const min = Math.min(...prices) * 0.9;
+      const max = Math.max(...prices) * 1.1;
+      const range = max - min;
+      
+      // Draw price line
+      ctx.strokeStyle = '#0f0';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      
+      prices.forEach((price, i) => {
+        const x = width * i / (prices.length - 1);
+        const y = height - ((price - min) / range * height);
+        
+        if (i === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+      });
+      
+      ctx.stroke();
+      
+      // Draw current price label
+      const currentPrice = prices[prices.length - 1];
+      const x = width - 100;
+      const y = height - ((currentPrice - min) / range * height);
+      
+      ctx.fillStyle = '#0f0';
+      ctx.font = '12px "Press Start 2P"';
+      ctx.fillText(`$${currentPrice.toFixed(5)}`, x, y - 10);
+      
+      // Draw coin name
+      ctx.fillStyle = '#fff';
+      ctx.font = '16px "Press Start 2P"';
+      ctx.fillText(`${selectedCoin.symbol} - ${selectedCoin.name}`, 10, 20);
+
+      // Set particles canvas size
+      particlesCanvas.width = width;
+      particlesCanvas.height = height;
+    }
+    
+    // Update player stats
+    function updatePlayerStats() {
+      // Calculate portfolio value
+      let portfolioValueNum = 0;
+      for (const symbol in playerHoldings) {
+        const coin = coins.find(c => c.symbol === symbol);
+        if (coin) {
+          portfolioValueNum += playerHoldings[symbol] * coin.currentPrice;
+        }
+      }
+      
+      walletValue.textContent = `$${playerCash.toFixed(2)}`;
+      portfolioValue.textContent = `$${portfolioValueNum.toFixed(2)}`;
+      totalValue.textContent = `$${(playerCash + portfolioValueNum).toFixed(2)}`;
+      influenceValue.textContent = playerInfluence;
+      
+      // Update final score (used when game over)
+      finalScore.textContent = `$${(playerCash + portfolioValueNum).toFixed(2)}`;
+      
+      // Update slider value
+      amountValue.textContent = `${amountSlider.value}%`;
+      
+      // Update button states
+      buyBtn.disabled = !selectedCoin || playerCash <= 0;
+      sellBtn.disabled = !selectedCoin || !playerHoldings[selectedCoin.symbol] || playerHoldings[selectedCoin.symbol] <= 0;
+      shillBtn.disabled = !selectedCoin || playerInfluence <= 0 || shillCooldown > 0;
+    }
+    
+    // Select a coin
+    function selectCoin(coin) {
+      selectedCoin = coin;
+      
+      // Play select sound effect
+      playSoundEffect('select');
+      
+      renderCoinList();
+      renderChart();
+      updatePlayerStats();
+    }
+    
+    // Buy selected coin
+    function buyCoin() {
+      if (!selectedCoin || playerCash <= 0) return;
+      
+      const percentage = amountSlider.value / 100;
+      const amountToSpend = playerCash * percentage;
+      const quantity = amountToSpend / selectedCoin.currentPrice;
+      
+      playerCash -= amountToSpend;
+      
+      if (!playerHoldings[selectedCoin.symbol]) {
+        playerHoldings[selectedCoin.symbol] = 0;
+      }
+      
+      playerHoldings[selectedCoin.symbol] += quantity;
+      playerInfluence += Math.floor(amountToSpend / 100); // Gain influence based on purchase amount
+      
+      // Play buy sound effect
+      playSoundEffect('buy');
+      
+      // Create buy particles
+      createBuyParticles(amountToSpend);
+      
+      showNotification(`Bought ${quantity.toFixed(2)} ${selectedCoin.symbol} for $${amountToSpend.toFixed(2)} like a degenerate fucking gambler!`);
+      updatePlayerStats();
+    }
+    
+    // Sell selected coin
+    function sellCoin() {
+      if (!selectedCoin || !playerHoldings[selectedCoin.symbol] || playerHoldings[selectedCoin.symbol] <= 0) return;
+      
+      const percentage = amountSlider.value / 100;
+      const quantityToSell = playerHoldings[selectedCoin.symbol] * percentage;
+      const saleValue = quantityToSell * selectedCoin.currentPrice;
+      
+      playerCash += saleValue;
+      playerHoldings[selectedCoin.symbol] -= quantityToSell;
+      
+      // Play sell sound effect
+      playSoundEffect('sell');
+      
+      // Create sell particles
+      createSellParticles(saleValue);
+      
+      showNotification(`Dumped ${quantityToSell.toFixed(2)} ${selectedCoin.symbol} on those poor stupid fucks for $${saleValue.toFixed(2)}!`);
+      updatePlayerStats();
+    }
+    
+    // Shill selected coin
+    function shillCoin() {
+      if (!selectedCoin || playerInfluence <= 0 || shillCooldown > 0) return;
+      
+      const shillPower = Math.min(playerInfluence, 10);
+      selectedCoin.shilled += shillPower * 10;
+      playerInfluence -= shillPower;
+      shillCooldown = SHILL_COOLDOWN;
+      
+      // Play shill sound effect
+      playSoundEffect('shill');
+      
+      // Create shill particles
+      createShillParticles();
+      
+      showNotification(`You shilled ${selectedCoin.symbol} like a fucking prostitute! +${shillPower * 10}% pump incoming, bitches!`);
+      updatePlayerStats();
+    }
+    
+    // Show notification
+    function showNotification(message, type) {
+      notification.textContent = message;
+      notification.className = 'notification';
+      if (type) notification.classList.add(type);
+      notification.classList.add('show');
+      
+      setTimeout(() => {
+        notification.classList.remove('show');
+      }, 3000);
+    }
+    
+    // Update game timer
+    function updateTimer() {
+      secondsRemaining--;
+      
+      if (secondsRemaining <= 0) {
+        endGame();
+        return;
+      }
+      
+      // Update shillCooldown
+      if (shillCooldown > 0) {
+        shillCooldown--;
+        if (shillCooldown === 0) {
+          showNotification('Shill cooldown over, motherfucker! Time to pump another shitcoin!');
+        }
+      }
+      
+      // Every second, update prices
+      updateCoinPrices();
+      renderCoinList();
+      if (selectedCoin) renderChart();
+      updatePlayerStats();
+    }
+    
+    // Start the game
+    function startGame() {
+      // Clear any existing animation frame
+      if (animationFrame) {
+        cancelAnimationFrame(animationFrame);
+      }
+      
+      generateCoins();
+      playerCash = STARTING_CASH;
+      playerHoldings = {};
+      playerInfluence = 10;
+      secondsRemaining = GAME_DURATION;
+      shillCooldown = 0;
+      particles = [];
+      
+      selectCoin(coins[0]); // Select first coin
+      
+      gameActive = true;
+      startScreen.style.display = 'none';
+      gameOver.style.display = 'none';
+      
+      // Start the timer
+      clearInterval(gameTimer);
+      gameTimer = setInterval(updateTimer, 1000);
+      
+      // Start particle animation
+      animateParticles();
+      
+      // Play game start sound
+      playSoundEffect('gameStart');
+      
+      showNotification('Game started! Buy low, sell high, you fucking degenerate piece of shit!');
+    }
+    
+    // End the game
+    function endGame() {
+      gameActive = false;
+      clearInterval(gameTimer);
+      
+      // Calculate final score (should be already updated in player stats)
+      const finalScoreValue = parseFloat(finalScore.textContent.replace('$', ''));
+      
+      // Determine performance message
+      let performanceMessage;
+      if (finalScoreValue >= STARTING_CASH * 2) {
+        performanceMessage = 'Holy shit! You\'re a fucking crypto god, you magnificent bastard!';
+      } else if (finalScoreValue >= STARTING_CASH * 1.5) {
+        performanceMessage = 'Nice gains, dickhead! You\'re a true fucking degen!';
+      } else if (finalScoreValue >= STARTING_CASH) {
+        performanceMessage = 'At least you didn\'t lose everything, you pussy-ass bitch.';
+      } else if (finalScoreValue >= STARTING_CASH * 0.5) {
+        performanceMessage = 'You got absolutely rekt, paper hands! Fucking pathetic!';
+      } else {
+        performanceMessage = 'You\'re a fucking disgrace to degens everywhere, you worthless sack of shit!';
+      }
+      
+      // Play game over sound
+      playSoundEffect('gameOver');
+      
+      performanceText.textContent = performanceMessage;
+      gameOver.style.display = 'flex';
+    }
+    
+    // Particle effects system
+    let particles = [];
+    
+    function createParticle(x, y, color, text = null, size = null, lifespan = 60) {
+      particles.push({
+        x,
+        y,
+        size: size || (text ? 20 : Math.random() * 10 + 5),
+        color,
+        speed: Math.random() * 3 + 1,
+        angle: Math.random() * Math.PI * 2,
+        life: lifespan,
+        text
+      });
+    }
+    
+    function createBuyParticles(amount) {
+      // Get position in the chart for particle effect (bottom right)
+      const x = chartCanvas.width * 0.7;
+      const y = chartCanvas.height * 0.7;
+      
+      // Create dollar sign particles
+      for (let i = 0; i < 20; i++) {
+        createParticle(
+          x + (Math.random() - 0.5) * 50,
+          y + (Math.random() - 0.5) * 50,
+          '#0f0'
+        );
+      }
+      
+      // Create a text particle showing the amount
+      createParticle(
+        x,
+        y,
+        '#0f0',
+        `$${amount.toFixed(0)}`,
+        30,
+        90
+      );
+    }
+    
+    function createSellParticles(amount) {
+      // Get position in the chart for particle effect (top right)
+      const x = chartCanvas.width * 0.7;
+      const y = chartCanvas.height * 0.3;
+      
+      // Create dollar sign particles
+      for (let i = 0; i < 20; i++) {
+        createParticle(
+          x + (Math.random() - 0.5) * 50,
+          y + (Math.random() - 0.5) * 50,
+          '#f00'
+        );
+      }
+      
+      // Create a text particle showing the amount
+      createParticle(
+        x,
+        y,
+        '#f00',
+        `$${amount.toFixed(0)}`,
+        30,
+        90
+      );
+    }
+    
+    function createShillParticles() {
+      // Get multiple positions around the chart for shill emojis
+      for (let i = 0; i < 8; i++) {
+        const x = Math.random() * chartCanvas.width;
+        const y = Math.random() * chartCanvas.height;
+        
+        // Create emoji particles (emojis like 🚀💰💎🌙)
+        const emojis = ['🚀', '💰', '💎', '🌙', '🔥', '💯', '👑', '💪'];
+        createParticle(
+          x,
+          y,
+          '#ff0',
+          emojis[Math.floor(Math.random() * emojis.length)],
+          30,
+          120
+        );
+      }
+    }
+    
+    function createRugpullParticles(coin) {
+      // Get position in the chart for particle effect (center)
+      const x = chartCanvas.width * 0.5;
+      const y = chartCanvas.height * 0.5;
+      
+      // Create explosion particles
+      for (let i = 0; i < 50; i++) {
+        createParticle(
+          x + (Math.random() - 0.5) * 100,
+          y + (Math.random() - 0.5) * 100,
+          '#f00',
+          null,
+          Math.random() * 15 + 5,
+          90
+        );
+      }
+      
+      // Create a text particle showing the rugpull
+      createParticle(
+        x,
+        y,
+        '#f00',
+        `RUGPULL!`,
+        40,
+        120
+      );
+      
+      // Create a text particle showing the coin name
+      createParticle(
+        x,
+        y + 50,
+        '#f00',
+        `${coin.symbol} -99%`,
+        30,
+        120
+      );
+    }
+    
+    function updateParticles() {
+      particles = particles.filter(p => p.life > 0);
+      
+      particles.forEach(p => {
+        // Move the particle
+        p.x += Math.cos(p.angle) * p.speed;
+        p.y += Math.sin(p.angle) * p.speed;
+        
+        // Reduce life
+        p.life--;
+      });
+    }
+    
+    function drawParticles() {
+      particlesCtx.clearRect(0, 0, particlesCanvas.width, particlesCanvas.height);
+      
+      particles.forEach(p => {
+        if (p.text) {
+          // Draw text particle
+          const alpha = p.life / 60;
+          particlesCtx.globalAlpha = alpha;
+          particlesCtx.fillStyle = p.color;
+          particlesCtx.font = `${p.size}px "Press Start 2P"`;
+          particlesCtx.textAlign = 'center';
+          particlesCtx.fillText(p.text, p.x, p.y);
+        } else {
+          // Draw circle particle
+          const alpha = p.life / 60;
+          particlesCtx.globalAlpha = alpha;
+          particlesCtx.beginPath();
+          particlesCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          particlesCtx.fillStyle = p.color;
+          particlesCtx.fill();
+        }
+      });
+      
+      particlesCtx.globalAlpha = 1;
+    }
+    
+    function animateParticles() {
+      updateParticles();
+      drawParticles();
+      
+      animationFrame = requestAnimationFrame(animateParticles);
+    }
+    
+    // Event Listeners
+    startBtn.addEventListener('click', function() {
+      startGame();
+    });
+    
+    restartBtn.addEventListener('click', function() {
+      startGame();
+    });
+    
+    gameRestartBtn.addEventListener('click', function() {
+      startGame();
+    });
+    
+    buyBtn.addEventListener('click', buyCoin);
+    sellBtn.addEventListener('click', sellCoin);
+    shillBtn.addEventListener('click', shillCoin);
+    
+    amountSlider.addEventListener('input', () => {
+      amountValue.textContent = `${amountSlider.value}%`;
+    });
+    
+    backBtn.addEventListener('click', function() {
+      window.location.href = '../../index.html';
+    });
+    
+    // Resize handling for the chart
+    window.addEventListener('resize', () => {
+      if (selectedCoin) renderChart();
+    });
+    
+    // Initialize canvas size
+    chartCanvas.width = chartCanvas.offsetWidth;
+    chartCanvas.height = chartCanvas.offsetHeight;
+    particlesCanvas.width = chartCanvas.width;
+    particlesCanvas.height = chartCanvas.height;
+    
+    // Sound effects integration
+    function playSoundEffect(action) {
+      if (typeof DegenSound !== 'undefined') {
+        switch(action) {
+          case 'buy':
+            DegenSound.play('game', 'collect');
+            break;
+          case 'sell':
+            DegenSound.play('game', 'land');
+            break;
+          case 'shill':
+            DegenSound.play('game', 'powerUp');
+            break;
+          case 'rugpull':
+            DegenSound.play('game', 'explosion');
+            break;
+          case 'select':
+            DegenSound.play('ui', 'click');
+            break;
+          case 'gameStart':
+            DegenSound.play('game', 'levelUp');
+            break;
+          case 'gameOver':
+            DegenSound.play('game', 'explosion');
+            break;
+        }
+      }
+    }
+  </script>
+</body>
+</html>

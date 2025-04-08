@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rugpull Roulette - The Degenerates' Casino</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <!-- Import shared DegenlanderPortal libraries -->
+  <script src="/js/degen-theme.js"></script>
+  <script src="/js/sound-effects.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      background-color: var(--bg-color, #0a0a0a);
+      font-family: 'Press Start 2P', cursive;
+      color: var(--text-color, #33ff33);
+      min-height: 100vh;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    header {
+      width: 100%;
+      padding: 20px;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    h1 {
+      font-size: 2.5rem;
+      color: #ff3333;
+      text-shadow: 0 0 10px rgba(255, 51, 51, 0.7);
+      margin-bottom: 10px;
+      animation: glowText 1.5s ease-in-out infinite alternate;
+    }
+    @keyframes glowText {
+      from { text-shadow: 0 0 5px rgba(255, 51, 51, 0.7); }
+      to { text-shadow: 0 0 15px #ff3333, 0 0 20px #ff3333; }
+    }
+    .subtitle {
+      font-size: 1rem;
+      color: var(--text-color, #33ff33);
+      margin-bottom: 20px;
+    }
+    #game-container {
+      position: relative;
+      width: 90vw;
+      max-width: 1000px;
+      height: 650px;
+      border: 5px solid var(--accent-color, #33ff33);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 0 20px rgba(51, 255, 51, 0.5);
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-secondary, #111);
+    }
+    #roulette-wheel {
+      width: 100%;
+      height: 350px;
+      position: relative;
+      background: #000;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #wheel-container {
+      width: 320px;
+      height: 320px;
+      position: relative;
+      border-radius: 50%;
+      border: 3px solid var(--accent-color, #33ff33);
+      box-shadow: 0 0 20px rgba(51, 255, 51, 0.5);
+      overflow: hidden;
+      transform: rotate(0deg);
+      transition: transform 5s cubic-bezier(0.25, 0.1, 0.25, 1);
+    }
+    .wheel-segment {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      clip-path: polygon(50% 50%, 50% 0, 100% 0, 100% 50%);
+      transform-origin: bottom center;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding-top: 10px;
+      font-size: 0.6rem;
+      color: #fff;
+      text-shadow: 0 0 5px #000;
+    }
+    #wheel-pointer {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 15px solid transparent;
+      border-right: 15px solid transparent;
+      border-top: 25px solid #ff3333;
+      z-index: 10;
+    }
+    #projects-list {
+      height: 150px;
+      padding: 10px;
+      background: #000;
+      display: flex;
+      overflow-x: auto;
+      gap: 10px;
+      border-top: 2px solid #333;
+      border-bottom: 2px solid #333;
+    }
+    .project-card {
+      flex: 0 0 auto;
+      width: 130px;
+      height: 130px;
+      border: 2px solid #333;
+      border-radius: 5px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: var(--bg-secondary, #111);
+      position: relative;
+    }
+    .project-card:hover {
+      transform: translateY(-5px);
+      border-color: var(--accent-color, #33ff33);
+      box-shadow: 0 0 10px rgba(51, 255, 51, 0.5);
+    }
+    .project-card.selected {
+      border-color: #ff3333;
+      box-shadow: 0 0 10px rgba(255, 51, 51, 0.5);
+    }
+    .project-card.rugpulled {
+      border-color: #ff3333;
+      box-shadow: 0 0 10px rgba(255, 51, 51, 0.5);
+    }
+    .project-card.rugpulled::before {
+      content: "RUGPULLED";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      color: #ff3333;
+      text-shadow: 0 0 5px #ff3333;
+      transform: rotate(-30deg);
+    }
+    .project-logo {
+      width: 50px;
+      height: 50px;
+      background: #222;
+      border-radius: 50%;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+    }
+    .project-name {
+      font-size: 0.6rem;
+      text-align: center;
+      margin-bottom: 5px;
+    }
+    .project-odds {
+      font-size: 0.6rem;
+      color: #ffcc00;
+    }
+    #game-controls {
+      height: 150px;
+      padding: 15px;
+      background: var(--bg-secondary, #111);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    #bet-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    #bet-amount {
+      width: 100px;
+      padding: 10px;
+      font-family: 'Press Start 2P', cursive;
+      background: #222;
+      border: 2px solid #333;
+      border-radius: 5px;
+      color: var(--text-color, #33ff33);
+      text-align: center;
+    }
+    .bet-button {
+      padding: 10px;
+      font-family: 'Press Start 2P', cursive;
+      background: #222;
+      border: 2px solid #333;
+      border-radius: 5px;
+      color: var(--text-color, #33ff33);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .bet-button:hover {
+      background: #333;
+      border-color: var(--accent-color, #33ff33);
+    }
+    #player-stats {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.7rem;
+    }
+    #spin-button {
+      width: 100%;
+      padding: 15px;
+      font-family: 'Press Start 2P', cursive;
+      font-size: 1.2rem;
+      background: #ff3333;
+      border: none;
+      border-radius: 5px;
+      color: #fff;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    #spin-button:hover {
+      background: #ff5555;
+      transform: translateY(-3px);
+      box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
+    }
+    #spin-button:disabled {
+      background: #555;
+      color: #888;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    .notification {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.8);
+      color: var(--text-color, #33ff33);
+      padding: 15px 20px;
+      border-radius: 5px;
+      font-size: 1rem;
+      z-index: 150;
+      opacity: 0;
+      transition: opacity 0.3s;
+      text-align: center;
+      max-width: 80%;
+      pointer-events: none;
+    }
+    .notification.show {
+      opacity: 1;
+    }
+    .notification.warning {
+      color: #ff3333;
+    }
+    .notification.success {
+      color: #ffcc00;
+    }
+    #start-screen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      z-index: 100;
+    }
+    #start-screen h2 {
+      font-size: 2rem;
+      color: #ff3333;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    #start-screen p {
+      font-size: 0.8rem;
+      margin-bottom: 15px;
+      max-width: 600px;
+      text-align: center;
+      line-height: 1.5;
+    }
+    #start-btn {
+      padding: 15px 30px;
+      font-size: 1.2rem;
+      background: var(--accent-color, #33ff33);
+      color: #000;
+      margin-top: 30px;
+      font-family: 'Press Start 2P', cursive;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    #start-btn:hover {
+      background: #55ff55;
+      transform: translateY(-3px);
+      box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
+    }
+    #game-over {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      z-index: 100;
+    }
+    #game-over h2 {
+      font-size: 2rem;
+      color: #ff3333;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    #game-over p {
+      font-size: 1rem;
+      margin-bottom: 15px;
+      max-width: 600px;
+      text-align: center;
+    }
+    #final-balance {
+      font-size: 2.5rem;
+      color: #ffcc00;
+      margin: 30px 0;
+    }
+    #restart-btn {
+      padding: 15px 30px;
+      font-size: 1.2rem;
+      background: var(--accent-color, #33ff33);
+      color: #000;
+      margin-top: 30px;
+      font-family: 'Press Start 2P', cursive;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    #restart-btn:hover {
+      background: #55ff55;
+      transform: translateY(-3px);
+      box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
+    }
+    /* Responsive styling */
+    @media (max-width: 768px) {
+      h1 {
+        font-size: 1.8rem;
+      }
+      .subtitle {
+        font-size: 0.8rem;
+      }
+      #wheel-container {
+        width: 250px;
+        height: 250px;
+      }
+      .project-card {
+        width: 110px;
+        height: 110px;
+      }
+      #game-controls {
+        height: 180px;
+      }
+    }
+    /* Game controls (back and restart) */
+    .game-controls {
+      display: flex;
+      gap: 20px;
+      margin-top: 20px;
+    }
+    .game-btn {
+      width: auto;
+      padding: 10px 20px;
+      background: var(--accent-color, #33ff33);
+      color: #000;
+      border: none;
+      border-radius: 5px;
+      font-family: 'Press Start 2P', cursive;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .game-btn:hover {
+      background: #55ff55;
+      transform: translateY(-2px);
+    }
+    .game-btn.red {
+      background: #ff3333;
+      color: #fff;
+    }
+    .game-btn.red:hover {
+      background: #ff5555;
+    }
+    /* Particle effects */
+    #particles-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 50;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>RUGPULL ROULETTE</h1>
+    <div class="subtitle">Bet on which shitcoin gets rugpulled next!</div>
+  </header>
+  
+  <div id="game-container">
+    <div id="roulette-wheel">
+      <div id="wheel-container">
+        <!-- Wheel segments will be added dynamically -->
+      </div>
+      <div id="wheel-pointer"></div>
+    </div>
+    
+    <div id="projects-list">
+      <!-- Project cards will be added dynamically -->
+    </div>
+    
+    <div id="game-controls">
+      <div id="bet-controls">
+        <div>
+          <label for="bet-amount">BET:</label>
+          <input type="number" id="bet-amount" min="10" max="1000" step="10" value="100">
+        </div>
+        <div>
+          <button class="bet-button" id="min-bet">MIN</button>
+          <button class="bet-button" id="max-bet">MAX</button>
+        </div>
+      </div>
+      
+      <button id="spin-button" disabled>SPIN THE WHEEL</button>
+      
+      <div id="player-stats">
+        <div>BALANCE: <span id="player-balance">$1000</span></div>
+        <div>ROUND: <span id="round-counter">1</span>/10</div>
+      </div>
+    </div>
+    
+    <div id="start-screen">
+      <h2>WELCOME TO RUGPULL ROULETTE, DUMBASS!</h2>
+      <p>In this fucking game, you bet on which shitcoin project will get RUGPULLED next.</p>
+      <p>Each round, one of these scammy pieces of shit will crash and burn. If you bet on the right one, you win big!</p>
+      <p>The odds shown on each project indicate your potential payout multiplier, you greedy fuck.</p>
+      <p>Remember: The higher the odds, the less likely it is to get rugpulled (or so those lying bastards claim).</p>
+      <p>Can you survive 10 rounds without getting REKT, you degenerate gambler?</p>
+      <button id="start-btn">START BETTING, ASSHOLE</button>
+    </div>
+    
+    <div id="game-over">
+      <h2 id="game-over-title">GAME OVER!</h2>
+      <p id="game-over-message">Your gambling addiction has reached its conclusion.</p>
+      <div id="final-balance">$0</div>
+      <button id="restart-btn">BET AGAIN, DIPSHIT</button>
+    </div>
+    
+    <div class="notification" id="notification"></div>
+    <canvas id="particles-canvas"></canvas>
+  </div>
+
+  <div class="game-controls">
+    <button class="game-btn" id="back-btn">BACK TO FUCKING HOME</button>
+    <button class="game-btn red" id="game-restart-btn">RESTART THIS SHIT</button>
+  </div>
+
+  <script>
+    // Game Constants
+    const STARTING_BALANCE = 1000;
+    const MIN_BET = 10;
+    const MAX_BET = 1000;
+    const MAX_ROUNDS = 10;
+    const PROJECT_COUNT = 12;
+    
+    // Project Names
+    const projectNames = [
+      "ElonDoge", "SafeMoon", "ShibaRocket", "BabyFloki", "CumRocket", 
+      "SquidGame", "ApeFarm", "MoonSafe", "RocketCoin", "DeFiDegen", 
+      "PonziFinance", "YieldFarm", "Eth2X", "FrogDao", "PepeCoin",
+      "ChadToken", "CatCoin", "MoonShot", "ReptileCoin", "MuskSwap",
+      "MarsCoin", "GalacticDoge", "MetaShiba", "ApeLand", "SafeDeFi"
+    ];
+    
+    // Game Variables
+    let projects = [];
+    let selectedProject = null;
+    let playerBalance = STARTING_BALANCE;
+    let currentRound = 1;
+    let gameActive = false;
+    let spinning = false;
+    let particles = [];
+    let animationFrame = null;
+    
+    // DOM Elements
+    const wheelContainer = document.getElementById('wheel-container');
+    const projectsList = document.getElementById('projects-list');
+    const betAmountInput = document.getElementById('bet-amount');
+    const minBetBtn = document.getElementById('min-bet');
+    const maxBetBtn = document.getElementById('max-bet');
+    const spinButton = document.getElementById('spin-button');
+    const playerBalanceEl = document.getElementById('player-balance');
+    const roundCounterEl = document.getElementById('round-counter');
+    const startBtn = document.getElementById('start-btn');
+    const startScreen = document.getElementById('start-screen');
+    const gameOver = document.getElementById('game-over');
+    const gameOverTitle = document.getElementById('game-over-title');
+    const gameOverMessage = document.getElementById('game-over-message');
+    const finalBalance = document.getElementById('final-balance');
+    const restartBtn = document.getElementById('restart-btn');
+    const notification = document.getElementById('notification');
+    const backBtn = document.getElementById('back-btn');
+    const gameRestartBtn = document.getElementById('game-restart-btn');
+    const particlesCanvas = document.getElementById('particles-canvas');
+    const particlesCtx = particlesCanvas.getContext('2d');
+    
+    // Generate a random list of crypto projects with odds
+    function generateProjects() {
+      projects = [];
+      const usedNames = new Set();
+      
+      for (let i = 0; i < PROJECT_COUNT; i++) {
+        // Get a random name
+        let name;
+        do {
+          name = projectNames[Math.floor(Math.random() * projectNames.length)];
+        } while (usedNames.has(name));
+        
+        usedNames.add(name);
+        
+        // Generate symbol from name (e.g., "ElonDoge" -> "ELDG")
+        const symbol = name.replace(/[aeiou]/gi, '').substring(0, 4).toUpperCase();
+        
+        // Generate random odds (1.5x to 12x)
+        // Lower odds mean higher probability of rugpull
+        const odds = (1.5 + Math.random() * 10.5).toFixed(1);
+        
+        // Calculate rugpull probability (inverse of odds)
+        const rugpullProbability = 1 / parseFloat(odds);
+        
+        projects.push({
+          id: i,
+          name,
+          symbol,
+          odds,
+          rugpullProbability,
+          rugpulled: false
+        });
+      }
+      
+      // Sort by odds (ascending)
+      projects.sort((a, b) => parseFloat(a.odds) - parseFloat(b.odds));
+    }
+    
+    // Render the list of crypto projects
+    function renderProjects() {
+      projectsList.innerHTML = '';
+      
+      projects.forEach(project => {
+        if (project.rugpulled) return; // Don't show rugpulled projects
+        
+        const projectCard = document.createElement('div');
+        projectCard.className = `project-card ${selectedProject === project ? 'selected' : ''}`;
+        projectCard.innerHTML = `
+          <div class="project-logo">${project.symbol}</div>
+          <div class="project-name">${project.name}</div>
+          <div class="project-odds">${project.odds}x</div>
+        `;
+        
+        projectCard.addEventListener('click', () => {
+          if (!gameActive || spinning) return;
+          selectProject(project);
+        });
+        
+        projectsList.appendChild(projectCard);
+      });
+    }
+    
+    // Render the roulette wheel
+    function renderWheel() {
+      wheelContainer.innerHTML = '';
+      
+      const activeProjects = projects.filter(p => !p.rugpulled);
+      const segmentAngle = 360 / activeProjects.length;
+      
+      activeProjects.forEach((project, index) => {
+        const segment = document.createElement('div');
+        segment.className = 'wheel-segment';
+        segment.style.transform = `rotate(${index * segmentAngle}deg)`;
+        segment.style.background = getRandomColor(index);
+        segment.innerHTML = `${project.symbol}`;
+        
+        wheelContainer.appendChild(segment);
+      });
+    }
+    
+    // Generate a random color for wheel segments
+    function getRandomColor(index) {
+      const hue = (index * 30) % 360;
+      return `hsl(${hue}, 80%, 50%)`;
+    }
+    
+    // Select a project to bet on
+    function selectProject(project) {
+      selectedProject = project;
+      
+      // Play select sound effect
+      playSoundEffect('select');
+      
+      renderProjects();
+      updateUI();
+    }
+    
+    // Spin the wheel
+    function spinWheel() {
+      if (!gameActive || spinning || !selectedProject) return;
+      
+      // Get bet amount
+      const betAmount = parseInt(betAmountInput.value);
+      
+      // Validate bet
+      if (betAmount < MIN_BET || betAmount > MAX_BET || betAmount > playerBalance) {
+        showNotification('Invalid bet amount, you fucking moron!', 'warning');
+        playSoundEffect('error');
+        return;
+      }
+      
+      // Deduct bet from balance
+      playerBalance -= betAmount;
+      updateUI();
+      
+      spinning = true;
+      spinButton.disabled = true;
+      
+      // Play spin sound effect
+      playSoundEffect('spin');
+      
+      // Choose which project gets rugpulled
+      const rugpulledProject = chooseRugpulledProject();
+      
+      // Calculate rotation to land on the rugpulled project
+      const activeProjects = projects.filter(p => !p.rugpulled);
+      const segmentAngle = 360 / activeProjects.length;
+      const rugpulledIndex = activeProjects.findIndex(p => p.id === rugpulledProject.id);
+      
+      // Add extra rotations for dramatic effect (2-5 full rotations)
+      const extraRotations = 2 + Math.floor(Math.random() * 4);
+      const finalRotation = (rugpulledIndex * segmentAngle) + (extraRotations * 360) + (Math.random() * (segmentAngle * 0.8));
+      
+      // Animate the wheel
+      wheelContainer.style.transition = 'transform 5s cubic-bezier(0.25, 0.1, 0.25, 1)';
+      wheelContainer.style.transform = `rotate(${-finalRotation}deg)`;
+      
+      // Show result after animation
+      setTimeout(() => {
+        rugpulledProject.rugpulled = true;
+        
+        // Create rugpull particles
+        createRugpullParticles(rugpulledProject);
+        
+        // Check if player won
+        if (selectedProject.id === rugpulledProject.id) {
+          // Player wins
+          const winAmount = betAmount * parseFloat(selectedProject.odds);
+          playerBalance += winAmount;
+          showNotification(`HOLY SHIT! YOU BET CORRECTLY! Won $${winAmount.toFixed(2)}, you lucky bastard!`, 'success');
+          
+          // Play win sound effect
+          playSoundEffect('win');
+          
+          // Create win particles
+          createWinParticles(winAmount);
+        } else {
+          // Player loses
+          showNotification(`WRONG, DUMBASS! ${rugpulledProject.name} got rugpulled, not your shitty pick!`, 'warning');
+          
+          // Play lose sound effect
+          playSoundEffect('lose');
+        }
+        
+        // Next round or game over
+        setTimeout(() => {
+          currentRound++;
+          
+          if (currentRound > MAX_ROUNDS || playerBalance < MIN_BET || projects.filter(p => !p.rugpulled).length < 2) {
+            endGame();
+          } else {
+            spinning = false;
+            selectedProject = null;
+            renderProjects();
+            renderWheel();
+            updateUI();
+          }
+        }, 2000);
+      }, 5000);
+    }
+    
+    // Choose which project gets rugpulled based on probabilities
+    function chooseRugpulledProject() {
+      const activeProjects = projects.filter(p => !p.rugpulled);
+      
+      // Calculate total probability weight
+      const totalWeight = activeProjects.reduce((sum, project) => sum + project.rugpullProbability, 0);
+      
+      // Generate a random value between 0 and total weight
+      let random = Math.random() * totalWeight;
+      
+      // Find the project that gets rugpulled
+      for (const project of activeProjects) {
+        random -= project.rugpullProbability;
+        if (random <= 0) {
+          return project;
+        }
+      }
+      
+      // Fallback (shouldn't reach here)
+      return activeProjects[0];
+    }
+    
+    // Update UI elements
+    function updateUI() {
+      playerBalanceEl.textContent = `$${playerBalance.toFixed(2)}`;
+      roundCounterEl.textContent = `${currentRound}/${MAX_ROUNDS}`;
+      
+      // Update spin button state
+      spinButton.disabled = !selectedProject || spinning || playerBalance < MIN_BET;
+    }
+    
+    // Show notification
+    function showNotification(message, type = '') {
+      notification.textContent = message;
+      notification.className = 'notification ' + type;
+      notification.classList.add('show');
+      
+      setTimeout(() => {
+        notification.classList.remove('show');
+      }, 3000);
+    }
+    
+    // Start the game
+    function startGame() {
+      // Clear any existing animation frame
+      if (animationFrame) {
+        cancelAnimationFrame(animationFrame);
+      }
+      
+      // Initialize game state
+      generateProjects();
+      playerBalance = STARTING_BALANCE;
+      currentRound = 1;
+      selectedProject = null;
+      spinning = false;
+      particles = [];
+      
+      // Initialize canvas size
+      particlesCanvas.width = particlesCanvas.offsetWidth;
+      particlesCanvas.height = particlesCanvas.offsetHeight;
+      
+      renderProjects();
+      renderWheel();
+      updateUI();
+      
+      gameActive = true;
+      startScreen.style.display = 'none';
+      gameOver.style.display = 'none';
+      
+      // Start particle animation
+      animateParticles();
+      
+      // Play start game sound
+      playSoundEffect('gameStart');
+      
+      showNotification('Game started! Place your bets, degenerate scum!');
+    }
+    
+    // End the game
+    function endGame() {
+      gameActive = false;
+      spinning = false;
+      
+      // Update final balance
+      finalBalance.textContent = `$${playerBalance.toFixed(2)}`;
+      
+      // Set game over message
+      if (playerBalance <= 0) {
+        gameOverTitle.textContent = 'TOTALLY FUCKED!';
+        gameOverMessage.textContent = 'You lost every goddamn penny. This is why you\'re a pathetic excuse for a trader, shitstain.';
+      } else if (playerBalance < STARTING_BALANCE) {
+        gameOverTitle.textContent = 'NGMI, ASSHOLE!';
+        gameOverMessage.textContent = 'You lost money. Maybe try flipping burgers instead, you worthless piece of shit?';
+      } else if (playerBalance < STARTING_BALANCE * 2) {
+        gameOverTitle.textContent = 'BARELY FUCKING DECENT!';
+        gameOverMessage.textContent = 'You made some gains. Not bad for a brain-dead degen with shit for brains.';
+      } else if (playerBalance < STARTING_BALANCE * 5) {
+        gameOverTitle.textContent = 'APE STRONG, MOTHERFUCKER!';
+        gameOverMessage.textContent = 'Impressive gains! You've got diamond hands, you crazy bastard!';
+      } else {
+        gameOverTitle.textContent = 'CRYPTO CHAD SUPREME!';
+        gameOverMessage.textContent = 'You're a fucking legend! Buy that Lambo and fuck everyone\'s wife!';
+      }
+      
+      // Play game over sound
+      playSoundEffect('gameOver');
+      
+      // Create game over particles
+      createGameOverParticles(playerBalance >= STARTING_BALANCE);
+      
+      gameOver.style.display = 'flex';
+    }
+    
+    // Particle effects system
+    function createParticle(x, y, color, text = null, size = null, lifespan = 60) {
+      particles.push({
+        x,
+        y,
+        size: size || (text ? 20 : Math.random() * 10 + 5),
+        color,
+        speed: Math.random() * 3 + 1,
+        angle: Math.random() * Math.PI * 2,
+        life: lifespan,
+        text
+      });
+    }
+    
+    function createWinParticles(amount) {
+      // Create particles around the wheel
+      const rouletteWheel = document.getElementById('roulette-wheel');
+      const centerX = rouletteWheel.offsetWidth / 2;
+      const centerY = rouletteWheel.offsetHeight / 2;
+      
+      // Create money particles
+      for (let i = 0; i < 50; i++) {
+        createParticle(
+          centerX + (Math.random() - 0.5) * 300,
+          centerY + (Math.random() - 0.5) * 300,
+          '#ffcc00'
+        );
+      }
+      
+      // Create text particle showing the win amount
+      createParticle(
+        centerX,
+        centerY - 100,
+        '#ffcc00',
+        `+$${amount.toFixed(0)}`,
+        40,
+        120
+      );
+      
+      // Create emoji particles
+      const emojis = ['💰', '💎', '💵', '🚀', '🔥', '💯'];
+      for (let i = 0; i < 10; i++) {
+        createParticle(
+          centerX + (Math.random() - 0.5) * 300,
+          centerY + (Math.random() - 0.5) * 300,
+          '#ffffff',
+          emojis[Math.floor(Math.random() * emojis.length)],
+          30,
+          120
+        );
+      }
+    }
+    
+    function createRugpullParticles(project) {
+      // Get random positions in the wheel area
+      const rouletteWheel = document.getElementById('roulette-wheel');
+      const centerX = rouletteWheel.offsetWidth / 2;
+      const centerY = rouletteWheel.offsetHeight / 2;
+      
+      // Create explosion particles
+      for (let i = 0; i < 50; i++) {
+        createParticle(
+          centerX + (Math.random() - 0.5) * 300,
+          centerY + (Math.random() - 0.5) * 300,
+          '#ff3333',
+          null,
+          Math.random() * 15 + 5,
+          90
+        );
+      }
+      
+      // Create a text particle showing the rugpull
+      createParticle(
+        centerX,
+        centerY - 50,
+        '#ff3333',
+        `RUGPULL!`,
+        40,
+        120
+      );
+      
+      // Create a text particle showing the coin name
+      createParticle(
+        centerX,
+        centerY,
+        '#ff3333',
+        `${project.symbol}`,
+        30,
+        120
+      );
+    }
+    
+    function createGameOverParticles(isWinner) {
+      const gameContainer = document.getElementById('game-container');
+      const containerRect = gameContainer.getBoundingClientRect();
+      const centerX = containerRect.width / 2;
+      const centerY = containerRect.height / 2;
+      
+      const color = isWinner ? '#ffcc00' : '#ff3333';
+      const emojis = isWinner ? 
+        ['💰', '💎', '💵', '🚀', '🔥', '💯', '🏆'] : 
+        ['💩', '👎', '🤡', '😭', '🗑️', '💸'];
+      
+      // Create explosion particles
+      for (let i = 0; i < 100; i++) {
+        createParticle(
+          centerX + (Math.random() - 0.5) * containerRect.width,
+          centerY + (Math.random() - 0.5) * containerRect.height,
+          color,
+          null,
+          Math.random() * 15 + 5,
+          120
+        );
+      }
+      
+      // Create emoji particles
+      for (let i = 0; i < 20; i++) {
+        createParticle(
+          centerX + (Math.random() - 0.5) * containerRect.width * 0.8,
+          centerY + (Math.random() - 0.5) * containerRect.height * 0.8,
+          '#ffffff',
+          emojis[Math.floor(Math.random() * emojis.length)],
+          30,
+          150
+        );
+      }
+    }
+    
+    function updateParticles() {
+      particles = particles.filter(p => p.life > 0);
+      
+      particles.forEach(p => {
+        // Move the particle
+        p.x += Math.cos(p.angle) * p.speed;
+        p.y += Math.sin(p.angle) * p.speed;
+        
+        // Reduce life
+        p.life--;
+      });
+    }
+    
+    function drawParticles() {
+      particlesCtx.clearRect(0, 0, particlesCanvas.width, particlesCanvas.height);
+      
+      particles.forEach(p => {
+        if (p.text) {
+          // Draw text particle
+          const alpha = p.life / 60;
+          particlesCtx.globalAlpha = alpha;
+          particlesCtx.fillStyle = p.color;
+          particlesCtx.font = `${p.size}px "Press Start 2P"`;
+          particlesCtx.textAlign = 'center';
+          particlesCtx.fillText(p.text, p.x, p.y);
+        } else {
+          // Draw circle particle
+          const alpha = p.life / 60;
+          particlesCtx.globalAlpha = alpha;
+          particlesCtx.beginPath();
+          particlesCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          particlesCtx.fillStyle = p.color;
+          particlesCtx.fill();
+        }
+      });
+      
+      particlesCtx.globalAlpha = 1;
+    }
+    
+    function animateParticles() {
+      updateParticles();
+      drawParticles();
+      
+      animationFrame = requestAnimationFrame(animateParticles);
+    }
+    
+    // Sound effects integration
+    function playSoundEffect(action) {
+      if (typeof DegenSound !== 'undefined') {
+        switch(action) {
+          case 'select':
+            DegenSound.play('ui', 'click');
+            break;
+          case 'spin':
+            DegenSound.play('game', 'jump');
+            break;
+          case 'win':
+            DegenSound.play('game', 'collect');
+            break;
+          case 'lose':
+            DegenSound.play('game', 'hit');
+            break;
+          case 'gameStart':
+            DegenSound.play('game', 'levelUp');
+            break;
+          case 'gameOver':
+            DegenSound.play('game', 'explosion');
+            break;
+          case 'error':
+            DegenSound.play('ui', 'error');
+            break;
+        }
+      }
+    }
+    
+    // Event Listeners
+    startBtn.addEventListener('click', function() {
+      startGame();
+    });
+    
+    restartBtn.addEventListener('click', function() {
+      startGame();
+    });
+    
+    gameRestartBtn.addEventListener('click', function() {
+      startGame();
+    });
+    
+    backBtn.addEventListener('click', function() {
+      window.location.href = '../../index.html';
+    });
+    
+    spinButton.addEventListener('click', spinWheel);
+    
+    minBetBtn.addEventListener('click', () => {
+      betAmountInput.value = MIN_BET;
+      playSoundEffect('select');
+    });
+    
+    maxBetBtn.addEventListener('click', () => {
+      betAmountInput.value = Math.min(MAX_BET, playerBalance);
+      playSoundEffect('select');
+    });
+    
+    betAmountInput.addEventListener('input', () => {
+      const value = parseInt(betAmountInput.value);
+      if (value < MIN_BET) betAmountInput.value = MIN_BET;
+      if (value > MAX_BET) betAmountInput.value = MAX_BET;
+    });
+    
+    // Resize handling for the particles canvas
+    window.addEventListener('resize', () => {
+      particlesCanvas.width = particlesCanvas.offsetWidth;
+      particlesCanvas.height = particlesCanvas.offsetHeight;
+    });
+    
+    // Make sure the game initializes properly
+    document.addEventListener('DOMContentLoaded', function() {
+      // Pre-initialize the UI but keep start screen visible
+      generateProjects();
+      renderProjects();
+      renderWheel();
+      updateUI();
+      
+      // Initialize canvas size
+      particlesCanvas.width = particlesCanvas.offsetWidth;
+      particlesCanvas.height = particlesCanvas.offsetHeight;
+    });
+  </script>
+</body>
+</html>
