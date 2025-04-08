@@ -382,22 +382,17 @@
   <!-- Firebase scripts - same as in games for consistency -->
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <script src="config.js"></script>
   
   <script>
-    // Firebase configuration - same as in games
+    // Firebase configuration - using centralized config
     try {
       if (!firebase.apps.length) {
-        const firebaseConfig = {
-          apiKey: "AIzaSyDZaU-AnRxHIjA5WgXBFXQG4P4VwOLj8Bs",
-          authDomain: "degenlander-3b1c7.firebaseapp.com",
-          projectId: "degenlander-3b1c7",
-          storageBucket: "degenlander-3b1c7.appspot.com",
-          messagingSenderId: "431855620245",
-          appId: "1:431855620245:web:80b5c8da3b688972cc5ce1"
-        };
-        
-        // Initialize Firebase
+        // Initialize Firebase using the imported config
         firebase.initializeApp(firebaseConfig);
+        
+        // Test connection and log success
+        console.log("Firebase initialized with project:", firebaseConfig.projectId);
       }
     } catch (e) {
       console.error("Firebase init error", e);
