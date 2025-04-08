@@ -764,38 +764,48 @@
     
     // Start the game
     function startGame() {
-      // Clear any existing animation frame
-      if (animationFrame) {
-        cancelAnimationFrame(animationFrame);
+      try {
+        console.log("Starting game...");
+        // Clear any existing animation frame
+        if (animationFrame) {
+          cancelAnimationFrame(animationFrame);
+        }
+        
+        // Initialize game state
+        generateProjects();
+        playerBalance = STARTING_BALANCE;
+        currentRound = 1;
+        selectedProject = null;
+        spinning = false;
+        particles = [];
+        
+        // Initialize canvas size
+        if (particlesCanvas && particlesCtx) {
+          particlesCanvas.width = particlesCanvas.offsetWidth || 800;
+          particlesCanvas.height = particlesCanvas.offsetHeight || 600;
+        }
+        
+        // Render UI elements
+        renderProjects();
+        renderWheel();
+        updateUI();
+        
+        // Update game state
+        gameActive = true;
+        if (startScreen) startScreen.style.display = 'none';
+        if (gameOver) gameOver.style.display = 'none';
+        
+        // Start particle animation
+        animateParticles();
+        
+        // Play start game sound
+        playSoundEffect('gameStart');
+        
+        showNotification('Game started! Place your bets, degenerate scum!');
+        console.log("Game started successfully");
+      } catch (error) {
+        console.error("Error starting game:", error);
       }
-      
-      // Initialize game state
-      generateProjects();
-      playerBalance = STARTING_BALANCE;
-      currentRound = 1;
-      selectedProject = null;
-      spinning = false;
-      particles = [];
-      
-      // Initialize canvas size
-      particlesCanvas.width = particlesCanvas.offsetWidth;
-      particlesCanvas.height = particlesCanvas.offsetHeight;
-      
-      renderProjects();
-      renderWheel();
-      updateUI();
-      
-      gameActive = true;
-      startScreen.style.display = 'none';
-      gameOver.style.display = 'none';
-      
-      // Start particle animation
-      animateParticles();
-      
-      // Play start game sound
-      playSoundEffect('gameStart');
-      
-      showNotification('Game started! Place your bets, degenerate scum!');
     }
     
     // End the game
@@ -848,116 +858,144 @@
     }
     
     function createWinParticles(amount) {
-      // Create particles around the wheel
-      const rouletteWheel = document.getElementById('roulette-wheel');
-      const centerX = rouletteWheel.offsetWidth / 2;
-      const centerY = rouletteWheel.offsetHeight / 2;
-      
-      // Create money particles
-      for (let i = 0; i < 50; i++) {
+      try {
+        // Create particles around the wheel
+        const rouletteWheel = document.getElementById('roulette-wheel');
+        if (!rouletteWheel) {
+          console.error('Roulette wheel not found');
+          return;
+        }
+        
+        const centerX = rouletteWheel.offsetWidth / 2;
+        const centerY = rouletteWheel.offsetHeight / 2;
+        
+        // Create money particles
+        for (let i = 0; i < 50; i++) {
+          createParticle(
+            centerX + (Math.random() - 0.5) * 300,
+            centerY + (Math.random() - 0.5) * 300,
+            '#ffcc00'
+          );
+        }
+        
+        // Create text particle showing the win amount
         createParticle(
-          centerX + (Math.random() - 0.5) * 300,
-          centerY + (Math.random() - 0.5) * 300,
-          '#ffcc00'
-        );
-      }
-      
-      // Create text particle showing the win amount
-      createParticle(
-        centerX,
-        centerY - 100,
-        '#ffcc00',
-        `+$${amount.toFixed(0)}`,
-        40,
-        120
-      );
-      
-      // Create emoji particles
-      const emojis = ['💰', '💎', '💵', '🚀', '🔥', '💯'];
-      for (let i = 0; i < 10; i++) {
-        createParticle(
-          centerX + (Math.random() - 0.5) * 300,
-          centerY + (Math.random() - 0.5) * 300,
-          '#ffffff',
-          emojis[Math.floor(Math.random() * emojis.length)],
-          30,
+          centerX,
+          centerY - 100,
+          '#ffcc00',
+          `+$${amount.toFixed(0)}`,
+          40,
           120
         );
+        
+        // Create emoji particles
+        const emojis = ['💰', '💎', '💵', '🚀', '🔥', '💯'];
+        for (let i = 0; i < 10; i++) {
+          createParticle(
+            centerX + (Math.random() - 0.5) * 300,
+            centerY + (Math.random() - 0.5) * 300,
+            '#ffffff',
+            emojis[Math.floor(Math.random() * emojis.length)],
+            30,
+            120
+          );
+        }
+      } catch (error) {
+        console.error("Error creating win particles:", error);
       }
     }
     
     function createRugpullParticles(project) {
-      // Get random positions in the wheel area
-      const rouletteWheel = document.getElementById('roulette-wheel');
-      const centerX = rouletteWheel.offsetWidth / 2;
-      const centerY = rouletteWheel.offsetHeight / 2;
-      
-      // Create explosion particles
-      for (let i = 0; i < 50; i++) {
+      try {
+        // Get random positions in the wheel area
+        const rouletteWheel = document.getElementById('roulette-wheel');
+        if (!rouletteWheel) {
+          console.error('Roulette wheel not found');
+          return;
+        }
+        
+        const centerX = rouletteWheel.offsetWidth / 2;
+        const centerY = rouletteWheel.offsetHeight / 2;
+        
+        // Create explosion particles
+        for (let i = 0; i < 50; i++) {
+          createParticle(
+            centerX + (Math.random() - 0.5) * 300,
+            centerY + (Math.random() - 0.5) * 300,
+            '#ff3333',
+            null,
+            Math.random() * 15 + 5,
+            90
+          );
+        }
+        
+        // Create a text particle showing the rugpull
         createParticle(
-          centerX + (Math.random() - 0.5) * 300,
-          centerY + (Math.random() - 0.5) * 300,
+          centerX,
+          centerY - 50,
           '#ff3333',
-          null,
-          Math.random() * 15 + 5,
-          90
+          `RUGPULL!`,
+          40,
+          120
         );
+        
+        // Create a text particle showing the coin name
+        if (project && project.symbol) {
+          createParticle(
+            centerX,
+            centerY,
+            '#ff3333',
+            `${project.symbol}`,
+            30,
+            120
+          );
+        }
+      } catch (error) {
+        console.error("Error creating rugpull particles:", error);
       }
-      
-      // Create a text particle showing the rugpull
-      createParticle(
-        centerX,
-        centerY - 50,
-        '#ff3333',
-        `RUGPULL!`,
-        40,
-        120
-      );
-      
-      // Create a text particle showing the coin name
-      createParticle(
-        centerX,
-        centerY,
-        '#ff3333',
-        `${project.symbol}`,
-        30,
-        120
-      );
     }
     
     function createGameOverParticles(isWinner) {
-      const gameContainer = document.getElementById('game-container');
-      const containerRect = gameContainer.getBoundingClientRect();
-      const centerX = containerRect.width / 2;
-      const centerY = containerRect.height / 2;
-      
-      const color = isWinner ? '#ffcc00' : '#ff3333';
-      const emojis = isWinner ? 
-        ['💰', '💎', '💵', '🚀', '🔥', '💯', '🏆'] : 
-        ['💩', '👎', '🤡', '😭', '🗑️', '💸'];
-      
-      // Create explosion particles
-      for (let i = 0; i < 100; i++) {
-        createParticle(
-          centerX + (Math.random() - 0.5) * containerRect.width,
-          centerY + (Math.random() - 0.5) * containerRect.height,
-          color,
-          null,
-          Math.random() * 15 + 5,
-          120
-        );
-      }
-      
-      // Create emoji particles
-      for (let i = 0; i < 20; i++) {
-        createParticle(
-          centerX + (Math.random() - 0.5) * containerRect.width * 0.8,
-          centerY + (Math.random() - 0.5) * containerRect.height * 0.8,
-          '#ffffff',
-          emojis[Math.floor(Math.random() * emojis.length)],
-          30,
-          150
-        );
+      try {
+        const gameContainer = document.getElementById('game-container');
+        if (!gameContainer) {
+          console.error('Game container not found');
+          return;
+        }
+        const containerRect = gameContainer.getBoundingClientRect();
+        const centerX = containerRect.width / 2;
+        const centerY = containerRect.height / 2;
+        
+        const color = isWinner ? '#ffcc00' : '#ff3333';
+        const emojis = isWinner ? 
+          ['💰', '💎', '💵', '🚀', '🔥', '💯', '🏆'] : 
+          ['💩', '👎', '🤡', '😭', '🗑️', '💸'];
+        
+        // Create explosion particles
+        for (let i = 0; i < 100; i++) {
+          createParticle(
+            centerX + (Math.random() - 0.5) * containerRect.width,
+            centerY + (Math.random() - 0.5) * containerRect.height,
+            color,
+            null,
+            Math.random() * 15 + 5,
+            120
+          );
+        }
+        
+        // Create emoji particles
+        for (let i = 0; i < 20; i++) {
+          createParticle(
+            centerX + (Math.random() - 0.5) * containerRect.width * 0.8,
+            centerY + (Math.random() - 0.5) * containerRect.height * 0.8,
+            '#ffffff',
+            emojis[Math.floor(Math.random() * emojis.length)],
+            30,
+            150
+          );
+        }
+      } catch (error) {
+        console.error("Error creating game over particles:", error);
       }
     }
     
@@ -1001,10 +1039,17 @@
     }
     
     function animateParticles() {
-      updateParticles();
-      drawParticles();
-      
-      animationFrame = requestAnimationFrame(animateParticles);
+      try {
+        if (particlesCanvas && particlesCtx) {
+          updateParticles();
+          drawParticles();
+        }
+        
+        animationFrame = requestAnimationFrame(animateParticles);
+      } catch (error) {
+        console.error("Error animating particles:", error);
+        // Don't request another frame if there was an error
+      }
     }
     
     // Sound effects integration
@@ -1038,7 +1083,9 @@
     
     // Event Listeners
     startBtn.addEventListener('click', function() {
+      console.log('Start button clicked');
       startGame();
+      playSoundEffect('ui');
     });
     
     restartBtn.addEventListener('click', function() {
