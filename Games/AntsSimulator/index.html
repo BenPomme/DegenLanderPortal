@@ -13,6 +13,9 @@
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.11.0/dist/tf.min.js"></script>
     <!-- Tailwind CSS CDN (still loaded for utility classes) -->
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.3.2/dist/tailwind.min.css" rel="stylesheet">
+    <!-- Import shared DegenlanderPortal libraries -->
+    <script src="/js/degen-theme.js"></script>
+    <script src="/js/sound-effects.js"></script>
     <style>
         /* Degen / Retro styling overrides */
         * {
@@ -22,8 +25,8 @@
         }
         body {
             font-family: 'Press Start 2P', cursive;
-            background: #000;
-            color: #0f0;
+            background: var(--bg-color, #000);
+            color: var(--text-color, #0f0);
             display: flex;
             height: 100vh;
             overflow: hidden;
@@ -53,8 +56,8 @@
         .ui {
             width: 400px;
             padding: 25px;
-            background: rgba(0, 0, 0, 0.9);
-            border-left: 2px solid #0f0;
+            background: var(--panel-color, rgba(0, 0, 0, 0.9));
+            border-left: 2px solid var(--border-color, #0f0);
             box-shadow: -2px 0 10px rgba(0, 255, 0, 0.5);
             display: flex;
             flex-direction: column;
@@ -63,7 +66,7 @@
         }
         /* Headings and Stats */
         .ui h3, .ui h4 {
-            color: #0f0;
+            color: var(--text-color, #0f0);
             font-weight: 600;
             margin-bottom: 10px;
         }
@@ -72,24 +75,24 @@
             justify-content: space-between;
             align-items: center;
             padding: 12px 16px;
-            background: #111;
+            background: var(--altBg-color, #111);
             border-radius: 8px;
-            border: 1px solid #0f0;
+            border: 1px solid var(--border-color, #0f0);
             transition: background 0.3s;
         }
         .stat:hover {
-            background: #222;
+            background: var(--highlight-color, #222);
         }
         .stat span {
             font-weight: 500;
-            color: #0f0;
+            color: var(--text-color, #0f0);
         }
         /* Buttons – big, bold, degen */
         .ui button {
             padding: 12px 20px;
             font-size: 14px;
-            color: #000;
-            background: #0f0;
+            color: var(--bg-color, #000);
+            background: var(--text-color, #0f0);
             border: none;
             border-radius: 8px;
             cursor: pointer;
@@ -100,7 +103,7 @@
             gap: 8px;
         }
         .ui button:hover {
-            background: #f00;
+            background: var(--accent-color, #f00);
             transform: translateY(-2px);
             box-shadow: 0 4px 8px rgba(255, 0, 0, 0.5);
         }
@@ -230,12 +233,199 @@
             border-style: solid;
             border-color: rgba(0, 0, 0, 0.8) transparent transparent transparent;
         }
+        /* Mobile responsiveness improvements */
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+            }
+            .ui {
+                width: 100%;
+                border-left: none;
+                border-top: 2px solid #0f0;
+                order: 2;
+                max-height: 40vh;
+                overflow-y: auto;
+            }
+            #simulationContainer {
+                height: 60vh;
+                order: 1;
+            }
+        }
+        
+        /* Zoom controls for better gameplay */
+        .zoom-controls {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 100;
+        }
+        .zoom-btn {
+            width: 40px;
+            height: 40px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #0f0;
+            border: 2px solid #0f0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .zoom-btn:hover {
+            background: rgba(0, 40, 0, 0.8);
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
+        }
+        
+        /* Improved ant visuals with animations */
+        @keyframes antMove {
+            0% { transform: rotate(0deg) translateX(0); }
+            25% { transform: rotate(2deg) translateX(1px); }
+            75% { transform: rotate(-2deg) translateX(-1px); }
+            100% { transform: rotate(0deg) translateX(0); }
+        }
+        .ant {
+            width: 8px;
+            height: 10px;
+            position: absolute;
+            background: #f00; /* Red ants by default */
+            border-radius: 40% 40% 60% 60%;
+            transform-origin: center;
+            z-index: 10;
+            animation: antMove 0.5s infinite;
+            box-shadow: 0 0 3px rgba(255, 0, 0, 0.8);
+        }
+        .ant.worker { background: #f33; }
+        .ant.soldier { background: #f00; }
+        .ant.queen { 
+            background: #f90; 
+            width: 12px;
+            height: 15px;
+            box-shadow: 0 0 8px rgba(255, 150, 0, 0.8);
+        }
+        
+        /* Day/Night cycle toggle */
+        .day-night-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid #0f0;
+            border-radius: 20px;
+            padding: 8px 16px;
+            color: #0f0;
+            cursor: pointer;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+        }
+        .day-night-toggle:hover {
+            background: rgba(0, 40, 0, 0.8);
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
+        }
+        .day-night-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #ff0;
+            box-shadow: 0 0 10px rgba(255, 255, 0, 0.8);
+            transition: all 0.3s;
+        }
+        .night-mode .day-night-icon {
+            background: #aaf;
+            box-shadow: 0 0 10px rgba(170, 170, 255, 0.8);
+        }
+        .night-mode #simulation {
+            animation: nightGradientShift 15s ease infinite;
+            background: linear-gradient(-45deg, #001100, #000022, #001100, #000022);
+            background-size: 400% 400%;
+        }
+        @keyframes nightGradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        /* Tutorial overlay */
+        #tutorial {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 2000;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: #0f0;
+            font-family: 'Press Start 2P', cursive;
+        }
+        #tutorial h2 {
+            margin-bottom: 30px;
+            color: #f00;
+        }
+        #tutorial p {
+            max-width: 600px;
+            margin-bottom: 15px;
+            text-align: center;
+            line-height: 1.6;
+        }
+        #tutorial button {
+            margin-top: 30px;
+            padding: 12px 24px;
+            background: #0f0;
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Press Start 2P', cursive;
+            transition: all 0.3s;
+        }
+        #tutorial button:hover {
+            background: #f00;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(255, 0, 0, 0.5);
+        }
     </style>
 </head>
 <body class="theme-dark">
     <!-- Simulation Container -->
     <div id="simulationContainer">
         <canvas id="simulation"></canvas>
+        
+        <!-- Zoom Controls -->
+        <div class="zoom-controls">
+            <div class="zoom-btn" id="zoomIn">+</div>
+            <div class="zoom-btn" id="zoomOut">-</div>
+            <div class="zoom-btn" id="zoomReset">↺</div>
+        </div>
+        
+        <!-- Day/Night Toggle -->
+        <div class="day-night-toggle" id="dayNightToggle">
+            <div class="day-night-icon"></div>
+            <span>DAY</span>
+        </div>
+    </div>
+    
+    <!-- Tutorial Overlay -->
+    <div id="tutorial">
+        <h2>ANTS SIMULATOR - DEGEN EDITION</h2>
+        <p>Welcome to the most hardcore ant colony simulation in the galaxy!</p>
+        <p>Click anywhere on the grid to place food sources and watch your ants work.</p>
+        <p>Control the simulation speed, colony size, and manage resources to build the ultimate ant empire.</p>
+        <p>Use the zoom controls (+/-) to get a closer look at your ants.</p>
+        <p>Toggle between day and night modes to see how your ants behave differently!</p>
+        <button id="closeTutorial">READY TO DOMINATE</button>
     </div>
     
     <!-- UI Panel -->
@@ -368,14 +558,35 @@
         </div>
     </div>
 
-    <!-- Audio Elements for Sound Effects (using a known working MDN URL) -->
-    <audio id="collectSound" src="https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3" preload="auto"></audio>
-    <audio id="captureSound" src="https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3" preload="auto"></audio>
-    <audio id="wallSound" src="https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3" preload="auto"></audio>
-    <audio id="shootSound" src="https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3" preload="auto"></audio>
-    <audio id="hitSound" src="https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3" preload="auto"></audio>
+    <!-- Using DegenSound system instead of direct audio elements -->
+    <script>
+        // Initialize sound effects when the document is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Map legacy audio IDs to DegenSound system
+            window.playSound = function(type) {
+                switch(type) {
+                    case 'collect':
+                        DegenSound.play('game', 'collect');
+                        break;
+                    case 'capture':
+                        DegenSound.play('game', 'powerUp');
+                        break;
+                    case 'wall':
+                        DegenSound.play('game', 'land');
+                        break;
+                    case 'shoot':
+                        DegenSound.play('game', 'shoot');
+                        break;
+                    case 'hit':
+                        DegenSound.play('game', 'explosion');
+                        break;
+                }
+            };
+        });
+    </script>
 
-    <!-- Link to External JavaScript File -->
+    <!-- Link to External JavaScript Files - Order matters! -->
+    <script src="script-init.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

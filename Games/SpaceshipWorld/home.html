@@ -1,11 +1,11 @@
-<!DOCTYPE html>
+<\!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
-  <title>A Rocket Game (Image BG, friction=0.5, maxSpeed=7)</title>
+  <title>Spaceship World - Fly to New Heights</title>
   <style>
     /*****************************************
-     * TOP-NOTCH STYLING using starrybg.pnj
+     * Game styling
      *****************************************/
 
     body {
@@ -14,19 +14,16 @@
       font-family: 'Segoe UI', Tahoma, sans-serif;
       color: #fff;
       text-align: center;
-      /* Instead of radial gradients, we use the starrybg.pnj image: */
       background: url('homeback.jpg') no-repeat center center fixed; 
-      background-size: cover; /* so the image covers the screen */
+      background-size: cover;
     }
 
-    #menu, #gameContainer {
+    #menu {
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-    }
-    #menu {
-      min-height: 100vh;
       position: relative;
     }
 
@@ -56,7 +53,7 @@
       background-color: #333;
       box-shadow: 0 0 6px rgba(255,255,255,0.3);
     }
-    #menu button {
+    button {
       padding: 10px 18px;
       font-size: 1rem;
       cursor: pointer;
@@ -67,7 +64,7 @@
       color: #fff;
       transition: background 0.2s, box-shadow 0.2s;
     }
-    #menu button:hover {
+    button:hover {
       background-color: #666;
       box-shadow: 0 0 8px rgba(255,255,255,0.2);
     }
@@ -101,6 +98,10 @@
     #gameContainer {
       width: 100%;
       min-height: 100vh;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
     }
     #gameTitle {
       font-size: 2rem;
@@ -302,11 +303,15 @@
       color: #0f0;
     }
   </style>
+  
+  <\!-- Import shared DegenlanderPortal libraries -->
+  <script src="../../js/degen-theme.js"></script>
+  <script src="../../js/sound-effects.js"></script>
 </head>
 <body>
   <div id="menu">
-    <h1>A rocket game</h1>
-    <p>Enter your name and start the 5-round challenge!</p>
+    <h1>SPACESHIP WORLD</h1>
+    <p>Enter your name and start the 5-round challenge\!</p>
     <input type="text" id="playerName" placeholder="Your Name">
     <button id="startGameBtn">Start Game</button>
 
@@ -314,59 +319,7 @@
       <h2>Leaderboard</h2>
       <ol id="leaderboardList"></ol>
     </div>
-  </div>
-
-  <div id="gameContainer">
-    <h2 id="gameTitle">Round 1 of 5</h2>
-    <canvas id="gameCanvas" width="800" height="600"></canvas>
-    <div id="info"></div>
-    <button id="restartBtn">Restart</button>
-  </div>
-
-  <!-- The hidden popup for upgrade choice -->
-  <div id="upgradeModal">
-    <h2>Upgrade ExoPlanet Found!</h2>
-    <p>Pick your upgrade:</p>
-    <button class="upgradeBtn" id="biggerTankBtn">Bigger Tank</button>
-    <button class="upgradeBtn" id="fasterRocketBtn">Faster Rocket</button>
-  </div>
-
-  <!-- Touch Controls for mobile -->
-  <div id="touchControls">
-    <div class="touchBtn" id="touchLeft">←</div>
-    <div class="touchBtn" id="touchUp">↑</div>
-    <div class="touchBtn" id="touchDown">↓</div>
-    <div class="touchBtn" id="touchRight">→</div>
-  </div>
-  
-  <!-- Tutorial Panel -->
-  <div id="tutorialPanel">
-    <h2>How to Play</h2>
-    <p><span class="tutorialKey">↑</span> Accelerate forward</p>
-    <p><span class="tutorialKey">↓</span> Accelerate backward</p>
-    <p><span class="tutorialKey">←</span> <span class="tutorialKey">→</span> Rotate ship</p>
-    <p>Your goal is to explore the universe and collect all upgrades while managing your fuel.</p>
-    <p>Complete all 5 rounds to win!</p>
-    <button id="closeTutorial">Got it!</button>
-  </div>
-
-  <div id="game-container">
-    <div id="game-header">
-      <div id="score-container">Score: <span id="score">0</span></div>
-      <div id="high-score-container">High Score: <span id="high-score">0</span></div>
-      <div id="level-container">Level: <span id="level">1</span></div>
-    </div>
-    <canvas id="game-canvas"></canvas>
-    <div id="game-controls">
-      <button id="restart-btn">Restart Game</button>
-      <button id="back-btn">Back to Home</button>
-    </div>
-  </div>
-
-  <div id="main-menu" class="menu">
-    <h1>SPACESHIP WORLD</h1>
-    <button id="play-btn">PLAY GAME</button>
-    <button id="settings-btn">SETTINGS</button>
+    
     <h2>OTHER GAMES</h2>
     <div class="other-games">
         <a href="../degenlander/index.html" class="game-link">Degenlander</a>
@@ -379,11 +332,48 @@
     <button id="back-to-portal">BACK TO PORTAL</button>
   </div>
 
+  <div id="gameContainer">
+    <h2 id="gameTitle">Round 1 of 5</h2>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <div id="info"></div>
+    <button id="restartBtn">Restart</button>
+  </div>
+
+  <\!-- The hidden popup for upgrade choice -->
+  <div id="upgradeModal">
+    <h2>Upgrade ExoPlanet Found\!</h2>
+    <p>Pick your upgrade:</p>
+    <button class="upgradeBtn" id="biggerTankBtn">Bigger Tank</button>
+    <button class="upgradeBtn" id="fasterRocketBtn">Faster Rocket</button>
+  </div>
+
+  <\!-- Touch Controls for mobile -->
+  <div id="touchControls">
+    <div class="touchBtn" id="touchLeft">←</div>
+    <div class="touchBtn" id="touchUp">↑</div>
+    <div class="touchBtn" id="touchDown">↓</div>
+    <div class="touchBtn" id="touchRight">→</div>
+  </div>
+  
+  <\!-- Tutorial Panel -->
+  <div id="tutorialPanel">
+    <h2>How to Play</h2>
+    <p><span class="tutorialKey">↑</span> Accelerate forward</p>
+    <p><span class="tutorialKey">↓</span> Accelerate backward</p>
+    <p><span class="tutorialKey">←</span> <span class="tutorialKey">→</span> Rotate ship</p>
+    <p>Your goal is to explore the universe and collect all upgrades while managing your fuel.</p>
+    <p>Complete all 5 rounds to win\!</p>
+    <button id="closeTutorial">Got it\!</button>
+  </div>
+
   <script>
     /* LOCAL SCOREBOARD */
     let leaderboard = [];
     function updateLeaderboard() {
       leaderboard.sort((a,b)=> b.score - a.score);
+      const leaderboardList = document.getElementById('leaderboardList');
+      if (\!leaderboardList) return;
+      
       leaderboardList.innerHTML='';
       for(let i=0; i<leaderboard.length && i<10; i++){
         const li=document.createElement('li');
@@ -393,11 +383,12 @@
     }
 
     /* DOM ELEMENTS */
-    let menuDiv, playerNameInput, startGameBtn, leaderboardList;
+    let menuDiv, playerNameInput, startGameBtn;
     let gameContainer, gameTitle, canvas, ctx, info, restartBtn;
     let upgradeModal, biggerTankBtn, fasterRocketBtn;
     let touchControls, touchLeft, touchUp, touchDown, touchRight;
     let tutorialPanel, closeTutorial;
+    let backToPortalBtn;
 
     /* GAME STATE */
     let totalRounds = 5;
@@ -512,7 +503,7 @@
     let audioCtx=null;
     function playBeep(){
       try{
-        if(!audioCtx) audioCtx=new AudioContext();
+        if(\!audioCtx) audioCtx=new AudioContext();
         const osc= audioCtx.createOscillator();
         osc.type='sine';
         osc.frequency.value=440;
@@ -531,10 +522,21 @@
       gameContainer.style.display='none';
       gameState='menu';
     }
+    
     function showGame(){
       menuDiv.style.display='none';
       gameContainer.style.display='flex';
       gameState='playing';
+    }
+
+    function startGame(){
+      playerName = playerNameInput.value.trim() || 'Anonymous';
+      showGame();
+      startNewGame();
+      // Also play sound effect if available
+      if (typeof DegenSound \!== 'undefined') {
+        DegenSound.play('game', 'powerUp');
+      }
     }
 
     function startNewGame(){
@@ -571,7 +573,7 @@
     function finalizeRun(){
       leaderboard.push({ name: playerName, score: totalMoney });
       updateLeaderboard();
-      info.textContent='All 5 rounds done! You got '+ totalMoney +' money total. Return to menu.';
+      info.textContent='All 5 rounds done\! You got '+ totalMoney +' money total. Return to menu.';
       restartBtn.textContent='Return to Menu';
       restartBtn.style.display='inline-block';
       gameState='allDone';
@@ -594,6 +596,7 @@
       if(gameState==='roundOver'){
         if(currentRound< totalRounds){
           currentRound++;
+          gameTitle.textContent = `Round ${currentRound} of ${totalRounds}`;
           startRound();
           updateInfo();
         } else {
@@ -606,7 +609,7 @@
       }
     }
 
-    function onKeyDown(e){
+    function handleKeyDown(e){
       switch(e.key){
         case 'ArrowLeft': leftPressed=true; break;
         case 'ArrowRight': rightPressed=true; break;
@@ -614,7 +617,8 @@
         case 'ArrowDown': downPressed=true; break;
       }
     }
-    function onKeyUp(e){
+    
+    function handleKeyUp(e){
       switch(e.key){
         case 'ArrowLeft': leftPressed=false; break;
         case 'ArrowRight': rightPressed=false; break;
@@ -635,6 +639,9 @@
       } else if(gameState==='moonLander'){
         updateMoonLander();
       }
+      
+      // Update all particles
+      updateParticles();
     }
 
     function updateSpaceFlight(){
@@ -645,11 +652,14 @@
         rocketVX+= accelForward*Math.sin(angle);
         rocketVY-= accelForward*Math.cos(angle);
         fuel= Math.max(0,fuel-1);
+        
+        // Add thruster visual effects
+        applyThrust();
       }
       if(downPressed && fuel>0){
         rocketVX-= accelBackward*Math.sin(angle);
         rocketVY+= accelBackward*Math.cos(angle);
-        // fuel= Math.max(0,fuel-1);
+        fuel= Math.max(0,fuel-1);
       }
 
       rocketVX*= friction;
@@ -666,7 +676,7 @@
       rocketY+= rocketVY;
 
       if(fuel<=0){
-        endRoundCollision('You ran out of fuel!');
+        endRoundCollision('You ran out of fuel\!');
         return;
       }
 
@@ -705,7 +715,7 @@
         let px= sunX+ orbitRadius*Math.cos(planetAngle);
         let py= sunY+ orbitRadius*Math.sin(planetAngle);
         rocketX= px; rocketY= py-150;
-        showAnnouncement('Moon Lander sub-phase! Press Up to slow descent.');
+        showAnnouncement('Moon Lander sub-phase\! Press Up to slow descent.');
       }
 
       centerCameraOnRocket();
@@ -717,7 +727,7 @@
       let dy= rocketY- sunY;
       let dist= Math.sqrt(dx*dx+ dy*dy);
       if(dist< rocketRadius+ sunRadius){
-        endRoundCollision('You flew into the Sun!');
+        endRoundCollision('You flew into the Sun\!');
         return 'sun';
       }
       let planetX= sunX+ orbitRadius*Math.cos(planetAngle);
@@ -733,7 +743,7 @@
         dy= rocketY- a.y;
         dist= Math.sqrt(dx*dx+ dy*dy);
         if(dist< rocketRadius+ a.r){
-          endRoundCollision('Hit an asteroid!');
+          endRoundCollision('Hit an asteroid\!');
           return 'asteroid';
         }
       }
@@ -770,34 +780,103 @@
     }
 
     function endRoundCollision(msg){
-      info.textContent= msg +' Round Over! +'+ fuel +' money.';
+      info.textContent= msg +' Round Over\! +'+ fuel +' money.';
       totalMoney+= fuel;
       gameState='roundOver';
       restartBtn.style.display='inline-block';
       restartBtn.textContent='Next Round';
+      
+      // Create explosion visual effect
+      createExplosion(rocketX, rocketY);
     }
 
     function openUpgradeModal(){
       upgradeModal.style.display='block';
     }
+    
     function closeUpgradeModal(){
       upgradeModal.style.display='none';
     }
-    function biggerTankUpgrade(){
+    
+    function upgradeTank(){
       maxFuel+=200;
       fuel= maxFuel;
-      showAnnouncement('Bigger fuel tank! Fuel= '+ fuel +'/'+ maxFuel);
+      showAnnouncement('Bigger fuel tank\! Fuel= '+ fuel +'/'+ maxFuel);
       closeUpgradeModal();
     }
-    function fasterRocketUpgrade(){
+    
+    function upgradeRocket(){
       maxSpeed*=1.5;
-      showAnnouncement('Faster rocket! maxSpeed= '+ maxSpeed.toFixed(2));
+      showAnnouncement('Faster rocket\! maxSpeed= '+ maxSpeed.toFixed(2));
       closeUpgradeModal();
+    }
+
+    // Add a particle system for better visual effects
+    let particles = [];
+    
+    function createParticlesSystem() {
+      // Initialize particles array
+      particles = [];
+    }
+    
+    function addParticle(x, y, vx, vy, life = 30, color = '#ffaa00') {
+      particles.push({
+        x, y, vx, vy, life,
+        originalLife: life,
+        color
+      });
+    }
+    
+    function updateParticles() {
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life--;
+        
+        if (p.life <= 0) {
+          particles.splice(i, 1);
+        }
+      }
+    }
+    
+    function drawParticles() {
+      for (const p of particles) {
+        const alpha = p.life / p.originalLife;
+        ctx.fillStyle = p.color + Math.floor(alpha * 255).toString(16).padStart(2, '0');
+        ctx.beginPath();
+        ctx.arc(p.x - cameraX, p.y - cameraY, 3 * alpha, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    
+    // Update the thruster function to add particles
+    function applyThrust() {
+      // Add exhaust particles for visual effect
+      const particleCount = 3;
+      for (let i = 0; i < particleCount; i++) {
+        const particleAngle = angle + (Math.random() - 0.5) * 0.5;
+        const particleSpeed = 2 + Math.random() * 2;
+        const vx = -Math.sin(particleAngle) * particleSpeed;
+        const vy = Math.cos(particleAngle) * particleSpeed;
+        
+        // Position the particle at the back of the rocket
+        const pX = rocketX - Math.sin(angle) * rocketRadius;
+        const pY = rocketY + Math.cos(angle) * rocketRadius;
+        
+        // Random color between yellow and red
+        const r = Math.floor(255).toString(16).padStart(2, '0');
+        const g = Math.floor(Math.random() * 200).toString(16).padStart(2, '0');
+        const b = '00';
+        const color = `#${r}${g}${b}`;
+        
+        addParticle(pX, pY, vx, vy, 10 + Math.random() * 20, color);
+      }
     }
 
     function draw(){
       ctx.clearRect(0,0,canvas.width,canvas.height);
-      if(gameState!=='playing' && gameState!=='moonLander' && gameState!=='roundOver') return;
+      if(gameState\!=='playing' && gameState\!=='moonLander' && gameState\!=='roundOver') return;
 
       ctx.save();
       ctx.translate(-cameraX, -cameraY);
@@ -835,6 +914,9 @@
         ctx.fill();
         ctx.closePath();
       }
+      
+      // Draw particles
+      drawParticles();
 
       // rocket
       ctx.save();
@@ -937,13 +1019,60 @@
 
       ctx.restore();
     }
+    
+    // Explosion effect
+    function createExplosion(x, y) {
+      const explosionElement = document.createElement('div');
+      explosionElement.className = 'explosion';
+      explosionElement.style.left = (x - 50) + 'px';
+      explosionElement.style.top = (y - 50) + 'px';
+      document.body.appendChild(explosionElement);
+      
+      // Create particles
+      for (let i = 0; i < 30; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 1 + Math.random() * 3;
+        const vx = Math.cos(angle) * speed;
+        const vy = Math.sin(angle) * speed;
+        addParticle(x, y, vx, vy, 30 + Math.random() * 30, '#ff5500');
+      }
+      
+      // Play explosion sound if available
+      if (typeof DegenSound \!== 'undefined') {
+        DegenSound.play('game', 'explosion');
+      }
+      
+      // Remove explosion element after animation completes
+      setTimeout(() => {
+        try {
+          document.body.removeChild(explosionElement);
+        } catch (e) {
+          console.warn("Could not remove explosion element", e);
+        }
+      }, 500);
+    }
 
+    // Load rocket image
+    function loadRocketImage() {
+      rocketImg = new Image();
+      rocketImg.src = 'rocket.png';
+      rocketImg.onload = function() {
+        rocketImgLoaded = true;
+      };
+      rocketImg.onerror = function() {
+        console.warn("Failed to load rocket image, using fallback");
+        rocketImgLoaded = false;
+      };
+    }
+
+    // Initialize all game components
     function initialize() {
       // DOM Elements
       menuDiv = document.getElementById('menu');
       playerNameInput = document.getElementById('playerName');
       startGameBtn = document.getElementById('startGameBtn');
       leaderboardList = document.getElementById('leaderboardList');
+      backToPortalBtn = document.getElementById('back-to-portal');
       
       gameContainer = document.getElementById('gameContainer');
       gameTitle = document.getElementById('gameTitle');
@@ -968,7 +1097,7 @@
       closeTutorial = document.getElementById('closeTutorial');
       
       // Show tutorial if first time
-      if (!localStorage.getItem('spaceshipTutorialSeen')) {
+      if (\!localStorage.getItem('spaceshipTutorialSeen')) {
         tutorialPanel.style.display = 'block';
         localStorage.setItem('spaceshipTutorialSeen', 'true');
       }
@@ -1022,168 +1151,44 @@
       gameContainer.style.display = 'none';
       showMenu();
       updateLeaderboard();
+      
+      // Add event listeners
       startGameBtn.addEventListener('click', startGame);
-      restartBtn.addEventListener('click', showMenu);
+      restartBtn.addEventListener('click', handleRestart);
       
       // Upgrade buttons
       biggerTankBtn.addEventListener('click', upgradeTank);
       fasterRocketBtn.addEventListener('click', upgradeRocket);
       
+      // Keyboard controls
       window.addEventListener('keydown', handleKeyDown);
       window.addEventListener('keyup', handleKeyUp);
-    }
-
-    // Add a particle system for better visual effects
-    let particles = [];
-    
-    function createParticlesSystem() {
-      // Initialize particles array
-      particles = [];
-    }
-    
-    function addParticle(x, y, vx, vy, life = 30, color = '#ffaa00') {
-      particles.push({
-        x, y, vx, vy, life,
-        originalLife: life,
-        color
+      
+      // Back to portal button
+      backToPortalBtn.addEventListener('click', function() {
+        window.location.href = '../../index.html';
       });
-    }
-    
-    function updateParticles() {
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i];
-        p.x += p.vx;
-        p.y += p.vy;
-        p.life--;
-        
-        if (p.life <= 0) {
-          particles.splice(i, 1);
-        }
+      
+      // Load rocket image
+      loadRocketImage();
+      
+      // Initialize sound effects if available
+      if (typeof DegenSound \!== 'undefined') {
+        DegenSound.init({
+          groups: {
+            'game': {
+              'explosion': { url: '../../sounds/explosion.mp3', volume: 0.5, fallback: true },
+              'powerUp': { url: '../../sounds/power-up.mp3', volume: 0.5, fallback: true },
+              'collect': { url: '../../sounds/collect.mp3', volume: 0.5, fallback: true },
+              'shoot': { url: '../../sounds/shoot.mp3', volume: 0.3, fallback: true }
+            }
+          }
+        });
       }
-    }
-    
-    function drawParticles() {
-      for (const p of particles) {
-        const alpha = p.life / p.originalLife;
-        ctx.fillStyle = p.color + Math.floor(alpha * 255).toString(16).padStart(2, '0');
-        ctx.beginPath();
-        ctx.arc(p.x - cameraX, p.y - cameraY, 3 * alpha, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-    
-    // Update the thruster function to add particles
-    function applyThrust() {
-      if (upPressed && fuel > 0) {
-        const thrustPower = accelForward;
-        rocketVX += Math.sin(angle) * thrustPower;
-        rocketVY -= Math.cos(angle) * thrustPower;
-        fuel--;
-        
-        // Add exhaust particles for visual effect
-        const particleCount = 3;
-        for (let i = 0; i < particleCount; i++) {
-          const particleAngle = angle + (Math.random() - 0.5) * 0.5;
-          const particleSpeed = 2 + Math.random() * 2;
-          const vx = -Math.sin(particleAngle) * particleSpeed;
-          const vy = Math.cos(particleAngle) * particleSpeed;
-          
-          // Position the particle at the back of the rocket
-          const pX = rocketX - Math.sin(angle) * rocketRadius;
-          const pY = rocketY + Math.cos(angle) * rocketRadius;
-          
-          // Random color between yellow and red
-          const r = Math.floor(255).toString(16).padStart(2, '0');
-          const g = Math.floor(Math.random() * 200).toString(16).padStart(2, '0');
-          const b = '00';
-          const color = `#${r}${g}${b}`;
-          
-          addParticle(pX, pY, vx, vy, 10 + Math.random() * 20, color);
-        }
-      }
-      
-      if (downPressed && fuel > 0) {
-        const thrustPower = accelBackward;
-        rocketVX -= Math.sin(angle) * thrustPower;
-        rocketVY += Math.cos(angle) * thrustPower;
-        fuel--;
-        
-        // Add front thruster particles
-        const particleCount = 2;
-        for (let i = 0; i < particleCount; i++) {
-          const particleAngle = angle + Math.PI + (Math.random() - 0.5) * 0.3;
-          const particleSpeed = 1 + Math.random() * 1;
-          const vx = -Math.sin(particleAngle) * particleSpeed;
-          const vy = Math.cos(particleAngle) * particleSpeed;
-          
-          // Position the particle at the front of the rocket
-          const pX = rocketX + Math.sin(angle) * rocketRadius;
-          const pY = rocketY - Math.cos(angle) * rocketRadius;
-          
-          addParticle(pX, pY, vx, vy, 5 + Math.random() * 10, '#aaaaff');
-        }
-      }
-    }
-    
-    // Update the update function to include particles
-    function update() {
-      // ... existing code ...
-      
-      // Update particles
-      updateParticles();
-      
-      // ... rest of the existing update code ...
-    }
-    
-    // Update the draw function to include particles
-    function draw() {
-      // ... existing drawing code ...
-      
-      // Draw particles
-      drawParticles();
-      
-      // ... rest of the existing drawing code ...
-    }
-    
-    // Explosion effect
-    function createExplosion(x, y) {
-      const explosionElement = document.createElement('div');
-      explosionElement.className = 'explosion';
-      explosionElement.style.left = (x - 50) + 'px';
-      explosionElement.style.top = (y - 50) + 'px';
-      document.body.appendChild(explosionElement);
-      
-      // Create particles
-      for (let i = 0; i < 30; i++) {
-        const angle = Math.random() * Math.PI * 2;
-        const speed = 1 + Math.random() * 3;
-        const vx = Math.cos(angle) * speed;
-        const vy = Math.sin(angle) * speed;
-        addParticle(x, y, vx, vy, 30 + Math.random() * 30, '#ff5500');
-      }
-      
-      // Remove explosion element after animation completes
-      setTimeout(() => {
-        document.body.removeChild(explosionElement);
-      }, 500);
     }
 
-    document.getElementById('back-to-portal').addEventListener('click', function() {
-      window.location.href = '../../index.html';
-    });
-    
-    // Add links to library scripts
-    function addScriptToHead(src) {
-      const script = document.createElement('script');
-      script.src = src;
-      document.head.appendChild(script);
-    }
-    
-    // Add shared DegenlanderPortal libraries
-    addScriptToHead('../../js/degen-theme.js');
-    addScriptToHead('../../js/sound-effects.js');
-
-    window.addEventListener('DOMContentLoaded', ()=>{
+    // Initialize the game when the page loads
+    window.addEventListener('DOMContentLoaded', () => {
       initialize();
     });
   </script>
