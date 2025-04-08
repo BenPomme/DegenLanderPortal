@@ -1,0 +1,20 @@
+{
+  "rules": {
+    ".read": true,
+    "leaderboard": {
+      ".read": true,
+      ".write": "newData.child('score').isNumber() && 
+                 newData.child('name').isString() && 
+                 newData.child('stock').isString() && 
+                 newData.child('timestamp').isNumber()",
+      "$entry": {
+        ".validate": "newData.hasChildren(['name', 'score', 'stock', 'timestamp']) && 
+                      newData.child('name').isString() && 
+                      newData.child('name').val().length <= 10 && 
+                      newData.child('score').isNumber() && 
+                      newData.child('stock').isString() && 
+                      newData.child('timestamp').isNumber()"
+      }
+    }
+  }
+}
