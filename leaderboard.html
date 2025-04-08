@@ -3,83 +3,405 @@
 <head>
   <meta charset="UTF-8" />
   <title>Degen Leaderboards - Fucking Scoreboards</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Use Press Start 2P for that retro degen vibe -->
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <style>
-    /* Consistent retro styling */
+    /* Retro degen style with theme support */
+    :root {
+      --bg-color: #111;
+      --text-color: #0f0;
+      --accent-color: #f00;
+      --hover-color: #fff;
+      --panel-color: #222;
+      --border-color: #0f0;
+      --alt-bg-color: #222;
+      --highlight-bg: #330;
+    }
+    
+    .dark-mode {
+      --bg-color: #111;
+      --text-color: #0f0;
+      --accent-color: #f00;
+      --hover-color: #fff;
+      --panel-color: #222;
+      --border-color: #0f0;
+      --alt-bg-color: #222;
+      --highlight-bg: #330;
+    }
+    
+    .light-mode {
+      --bg-color: #f5f5f5;
+      --text-color: #0a5; 
+      --accent-color: #d00;
+      --hover-color: #333;
+      --panel-color: #fff;
+      --border-color: #0a5;
+      --alt-bg-color: #e5e5e5;
+      --highlight-bg: #efe5c0;
+    }
+    
     body {
-      background-color: #111;
-      color: #0f0;
-      font-family: 'Courier New', Courier, monospace;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-family: 'Press Start 2P', cursive;
       margin: 0;
-      padding: 20px;
+      padding: 0;
       text-align: center;
     }
+    
+    /* Navigation bar */
+    .nav-bar {
+      background-color: var(--panel-color);
+      padding: 10px 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      border-bottom: 2px solid var(--border-color);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .nav-bar a {
+      color: var(--text-color);
+      text-decoration: none;
+      margin: 0 15px;
+      font-size: 0.8em;
+      transition: all 0.2s ease;
+      border: none;
+      box-shadow: none;
+    }
+    
+    .nav-bar a:hover {
+      color: var(--hover-color);
+      text-shadow: 0 0 8px var(--text-color);
+      background-color: transparent;
+      transform: none;
+    }
+    
+    /* Theme toggle button */
+    #theme-toggle {
+      background-color: transparent;
+      border: 1px solid var(--text-color);
+      color: var(--text-color);
+      padding: 5px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-left: 20px;
+      font-family: 'Press Start 2P', cursive;
+      font-size: 0.6em;
+    }
+    
+    #theme-toggle:hover {
+      background-color: var(--text-color);
+      color: var(--bg-color);
+    }
+    
     h1 {
       font-size: 2.5em;
-      margin-top: 20px;
-      text-shadow: 2px 2px #f00;
+      margin-top: 50px;
+      text-shadow: 0 0 10px rgba(255, 0, 0, 0.7);
+      animation: glowText 1.5s ease-in-out infinite alternate;
     }
+    
+    @keyframes glowText {
+      from { text-shadow: 0 0 5px var(--accent-color); }
+      to { text-shadow: 0 0 15px var(--accent-color), 0 0 20px var(--accent-color); }
+    }
+    
     p {
       font-size: 1.1em;
       margin-bottom: 20px;
     }
+    
     table {
       margin: 20px auto;
       border-collapse: collapse;
-      width: 80%;
+      width: 90%;
+      max-width: 800px;
+      box-shadow: 0 0 20px var(--border-color);
     }
+    
     th, td {
-      border: 1px solid #0f0;
-      padding: 10px;
+      border: 1px solid var(--border-color);
+      padding: 12px;
     }
+    
     th {
+      background-color: var(--panel-color);
       font-size: 1.2em;
+      text-transform: uppercase;
     }
+    
     tr:nth-child(even) {
-      background-color: #222;
+      background-color: var(--alt-bg-color);
     }
+    
+    tr:hover {
+      background-color: var(--panel-color);
+    }
+    
     a {
-      color: #0f0;
+      color: var(--text-color);
       text-decoration: none;
-      border: 2px solid #0f0;
-      padding: 5px 10px;
+      border: 2px solid var(--border-color);
+      padding: 10px 15px;
+      transition: all 0.3s ease;
+      display: inline-block;
+      margin: 10px;
+      box-shadow: 0 0 10px var(--border-color);
+    }
+    
+    a:hover {
+      background-color: var(--text-color);
+      color: var(--bg-color);
+      transform: translateY(-3px);
+      box-shadow: 0 5px 15px var(--border-color);
+    }
+    
+    .game-tabs {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin: 20px 0;
+      gap: 10px;
+    }
+    
+    .game-tab {
+      padding: 10px 15px;
+      background: var(--panel-color);
+      border: 2px solid var(--border-color);
+      color: var(--text-color);
+      cursor: pointer;
       transition: all 0.3s ease;
     }
-    a:hover {
-      background-color: #0f0;
-      color: #111;
+    
+    .game-tab:hover, .game-tab.active {
+      background: var(--text-color);
+      color: var(--bg-color);
+    }
+    
+    .top-player {
+      animation: glow 1.5s ease-in-out infinite alternate;
+    }
+    
+    @keyframes glow {
+      from { background-color: var(--alt-bg-color); }
+      to { background-color: var(--highlight-bg); }
+    }
+    
+    /* Mobile responsiveness */
+    @media (max-width: 768px) {
+      h1 { font-size: 1.8em; }
+      th, td { padding: 8px; font-size: 0.9em; }
+      .game-tab { padding: 8px 12px; font-size: 0.8em; }
+      a { padding: 8px 12px; }
     }
   </style>
 </head>
-<body>
+<body class="dark-mode">
+  <!-- Navigation Bar -->
+  <div class="nav-bar">
+    <a href="/index.html">Home</a>
+    <a href="/leaderboard.html">Leaderboard</a>
+    <a href="/Games/AntsSimulator/index.html">Ants Simulator</a>
+    <a href="/Games/NerdSoccer/PenFootballGameWithWallBounce.html">Nerd Soccer</a>
+    <button id="theme-toggle">Toggle Theme</button>
+  </div>
+
   <h1>Degen Leaderboards</h1>
   <p>Check out the top scores from all our badass games. No bullshit—just scores.</p>
+  
+  <div class="game-tabs">
+    <div class="game-tab active" data-game="all">All Games</div>
+    <div class="game-tab" data-game="Degenlander">Degenlander</div>
+    <div class="game-tab" data-game="AntsSimulator">Ants Simulator</div>
+    <div class="game-tab" data-game="NerdSoccer">NerdSoccer</div>
+    <div class="game-tab" data-game="SpaceshipWorld">SpaceshipWorld</div>
+  </div>
+  
   <table>
-    <tr>
-      <th>Game</th>
-      <th>Player</th>
-      <th>Score</th>
-    </tr>
-    <tr>
-      <td>Degenlander</td>
-      <td>Fucking Legend</td>
-      <td>9999</td>
-    </tr>
-    <tr>
-      <td>Ants Simulator</td>
-      <td>Bug Buster</td>
-      <td>8765</td>
-    </tr>
-    <tr>
-      <td>NerdSoccer</td>
-      <td>Geeky Winner</td>
-      <td>5432</td>
-    </tr>
-    <tr>
-      <td>SpaceshipWorld</td>
-      <td>SpaceFucker</td>
-      <td>6789</td>
-    </tr>
+    <thead>
+      <tr>
+        <th>Rank</th>
+        <th>Game</th>
+        <th>Player</th>
+        <th>Score</th>
+        <th>Date</th>
+      </tr>
+    </thead>
+    <tbody id="leaderboardBody">
+      <!-- Data will be populated by JavaScript -->
+    </tbody>
   </table>
-  <p><a href="./index.html">Back to the Portal</a></p>
+  
+  <script>
+    // Theme toggle functionality
+    const themeToggle = document.getElementById('theme-toggle');
+    const body = document.body;
+    
+    // Check for saved theme preference or use default dark mode
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    body.className = savedTheme + '-mode';
+    themeToggle.textContent = savedTheme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+    
+    // Toggle between light and dark themes
+    themeToggle.addEventListener('click', () => {
+      if (body.classList.contains('dark-mode')) {
+        body.classList.replace('dark-mode', 'light-mode');
+        localStorage.setItem('theme', 'light');
+        themeToggle.textContent = '🌙 Dark Mode';
+      } else {
+        body.classList.replace('light-mode', 'dark-mode');
+        localStorage.setItem('theme', 'dark');
+        themeToggle.textContent = '☀️ Light Mode';
+      }
+    });
+    
+    // Sample leaderboard data - in a real app, this would come from a database
+    const leaderboardData = [
+      { id: 1, game: "Degenlander", player: "Fucking Legend", score: 9999, date: "2025-03-10" },
+      { id: 2, game: "Ants Simulator", player: "Bug Buster", score: 8765, date: "2025-03-09" },
+      { id: 3, game: "NerdSoccer", player: "Geeky Winner", score: 5432, date: "2025-03-08" },
+      { id: 4, game: "SpaceshipWorld", player: "SpaceFucker", score: 6789, date: "2025-03-07" },
+      { id: 5, game: "Degenlander", player: "Diamond Hands", score: 8888, date: "2025-03-06" },
+      { id: 6, game: "Ants Simulator", player: "Colony Master", score: 7654, date: "2025-03-05" },
+      { id: 7, game: "NerdSoccer", player: "Brain Ball", score: 4321, date: "2025-03-04" },
+      { id: 8, game: "SpaceshipWorld", player: "Astro Degen", score: 5678, date: "2025-03-03" },
+      { id: 9, game: "Degenlander", player: "HODL King", score: 7777, date: "2025-03-02" },
+      { id: 10, game: "Ants Simulator", player: "Insect God", score: 6543, date: "2025-03-01" }
+    ];
+    
+    // Function to render the leaderboard
+    function renderLeaderboard(gameFilter = 'all') {
+      const tbody = document.getElementById('leaderboardBody');
+      tbody.innerHTML = '';
+      
+      // Filter data if needed
+      let filteredData = leaderboardData;
+      if (gameFilter !== 'all') {
+        filteredData = leaderboardData.filter(entry => entry.game === gameFilter);
+      }
+      
+      // Sort by score (highest first)
+      filteredData.sort((a, b) => b.score - a.score);
+      
+      // Render rows
+      filteredData.forEach((entry, index) => {
+        const row = document.createElement('tr');
+        // Add top-player class to the top player(s)
+        if (index === 0) row.classList.add('top-player');
+        
+        row.innerHTML = `
+          <td>${index + 1}</td>
+          <td>${entry.game}</td>
+          <td>${entry.player}</td>
+          <td>${entry.score}</td>
+          <td>${entry.date}</td>
+        `;
+        tbody.appendChild(row);
+      });
+      
+      // If no results, display message
+      if (filteredData.length === 0) {
+        const row = document.createElement('tr');
+        row.innerHTML = '<td colspan="5">No scores found for this game yet.</td>';
+        tbody.appendChild(row);
+      }
+    }
+    
+    // Initialize and add event listeners
+    document.addEventListener('DOMContentLoaded', function() {
+      // Initial render
+      renderLeaderboard();
+      
+      // Tab switching
+      const tabs = document.querySelectorAll('.game-tab');
+      tabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+          // Update active tab
+          tabs.forEach(t => t.classList.remove('active'));
+          this.classList.add('active');
+          
+          // Render filtered leaderboard
+          renderLeaderboard(this.dataset.game);
+        });
+      });
+      
+      // Try to load local storage data if available
+      try {
+        const localData = localStorage.getItem('degenLeaderboardData');
+        if (localData) {
+          const parsedData = JSON.parse(localData);
+          if (Array.isArray(parsedData) && parsedData.length > 0) {
+            // Merge with sample data - in a real app we'd handle this differently
+            parsedData.forEach(item => {
+              if (!leaderboardData.some(d => d.id === item.id)) {
+                leaderboardData.push(item);
+              }
+            });
+            renderLeaderboard();
+          }
+        }
+      } catch (e) {
+        console.error('Error loading local leaderboard data:', e);
+      }
+      
+      // Try to fetch Firebase data if available
+      try {
+        // Check if Firebase is loaded from any game
+        if (typeof firebase !== 'undefined' && firebase.database) {
+          const leaderboardRef = firebase.database().ref('leaderboard');
+          leaderboardRef.orderByChild('score').limitToLast(20).once('value', (snapshot) => {
+            const fbData = snapshot.val();
+            if (fbData) {
+              // Convert Firebase object to array and add to leaderboard
+              Object.keys(fbData).forEach((key, index) => {
+                const item = fbData[key];
+                leaderboardData.push({
+                  id: key,
+                  game: item.game || "Degenlander",
+                  player: item.name,
+                  score: item.score,
+                  date: new Date(item.timestamp).toISOString().split('T')[0]
+                });
+              });
+              renderLeaderboard();
+            }
+          }).catch(err => {
+            console.error("Firebase data load error", err);
+          });
+        }
+      } catch (e) {
+        console.error('Error loading Firebase data:', e);
+      }
+    });
+  </script>
+  
+  <!-- Firebase scripts - same as in games for consistency -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  
+  <script>
+    // Firebase configuration - same as in games
+    try {
+      if (!firebase.apps.length) {
+        const firebaseConfig = {
+          apiKey: "AIzaSyDZaU-AnRxHIjA5WgXBFXQG4P4VwOLj8Bs",
+          authDomain: "degenlander-3b1c7.firebaseapp.com",
+          projectId: "degenlander-3b1c7",
+          storageBucket: "degenlander-3b1c7.appspot.com",
+          messagingSenderId: "431855620245",
+          appId: "1:431855620245:web:80b5c8da3b688972cc5ce1"
+        };
+        
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+      }
+    } catch (e) {
+      console.error("Firebase init error", e);
+    }
+  </script>
 </body>
 </html>

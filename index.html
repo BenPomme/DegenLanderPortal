@@ -2,71 +2,216 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Degen Portal - Fuck Yeah!</title>
   <style>
     /* Retro degen style */
+    :root {
+      --bg-color: #111;
+      --text-color: #0f0;
+      --accent-color: #f00;
+      --hover-color: #fff;
+      --panel-color: #222;
+      --border-color: #0f0;
+    }
+    
+    .dark-mode {
+      --bg-color: #111;
+      --text-color: #0f0;
+      --accent-color: #f00;
+      --hover-color: #fff;
+      --panel-color: #222;
+      --border-color: #0f0;
+    }
+    
+    .light-mode {
+      --bg-color: #f5f5f5;
+      --text-color: #0a5; 
+      --accent-color: #d00;
+      --hover-color: #333;
+      --panel-color: #fff;
+      --border-color: #0a5;
+    }
+    
     body {
-      background-color: #111;
-      color: #0f0;
+      background-color: var(--bg-color);
+      color: var(--text-color);
       font-family: 'Courier New', Courier, monospace;
       margin: 0;
       padding: 0;
       text-align: center;
     }
+    
+    /* Navigation bar */
+    .nav-bar {
+      background-color: var(--panel-color);
+      padding: 10px 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      border-bottom: 2px solid var(--border-color);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .nav-bar a {
+      color: var(--text-color);
+      text-decoration: none;
+      margin: 0 15px;
+      font-size: 1em;
+      transition: all 0.2s ease;
+    }
+    
+    .nav-bar a:hover {
+      color: var(--hover-color);
+      text-shadow: 0 0 8px var(--text-color);
+    }
+    
+    /* Theme toggle button */
+    #theme-toggle {
+      background-color: transparent;
+      border: 1px solid var(--text-color);
+      color: var(--text-color);
+      padding: 5px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-left: 20px;
+    }
+    
+    #theme-toggle:hover {
+      background-color: var(--text-color);
+      color: var(--bg-color);
+    }
+    
     h1 {
       margin-top: 50px;
       font-size: 3em;
-      text-shadow: 2px 2px #f00;
+      text-shadow: 2px 2px var(--accent-color);
     }
+    
     p {
       font-size: 1.2em;
       margin: 20px auto;
     }
+    
     ul {
       list-style: none;
       padding: 0;
     }
+    
     li {
       margin: 20px 0;
       font-size: 1.5em;
     }
+    
     a {
-      color: #0f0;
+      color: var(--text-color);
       text-decoration: none;
-      border: 2px solid #0f0;
+      border: 2px solid var(--text-color);
       padding: 10px 20px;
       transition: all 0.3s ease;
     }
+    
     a:hover {
-      background-color: #0f0;
-      color: #111;
+      background-color: var(--text-color);
+      color: var(--bg-color);
     }
+    
     .meme {
       margin: 20px auto;
       width: 300px;
-      border: 2px solid #0f0;
+      border: 2px solid var(--text-color);
     }
+    
     footer {
       margin-top: 50px;
       font-size: 0.8em;
       color: #888;
+      padding: 20px;
+    }
+    
+    /* New game category styling */
+    .category-title {
+      margin-top: 40px;
+      color: var(--accent-color);
+      text-shadow: 1px 1px var(--text-color);
+      font-size: 1.8em;
+    }
+    
+    .new-tag {
+      background-color: var(--accent-color);
+      color: #fff;
+      padding: 3px 8px;
+      border-radius: 10px;
+      font-size: 0.6em;
+      position: relative;
+      top: -10px;
+      margin-left: 10px;
     }
   </style>
 </head>
-<body>
+<body class="dark-mode">
+  <!-- Navigation Bar -->
+  <div class="nav-bar">
+    <a href="/index.html">Home</a>
+    <a href="/leaderboard.html">Leaderboard</a>
+    <a href="/Games/AntsSimulator/index.html">Ants Simulator</a>
+    <a href="/Games/NerdSoccer/PenFootballGameWithWallBounce.html">Nerd Soccer</a>
+    <button id="theme-toggle">Toggle Theme</button>
+  </div>
+  
   <h1>Welcome to the Fuckin' Degen Portal</h1>
   <!-- A retro meme image -->
   <img src="https://i.imgflip.com/1bij.jpg" alt="Meme" class="meme" />
   <p>Pick a game or check out the leaderboards. Let's get this shit started!</p>
+  
+  <h2 class="category-title">Classic Games</h2>
   <ul>
     <li><a href="./Games/degenlander/index.html">Degenlander</a></li>
     <li><a href="./Games/AntsSimulator/index.html">Ants Simulator</a></li>
-    <li><a href="./Games/NerdSoccer/labirinthgame.html">NerdSoccer</a></li>
+    <li><a href="./Games/NerdSoccer/PenFootballGameWithWallBounce.html">NerdSoccer</a></li>
     <li><a href="./Games/SpaceshipWorld/home.html">SpaceshipWorld</a></li>
+  </ul>
+  
+  <h2 class="category-title">New Degen Games <span class="new-tag">NEW!</span></h2>
+  <ul>
+    <li><a href="./Games/CryptoShitter/index.html">CryptoShitter</a></li>
+    <li><a href="./Games/RugpullRoulette/index.html">Rugpull Roulette</a></li>
+    <li><a href="./Games/DegenerateSlots/index.html">Degenerate Slots</a></li>
+  </ul>
+  
+  <h2 class="category-title">Leaderboards</h2>
+  <ul>
     <li><a href="./leaderboard.html">Leaderboards</a></li>
   </ul>
+  
   <footer>
     <p>Fucking awesome, 'cause shit's awesome!</p>
   </footer>
+  
+  <script>
+    // Theme toggle functionality
+    const themeToggle = document.getElementById('theme-toggle');
+    const body = document.body;
+    
+    // Check for saved theme preference or use default dark mode
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    body.className = savedTheme + '-mode';
+    themeToggle.textContent = savedTheme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+    
+    // Toggle between light and dark themes
+    themeToggle.addEventListener('click', () => {
+      if (body.classList.contains('dark-mode')) {
+        body.classList.replace('dark-mode', 'light-mode');
+        localStorage.setItem('theme', 'light');
+        themeToggle.textContent = '🌙 Dark Mode';
+      } else {
+        body.classList.replace('light-mode', 'dark-mode');
+        localStorage.setItem('theme', 'dark');
+        themeToggle.textContent = '☀️ Light Mode';
+      }
+    });
+  </script>
 </body>
 </html>
