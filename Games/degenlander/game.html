@@ -526,52 +526,54 @@
     const playerName = queryParams.playerName || "Anonymous";
     const stockSymbol = queryParams.stockSymbol || "AAPL";
     
-    // Fetch terrain data via corsproxy.io with API key
+    // Fetch terrain data directly from local files
     async function fetchTerrainDataStatic(stockSymbol) {
-      const baseUrl = `https://benpomme.github.io/degenlander/stock_${stockSymbol}.json`;
-      const proxyUrl = `https://corsproxy.io/?key=dcf28481&url=${encodeURIComponent(baseUrl)}`;
-      console.log("Fetching terrain data via proxy from:", proxyUrl);
+      const url = `stock_${stockSymbol}.json`;
+      console.log("Fetching terrain data from:", url);
       try {
-        const response = await fetch(proxyUrl);
+        console.log(`Attempting to load: ${url}`);
+        const response = await fetch(url);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
-        if (!Array.isArray(data) || data.length === 0) {
-          throw new Error("Invalid or empty stock data");
+        console.log("Terrain data loaded successfully:", data);
+        
+        // Validate data structure
+        if (!data.points || !Array.isArray(data.points) || data.points.length === 0) {
+          throw new Error("Invalid terrain data: missing or empty points array");
         }
-        const prices = data.map(item => parseFloat(item["4. close"]));
-        const displayCount = prices.length;
-        const minP = Math.min(...prices);
-        const maxP = Math.max(...prices);
-        const range = maxP - minP;
-        const step = canvas.width / (displayCount - 1);
-        let points = [];
-        for (let i = 0; i < displayCount; i++) {
-          let x = i * step;
-          let normalized = (prices[i] - minP) / (range || 1);
-          let y = canvas.height - normalized * (canvas.height * 0.5);
-          points.push({ x, y, price: prices[i] });
-        }
-        return { 
-          points, 
-          minP, 
-          maxP, 
-          dates: data.map((d, i) => "Day " + (i + 1)),
-          closePrice: prices[prices.length - 1]
-        };
+        
+        return data;
       } catch (err) {
         console.error("Error fetching static stock data:", err);
         info.textContent = "Using fallback terrain data.";
         
+        // Try to load fallback terrain from localStorage first
+        console.log("Checking for cached fallback terrain for stock:", stockSymbol);
+        const cachedTerrain = localStorage.getItem(`fallbackTerrain_${stockSymbol}`);
+        
+        if (cachedTerrain) {
+          try {
+            const parsedTerrain = JSON.parse(cachedTerrain);
+            console.log("Using cached fallback terrain from localStorage");
+            return parsedTerrain;
+          } catch (parseError) {
+            console.error("Error parsing cached terrain:", parseError);
+            // Continue to generate new terrain if parsing fails
+          }
+        }
+        
         // Generate fallback terrain data
+        console.log("Generating new fallback terrain data for stock:", stockSymbol);
         const fallbackPoints = [];
         const fallbackPrices = [];
-        const pointCount = 50;
+        const pointCount = 30;  // Match the expected number of days
         const step = canvas.width / (pointCount - 1);
         
         // Generate random prices with some variation for terrain
         let currentPrice = 100 + Math.random() * 100;
+        let startPrice = currentPrice;
         for (let i = 0; i < pointCount; i++) {
           // Add some random variation (with a trend)
           currentPrice += (Math.random() - 0.48) * 5;
@@ -590,13 +592,42 @@
           fallbackPoints.push({ x, y, price: fallbackPrices[i] });
         }
         
-        return { 
+        const endPrice = fallbackPrices[fallbackPrices.length - 1];
+        
+        // Create fallback data in the same format as the real stock data
+        const fallbackData = { 
           points: fallbackPoints, 
           minP, 
           maxP, 
           dates: Array(pointCount).fill().map((_, i) => "Day " + (i + 1)),
-          closePrice: fallbackPrices[fallbackPrices.length - 1]
+          closePrice: endPrice
         };
+        
+        // Save to localStorage for future use
+        try {
+          localStorage.setItem(`fallbackTerrain_${stockSymbol}`, JSON.stringify(fallbackData));
+          
+          // Update the stocks data in localStorage as well
+          const existingStocks = JSON.parse(localStorage.getItem('stocksData') || '[]');
+          const stockIndex = existingStocks.findIndex(s => s.ticker === stockSymbol);
+          
+          if (stockIndex === -1) {
+            existingStocks.push({
+              ticker: stockSymbol,
+              name: stockSymbol,
+              price: endPrice
+            });
+          } else {
+            existingStocks[stockIndex].price = endPrice;
+          }
+          
+          localStorage.setItem('stocksData', JSON.stringify(existingStocks));
+          console.log("Saved fallback data to localStorage for future use");
+        } catch (e) {
+          console.error("Could not save fallback data to localStorage:", e);
+        }
+        
+        return fallbackData;
       }
     }
     

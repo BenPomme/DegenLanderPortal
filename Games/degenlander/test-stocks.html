@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stock Data Test</title>
+  <style>
+    body {
+      font-family: monospace;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #111;
+      color: #0f0;
+    }
+    pre {
+      background: #333;
+      padding: 10px;
+      border-radius: 5px;
+      overflow-x: auto;
+    }
+    h1, h2 {
+      color: #0f0;
+    }
+    button {
+      background: #333;
+      color: #0f0;
+      border: 1px solid #0f0;
+      padding: 8px 16px;
+      margin: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0f0;
+      color: #000;
+    }
+    .error {
+      color: #f00;
+    }
+    .success {
+      color: #0f0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Stock Data Test Page</h1>
+  <p>This page tests the loading of stock data for the Degenlander game.</p>
+  
+  <div>
+    <h2>1. Test stocks.json</h2>
+    <button id="test-stocks">Test stocks.json</button>
+    <pre id="stocks-result"></pre>
+  </div>
+  
+  <div>
+    <h2>2. Test individual stock files</h2>
+    <select id="stock-select">
+      <option value="AAPL">AAPL</option>
+      <option value="MSFT">MSFT</option>
+      <option value="GOOGL">GOOGL</option>
+      <option value="AMZN">AMZN</option>
+      <option value="TSLA">TSLA</option>
+      <option value="META">META</option>
+      <option value="NVDA">NVDA</option>
+      <option value="NFLX">NFLX</option>
+    </select>
+    <button id="test-stock">Test Selected Stock</button>
+    <pre id="stock-result"></pre>
+  </div>
+  
+  <div>
+    <h2>3. Generate Fallback Terrain</h2>
+    <button id="generate-fallback">Generate Fallback Terrain</button>
+    <pre id="fallback-result"></pre>
+  </div>
+  
+  <h2>4. Test All Stock Files</h2>
+  <button id="test-all-stocks">Test All Stock Files</button>
+  <pre id="all-stocks-result"></pre>
+  
+  <script>
+    // Test stocks.json
+    document.getElementById('test-stocks').addEventListener('click', async () => {
+      const resultEl = document.getElementById('stocks-result');
+      try {
+        const response = await fetch('stocks.json');
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        const data = await response.json();
+        resultEl.innerHTML = `<span class="success">SUCCESS</span>\nstocks.json loaded successfully:\n${JSON.stringify(data, null, 2)}`;
+      } catch (error) {
+        resultEl.innerHTML = `<span class="error">ERROR</span>\nFailed to load stocks.json: ${error.message}`;
+      }
+    });
+    
+    // Test individual stock files
+    document.getElementById('test-stock').addEventListener('click', async () => {
+      const stockSymbol = document.getElementById('stock-select').value;
+      const resultEl = document.getElementById('stock-result');
+      
+      try {
+        const response = await fetch(`stock_${stockSymbol}.json`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        const data = await response.json();
+        
+        // Validate data format
+        if (!data.points || !Array.isArray(data.points) || data.points.length === 0) {
+          throw new Error('Invalid data format: missing or empty points array');
+        }
+        
+        resultEl.innerHTML = `<span class="success">SUCCESS</span>\nstock_${stockSymbol}.json loaded successfully\nPoints: ${data.points.length}\nMin Price: ${data.minP}\nMax Price: ${data.maxP}\nClose Price: ${data.closePrice}`;
+      } catch (error) {
+        resultEl.innerHTML = `<span class="error">ERROR</span>\nFailed to load stock_${stockSymbol}.json: ${error.message}`;
+      }
+    });
+    
+    // Generate fallback terrain
+    document.getElementById('generate-fallback').addEventListener('click', () => {
+      const resultEl = document.getElementById('fallback-result');
+      
+      // Generate fallback terrain data
+      const fallbackPoints = [];
+      const fallbackPrices = [];
+      const pointCount = 30;
+      const canvasWidth = 800;
+      const canvasHeight = 600;
+      const step = canvasWidth / (pointCount - 1);
+      
+      // Generate random terrain with some trend
+      let currentPrice = 100 + Math.random() * 100;
+      for (let i = 0; i < pointCount; i++) {
+        currentPrice += (Math.random() - 0.48) * 5;
+        currentPrice = Math.max(50, Math.min(200, currentPrice));
+        fallbackPrices.push(currentPrice);
+      }
+      
+      const minP = Math.min(...fallbackPrices);
+      const maxP = Math.max(...fallbackPrices);
+      const range = maxP - minP;
+      
+      for (let i = 0; i < pointCount; i++) {
+        let x = i * step;
+        let normalized = (fallbackPrices[i] - minP) / (range || 1);
+        let y = canvasHeight - normalized * (canvasHeight * 0.5);
+        fallbackPoints.push({ x, y, price: fallbackPrices[i] });
+      }
+      
+      const fallbackData = {
+        points: fallbackPoints,
+        minP: minP,
+        maxP: maxP,
+        dates: Array(pointCount).fill().map((_, i) => "Day " + (i + 1)),
+        closePrice: fallbackPrices[fallbackPrices.length - 1]
+      };
+      
+      resultEl.innerHTML = `<span class="success">SUCCESS</span>\nGenerated fallback terrain with ${pointCount} points\nA sample of the data:\n${JSON.stringify(fallbackData.points.slice(0, 3), null, 2)}...`;
+      
+      // Store in localStorage for testing
+      localStorage.setItem('fallbackTerrain', JSON.stringify(fallbackData));
+    });
+    
+    // Test all stock files
+    document.getElementById('test-all-stocks').addEventListener('click', async () => {
+      const resultEl = document.getElementById('all-stocks-result');
+      const stocksToTest = [
+        'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'META', 'NVDA', 'NFLX',
+        'BABA', 'JPM', 'BAC', 'V', 'MA', 'WMT', 'DIS', 'PFE', 'KO', 'MCD', 'BA', 'UNH'
+      ];
+      
+      resultEl.innerHTML = 'Testing all stock files...';
+      let results = '';
+      
+      for (const stock of stocksToTest) {
+        try {
+          const response = await fetch(`stock_${stock}.json`);
+          if (!response.ok) {
+            results += `<span class="error">✘ stock_${stock}.json - HTTP error ${response.status}</span>\n`;
+            continue;
+          }
+          
+          const data = await response.json();
+          
+          // Validate data format
+          if (!data.points || !Array.isArray(data.points) || data.points.length === 0) {
+            results += `<span class="error">✘ stock_${stock}.json - Invalid data format</span>\n`;
+            continue;
+          }
+          
+          results += `<span class="success">✓ stock_${stock}.json - ${data.points.length} points</span>\n`;
+        } catch (error) {
+          results += `<span class="error">✘ stock_${stock}.json - ${error.message}</span>\n`;
+        }
+      }
+      
+      resultEl.innerHTML = results;
+    });
+  </script>
+</body>
+</html>

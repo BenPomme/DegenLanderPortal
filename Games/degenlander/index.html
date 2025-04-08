@@ -4,12 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Degenlander - Land on the Fucking Moon!</title>
+  <link href="https://fonts.googleapis.com/css?family=Press+Start+2P" rel="stylesheet">
+  <!-- Import DegenlanderPortal shared libraries -->
+  <script src="../../js/degen-theme.js"></script>
+  <script src="../../js/sound-effects.js"></script>
   <style>
     /* Retro degen style */
     body {
       background-color: #111;
       color: #0f0;
-      font-family: 'Courier New', Courier, monospace;
+      font-family: 'Press Start 2P', 'Courier New', monospace;
       margin: 0;
       padding: 0;
       text-align: center;
@@ -40,7 +44,7 @@
     
     h1 {
       margin-top: 20px;
-      font-size: 3em;
+      font-size: 2.5em;
       text-shadow: 2px 2px #f00;
     }
     
@@ -84,7 +88,7 @@
       border: 2px solid #0f0;
       padding: 10px 20px;
       margin: 10px;
-      font-family: 'Courier New', Courier, monospace;
+      font-family: 'Press Start 2P', 'Courier New', monospace;
       font-size: 1.2em;
       cursor: pointer;
     }
@@ -174,7 +178,7 @@
       border: 2px solid #0f0;
       padding: 10px 20px;
       margin-top: 20px;
-      font-family: 'Courier New', Courier, monospace;
+      font-family: 'Press Start 2P', 'Courier New', monospace;
       font-size: 1.2em;
       cursor: pointer;
     }
@@ -226,6 +230,29 @@
     #audio-controls {
       margin: 10px auto;
     }
+    
+    .links-section {
+      margin-top: 20px;
+    }
+    .links-section a {
+      display: inline-block;
+      margin: 10px;
+      padding: 10px 15px;
+      background-color: #222;
+      color: #0f0;
+      text-decoration: none;
+      border: 2px solid #0f0;
+      border-radius: 5px;
+      font-family: 'Press Start 2P', 'Courier New', monospace;
+      font-size: 0.9em;
+      transition: all 0.3s;
+    }
+    .links-section a:hover {
+      background-color: #0f0;
+      color: #000;
+      transform: translateY(-3px);
+      box-shadow: 0 5px 15px rgba(0,255,0,0.4);
+    }
   </style>
 </head>
 <body>
@@ -237,7 +264,7 @@
     <a href="../NerdSoccer/PenFootballGameWithWallBounce.html">Nerd Soccer</a>
   </div>
 
-  <h1>Degenlander 🚀💎🙌</h1>
+  <h1>DEGENLANDER 🚀💎🙌</h1>
   <p>Select a fucking stock and land that shit! Don't crash or you'll lose everything.</p>
   
   <div id="audio-controls">
@@ -245,6 +272,12 @@
     <audio id="background-music" loop>
       <source src="STI.mp3" type="audio/mpeg">
     </audio>
+  </div>
+  
+  <div class="links-section">
+    <a href="simple-game.html">Play Simple Version</a>
+    <a href="direct-game.html">Direct Launch</a>
+    <a href="test-stocks.html">Test Stock Files</a>
   </div>
   
   <div class="game-container">
@@ -260,7 +293,10 @@
     <div class="start-screen" id="start-screen">
       <h2>Choose a fucking stock to land on:</h2>
       <select id="stock-select">
-        <!-- Stock options will be loaded dynamically -->
+        <!-- Default options in case loading fails -->
+        <option value="AAPL">AAPL - Apple Inc.</option>
+        <option value="MSFT">MSFT - Microsoft Corporation</option>
+        <option value="GOOGL">GOOGL - Alphabet Inc.</option>
       </select>
       <button id="start-btn">LFG!!! 🚀</button>
       <p>Controls: Arrow keys to move, Space to activate double-down boost</p>
@@ -363,31 +399,86 @@
       }
     }
     
-    // Load available stocks
+    // Load available stocks with error handling
+    console.log("Attempting to load stocks.json...");
+    
+    // First check if there's cached data
+    let cachedStocks = [];
+    try {
+      const cached = localStorage.getItem('cachedStocks');
+      if (cached) {
+        cachedStocks = JSON.parse(cached);
+        console.log("Found cached stocks:", cachedStocks);
+      }
+    } catch (error) {
+      console.warn("Error parsing cached stocks:", error);
+    }
+    
+    // Default stocks in case everything fails
+    const defaultStocks = [
+      { ticker: "AAPL", name: "Apple Inc.", price: 150.00 },
+      { ticker: "MSFT", name: "Microsoft Corporation", price: 300.00 },
+      { ticker: "GOOGL", name: "Alphabet Inc.", price: 140.00 }
+    ];
+    
+    // Function to populate stock select
+    function populateStockSelect(stocks) {
+      const select = document.getElementById('stock-select');
+      select.innerHTML = ''; // Clear existing options
+      
+      stocks.forEach(stock => {
+        const option = document.createElement('option');
+        option.value = stock.ticker;
+        option.textContent = `${stock.ticker} - ${stock.name} ($${stock.price.toFixed(2)})`;
+        select.appendChild(option);
+      });
+      
+      selectedStock = stocks[0].ticker;
+    }
+    
+    // Try to load stocks.json
     fetch('stocks.json')
-      .then(response => response.json())
-      .then(data => {
-        const select = document.getElementById('stock-select');
-        data.forEach(stock => {
-          const option = document.createElement('option');
-          option.value = stock.ticker;
-          option.textContent = `${stock.ticker} - ${stock.name} ($${stock.price.toFixed(2)})`;
-          select.appendChild(option);
-        });
-        selectedStock = data[0].ticker;
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json();
       })
-      .catch(error => console.error('Error loading stocks:', error));
+      .then(data => {
+        console.log("Successfully loaded stocks.json:", data);
+        
+        if (Array.isArray(data) && data.length > 0) {
+          // Cache the successful data
+          localStorage.setItem('cachedStocks', JSON.stringify(data));
+          
+          // Populate select
+          populateStockSelect(data);
+        } else {
+          console.warn("stocks.json has invalid format, using cached/defaults");
+          populateStockSelect(cachedStocks.length > 0 ? cachedStocks : defaultStocks);
+        }
+      })
+      .catch(error => {
+        console.error('Error loading stocks.json:', error);
+        
+        // Use cached stocks or defaults
+        populateStockSelect(cachedStocks.length > 0 ? cachedStocks : defaultStocks);
+      });
     
     // Load leaderboard
     function loadLeaderboard() {
-      const leaderboardRef = database.ref('leaderboard');
-      leaderboardRef.orderByChild('score').limitToLast(10).once('value', (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-          leaderboardData = Object.values(data).sort((a, b) => b.score - a.score);
-          updateLeaderboardDisplay();
-        }
-      });
+      try {
+        const leaderboardRef = database.ref('leaderboard');
+        leaderboardRef.orderByChild('score').limitToLast(10).once('value', (snapshot) => {
+          const data = snapshot.val();
+          if (data) {
+            leaderboardData = Object.values(data).sort((a, b) => b.score - a.score);
+            updateLeaderboardDisplay();
+          }
+        });
+      } catch (e) {
+        console.error("Error loading leaderboard:", e);
+      }
     }
     
     function updateLeaderboardDisplay() {
@@ -398,7 +489,7 @@
         const row = document.createElement('tr');
         row.innerHTML = `
           <td>${index + 1}</td>
-          <td>${entry.name}</td>
+          <td>${entry.name || 'Anonymous'}</td>
           <td>${entry.score.toLocaleString()}</td>
           <td>${entry.stock}</td>
         `;
@@ -408,19 +499,43 @@
     
     // Save score to leaderboard
     function saveScore(name, score, stock) {
-      if (name.trim() === '') return;
+      if (name.trim() === '') name = 'Anonymous';
       
-      const newScoreRef = database.ref('leaderboard').push();
-      newScoreRef.set({
-        name: name,
-        score: score,
-        stock: stock,
-        timestamp: firebase.database.ServerValue.TIMESTAMP
-      }).then(() => {
-        loadLeaderboard();
-      }).catch(error => {
-        console.error('Error saving score:', error);
-      });
+      try {
+        const newScoreRef = database.ref('leaderboard').push();
+        newScoreRef.set({
+          name: name,
+          score: score,
+          stock: stock,
+          timestamp: firebase.database.ServerValue.TIMESTAMP
+        }).then(() => {
+          loadLeaderboard();
+        }).catch(error => {
+          console.error('Error saving score:', error);
+        });
+      } catch (e) {
+        console.error("Error saving score:", e);
+        
+        // Store locally if Firebase fails
+        let localLeaderboard = [];
+        try {
+          const savedLeaderboard = localStorage.getItem('localLeaderboard');
+          if (savedLeaderboard) {
+            localLeaderboard = JSON.parse(savedLeaderboard);
+          }
+        } catch (parseError) {
+          console.warn("Error parsing local leaderboard:", parseError);
+        }
+        
+        localLeaderboard.push({
+          name: name,
+          score: score,
+          stock: stock,
+          timestamp: new Date().getTime()
+        });
+        
+        localStorage.setItem('localLeaderboard', JSON.stringify(localLeaderboard));
+      }
     }
     
     // Create stars for background
@@ -433,6 +548,39 @@
           size: Math.random() * 2 + 1,
           brightness: Math.random()
         });
+      }
+    }
+    
+    // Generate terrain
+    function generateTerrain() {
+      terrain = [];
+      const segments = 20;
+      const width = canvas.width;
+      const segmentWidth = width / segments;
+      
+      // Starting point
+      let y = canvas.height - 100 - Math.random() * 100;
+      terrain.push({ x: 0, y, price: 100 });
+      
+      // Generate random terrain with some flat landing pads
+      for (let i = 1; i <= segments; i++) {
+        const x = i * segmentWidth;
+        
+        // Every 5 segments, create a flat landing pad
+        if (i % 5 === 0 && i < segments) {
+          terrain.push({ x, y, price: 100 + i * 5 });
+          // Keep the same y for next point to create flat surface
+          i++;
+          if (i <= segments) {
+            terrain.push({ x: i * segmentWidth, y, price: 100 + i * 5 });
+          }
+        } else {
+          // Random height changes for normal terrain
+          y += (Math.random() - 0.5) * 40;
+          // Keep terrain in reasonable bounds
+          y = Math.max(canvas.height - 250, Math.min(canvas.height - 50, y));
+          terrain.push({ x, y, price: 100 + i * 5 });
+        }
       }
     }
     
@@ -462,18 +610,53 @@
         crashed: false
       };
       
+      console.log("Loading terrain data for:", selectedStock);
+      
       // Load terrain data for selected stock
       fetch(`stock_${selectedStock}.json`)
-        .then(response => response.json())
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          return response.json();
+        })
         .then(data => {
+          console.log("Successfully loaded stock data:", data);
           stockData = data;
-          terrain = data.points;
-          document.getElementById('start-screen').style.display = 'none';
-          gameLoop();
+          
+          // Make sure the data has the expected format
+          if (data.points && Array.isArray(data.points) && data.points.length > 0) {
+            terrain = data.points;
+            document.getElementById('start-screen').style.display = 'none';
+            gameLoop();
+          } else {
+            throw new Error("Invalid terrain data format");
+          }
         })
         .catch(error => {
           console.error('Error loading terrain data:', error);
-          alert('Failed to load stock data. Please try again.');
+          
+          // Check if we have terrain in localStorage
+          const cachedTerrain = localStorage.getItem(`fallbackTerrain_${selectedStock}`);
+          if (cachedTerrain) {
+            try {
+              const parsedTerrain = JSON.parse(cachedTerrain);
+              console.log("Using cached terrain data from localStorage");
+              stockData = parsedTerrain;
+              terrain = parsedTerrain.points;
+              document.getElementById('start-screen').style.display = 'none';
+              gameLoop();
+              return;
+            } catch (parseError) {
+              console.error("Error parsing cached terrain:", parseError);
+            }
+          }
+          
+          // Generate fallback terrain
+          console.log("Generating fallback terrain data");
+          generateTerrain();
+          document.getElementById('start-screen').style.display = 'none';
+          gameLoop();
         });
     }
     
@@ -722,12 +905,19 @@
       }
       ctx.stroke();
       
+      // Fill terrain area
+      ctx.lineTo(canvas.width, canvas.height);
+      ctx.lineTo(0, canvas.height);
+      ctx.closePath();
+      ctx.fillStyle = '#030';
+      ctx.fill();
+      
       // Draw price info
       if (stockData.points && stockData.points.length > 0) {
         ctx.font = '12px Courier New';
         ctx.fillStyle = '#0f0';
         ctx.fillText(`${selectedStock}: $${stockData.points[stockData.points.length-1].price.toFixed(2)}`, 10, 20);
-        ctx.fillText(`Range: $${stockData.minP.toFixed(2)} - $${stockData.maxP.toFixed(2)}`, 10, 40);
+        ctx.fillText(`Range: $${stockData.minP?.toFixed(2) || 'N/A'} - $${stockData.maxP?.toFixed(2) || 'N/A'}`, 10, 40);
       }
       
       // Draw lander if not crashed
@@ -796,6 +986,11 @@
     
     // Load leaderboard on startup
     loadLeaderboard();
+    
+    // Initialize game canvas
+    createStars();
+    generateTerrain();
+    draw();
   </script>
 </body>
 </html>

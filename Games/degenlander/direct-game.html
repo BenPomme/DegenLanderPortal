@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DegenlLander - Direct Launch</title>
+  <style>
+    body {
+      font-family: 'Courier New', Courier, monospace;
+      background: #111;
+      color: #0f0;
+      text-align: center;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      color: #0f0;
+      text-shadow: 2px 2px #f00;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    select, button {
+      background: #222;
+      color: #0f0;
+      border: 1px solid #0f0;
+      padding: 10px 20px;
+      margin: 10px;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 1.2em;
+    }
+    button {
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0f0;
+      color: #000;
+    }
+    .error {
+      color: #f00;
+      margin: 20px;
+      padding: 10px;
+      border: 1px solid #f00;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>DEGEN LANDER DIRECT LAUNCH</h1>
+    <p>Choose a stock and start the game immediately:</p>
+    
+    <div>
+      <select id="stock-select">
+        <option value="AAPL">AAPL - Apple</option>
+        <option value="MSFT">MSFT - Microsoft</option>
+        <option value="GOOGL">GOOGL - Google</option>
+        <option value="AMZN">AMZN - Amazon</option>
+        <option value="TSLA">TSLA - Tesla</option>
+        <option value="META">META - Meta</option>
+        <option value="NVDA">NVDA - NVIDIA</option>
+        <option value="NFLX">NFLX - Netflix</option>
+      </select>
+      
+      <input type="text" id="player-name" placeholder="Your Name" value="Player">
+      
+      <button id="start-game">LAUNCH GAME</button>
+    </div>
+    
+    <div id="error-message" class="error" style="display:none;"></div>
+    
+    <div style="margin-top: 20px;">
+      <button id="test-stock-files">Test Stock Files</button>
+      <button id="generate-fallback">Generate Fallback Files</button>
+      <button id="home">Back to Home</button>
+    </div>
+    
+    <div id="test-results" style="text-align: left; margin-top: 20px;"></div>
+  </div>
+  
+  <script>
+    document.getElementById('start-game').addEventListener('click', () => {
+      const stockSymbol = document.getElementById('stock-select').value;
+      const playerName = document.getElementById('player-name').value || 'Player';
+      
+      // First check if the stock file exists
+      fetch(`stock_${stockSymbol}.json`)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`Stock data for ${stockSymbol} not found. Status: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then(data => {
+          // Stock data exists, launch the game
+          window.location.href = `game.html?stockSymbol=${stockSymbol}&playerName=${encodeURIComponent(playerName)}`;
+        })
+        .catch(error => {
+          console.error(error);
+          // Generate a fallback file
+          generateFallbackTerrain(stockSymbol);
+          // Then launch the game anyway
+          window.location.href = `game.html?stockSymbol=${stockSymbol}&playerName=${encodeURIComponent(playerName)}`;
+        });
+    });
+    
+    document.getElementById('test-stock-files').addEventListener('click', async () => {
+      const resultsDiv = document.getElementById('test-results');
+      resultsDiv.innerHTML = 'Testing stock files...';
+      
+      const stockSymbols = [
+        'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'META', 'NVDA', 'NFLX'
+      ];
+      
+      let resultsHTML = '';
+      
+      for (const symbol of stockSymbols) {
+        try {
+          const response = await fetch(`stock_${symbol}.json`);
+          if (!response.ok) {
+            resultsHTML += `<div style="color:#f00">❌ stock_${symbol}.json - Not found (${response.status})</div>`;
+            continue;
+          }
+          
+          const data = await response.json();
+          if (!data.points || !Array.isArray(data.points) || data.points.length === 0) {
+            resultsHTML += `<div style="color:#f00">❌ stock_${symbol}.json - Invalid data format</div>`;
+            continue;
+          }
+          
+          resultsHTML += `<div style="color:#0f0">✅ stock_${symbol}.json - ${data.points.length} points</div>`;
+        } catch (error) {
+          resultsHTML += `<div style="color:#f00">❌ stock_${symbol}.json - ${error.message}</div>`;
+        }
+      }
+      
+      resultsDiv.innerHTML = resultsHTML;
+    });
+    
+    document.getElementById('generate-fallback').addEventListener('click', () => {
+      const stockSymbol = document.getElementById('stock-select').value;
+      generateFallbackTerrain(stockSymbol);
+      
+      document.getElementById('test-results').innerHTML = 
+        `<div style="color:#0f0">Generated fallback terrain for ${stockSymbol}</div>`;
+    });
+    
+    document.getElementById('home').addEventListener('click', () => {
+      window.location.href = 'index.html';
+    });
+    
+    function generateFallbackTerrain(stockSymbol) {
+      const canvas = { width: 800, height: 600 };
+      const fallbackPoints = [];
+      const fallbackPrices = [];
+      const pointCount = 30;
+      const step = canvas.width / (pointCount - 1);
+      
+      // Generate random terrain
+      let currentPrice = 100 + Math.random() * 100;
+      for (let i = 0; i < pointCount; i++) {
+        currentPrice += (Math.random() - 0.48) * 5;
+        currentPrice = Math.max(50, Math.min(200, currentPrice));
+        fallbackPrices.push(currentPrice);
+      }
+      
+      const minP = Math.min(...fallbackPrices);
+      const maxP = Math.max(...fallbackPrices);
+      const range = maxP - minP;
+      
+      for (let i = 0; i < pointCount; i++) {
+        let x = i * step;
+        let normalized = (fallbackPrices[i] - minP) / (range || 1);
+        let y = canvas.height - normalized * (canvas.height * 0.5);
+        fallbackPoints.push({ x, y, price: fallbackPrices[i] });
+      }
+      
+      const fallbackData = {
+        points: fallbackPoints,
+        minP: minP,
+        maxP: maxP,
+        dates: Array(pointCount).fill().map((_, i) => "Day " + (i + 1)),
+        closePrice: fallbackPrices[fallbackPrices.length - 1]
+      };
+      
+      // Save to localStorage
+      localStorage.setItem(`fallbackTerrain_${stockSymbol}`, JSON.stringify(fallbackData));
+      
+      return fallbackData;
+    }
+  </script>
+</body>
+</html>
