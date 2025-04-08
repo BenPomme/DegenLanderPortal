@@ -22,7 +22,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          submodules: recursive
+          submodules: false  # Don't attempt to checkout submodules
       
       - name: Setup Pages
         uses: actions/configure-pages@v4
