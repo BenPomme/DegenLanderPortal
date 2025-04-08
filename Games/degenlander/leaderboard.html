@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>DEGEN LANDER - Leaderboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Import the retro font for a super degen look -->
+  <link href="https://fonts.googleapis.com/css?family=Press+Start+2P" rel="stylesheet">
+  <style>
+    body {
+      background: #222;
+      color: #0f0;
+      font-family: 'Press Start 2P', cursive;
+      text-align: center;
+      margin: 0;
+      padding: 20px;
+    }
+    h1, h2 {
+      text-shadow: 2px 2px 4px #000;
+      margin: 10px 0;
+    }
+    /* Container for both leaderboards */
+    #leaderboardContainer {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 20px;
+    }
+    .leaderboard {
+      background: #111;
+      border: 2px solid #0f0;
+      box-shadow: 0 0 20px rgba(0,255,0,0.5);
+      padding: 10px;
+      width: 45%;
+      min-width: 300px;
+    }
+    table {
+      margin: auto;
+      border-collapse: collapse;
+      width: 100%;
+    }
+    th, td {
+      border: 1px solid #0f0;
+      padding: 5px;
+    }
+    th {
+      background: #333;
+    }
+    tr:nth-child(even) {
+      background: #222;
+    }
+    /* Super Degen Prize section */
+    #superDegenPrize {
+      margin-top: 20px;
+      background: #111;
+      border: 2px solid #FF5F5F;
+      padding: 10px;
+      box-shadow: 0 0 20px rgba(255,0,0,0.5);
+      display: inline-block;
+    }
+    #superDegenPrize p {
+      margin: 10px 0;
+    }
+    #backToMenu {
+      padding: 10px 20px;
+      font-size: 16px;
+      border: 2px solid #FF5F5F;
+      background: transparent;
+      color: #fff;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Leaderboard</h1>
+  <div id="leaderboardContainer">
+    <!-- Normal Leaderboard: Sorted Descending (Highest score first) -->
+    <div class="leaderboard" id="normalLeaderboard">
+      <h2>Normal Leaderboard</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Player Name</th>
+            <th>Stock</th>
+            <th>Score</th>
+          </tr>
+        </thead>
+        <tbody id="normalLeaderboardBody"></tbody>
+      </table>
+    </div>
+    <!-- Degen Leaderboard: Sorted Ascending (Lowest score first) -->
+    <div class="leaderboard" id="degenLeaderboard">
+      <h2>Degen Leaderboard</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Player Name</th>
+            <th>Stock</th>
+            <th>Score</th>
+          </tr>
+        </thead>
+        <tbody id="degenLeaderboardBody"></tbody>
+      </table>
+    </div>
+  </div>
+  
+  <!-- Super Degen Prize Section -->
+  <div id="superDegenPrize"></div>
+  
+  <button id="backToMenu">Back to Menu</button>
+  
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getFirestore, collection, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCol18DWGnK9NgxDK2h7YwTOGGegNSlJGM",
+      authDomain: "degenlander.firebaseapp.com",
+      projectId: "degenlander",
+      storageBucket: "degenlander.firebasestorage.app",
+      messagingSenderId: "520104814068",
+      appId: "1:520104814068:web:07e9042a7077c603fa05a1",
+      measurementId: "G-38X89CMKNS"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    async function loadLeaderboards() {
+      const normalBody = document.getElementById("normalLeaderboardBody");
+      const degenBody = document.getElementById("degenLeaderboardBody");
+      normalBody.innerHTML = "";
+      degenBody.innerHTML = "";
+      
+      try {
+        // Query for Normal Leaderboard (Descending order)
+        const normalQuery = query(collection(db, "leaderboard"), orderBy("score", "desc"), limit(10));
+        const normalSnapshot = await getDocs(normalQuery);
+        let normalEntries = [];
+        normalSnapshot.forEach(doc => {
+          normalEntries.push(doc.data());
+        });
+        normalEntries.forEach(data => {
+          const row = document.createElement("tr");
+          row.innerHTML = `<td>${data.name}</td><td>${data.stock}</td><td>${data.score}</td>`;
+          normalBody.appendChild(row);
+        });
+        
+        // Query for Degen Leaderboard (Ascending order)
+        const degenQuery = query(collection(db, "leaderboard"), orderBy("score", "asc"), limit(10));
+        const degenSnapshot = await getDocs(degenQuery);
+        let degenEntries = [];
+        degenSnapshot.forEach(doc => {
+          degenEntries.push(doc.data());
+        });
+        degenEntries.forEach(data => {
+          const row = document.createElement("tr");
+          row.innerHTML = `<td>${data.name}</td><td>${data.stock}</td><td>${data.score}</td>`;
+          degenBody.appendChild(row);
+        });
+        
+        // Set up the Super Degen Prize (worst score = first entry in degenEntries)
+        if (degenEntries.length > 0) {
+          const worstEntry = degenEntries[0];
+          const superPrizeDiv = document.getElementById("superDegenPrize");
+          superPrizeDiv.innerHTML = `
+            <h2>Super Degen Prize</h2>
+            <p>Worst Score: ${worstEntry.score} by ${worstEntry.name} (${worstEntry.stock})</p>
+            <img src="https://content.imageresizer.com/images/memes/Brainlet-Stupid-meme-1.jpg" alt="Super Degen Prize" style="max-width:200px;">
+          `;
+        }
+      } catch (error) {
+        console.error("Error loading leaderboards:", error);
+      }
+    }
+
+    document.getElementById("backToMenu").addEventListener("click", () => {
+      window.location.href = "index.html";
+    });
+
+    window.onload = loadLeaderboards;
+  </script>
+  
+  <!-- Tipping Widget: Buy Me A Coffee -->
+  <script data-name="BMC-Widget" data-cfasync="false" src="https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js" 
+          data-id="degenben" 
+          data-description="Support me on Buy me a coffee!" 
+          data-message="Golden hands, tip me to see my wee wee." 
+          data-color="#FF5F5F" 
+          data-position="Right" 
+          data-x_margin="18" 
+          data-y_margin="18"></script>
+</body>
+</html>

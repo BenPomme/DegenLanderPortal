@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Degenlander - Land on the Fucking Moon!</title>
+  <style>
+    /* Retro degen style */
+    body {
+      background-color: #111;
+      color: #0f0;
+      font-family: 'Courier New', Courier, monospace;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+    }
+    
+    /* Navigation bar */
+    .nav-bar {
+      background-color: #222;
+      padding: 10px 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      border-bottom: 2px solid #0f0;
+    }
+    
+    .nav-bar a {
+      color: #0f0;
+      text-decoration: none;
+      margin: 0 15px;
+      font-size: 1em;
+      transition: all 0.2s ease;
+    }
+    
+    .nav-bar a:hover {
+      color: #fff;
+      text-shadow: 0 0 8px #0f0;
+    }
+    
+    h1 {
+      margin-top: 20px;
+      font-size: 3em;
+      text-shadow: 2px 2px #f00;
+    }
+    
+    .game-container {
+      margin: 20px auto;
+      width: 800px;
+      height: 600px;
+      position: relative;
+      border: 3px solid #0f0;
+      overflow: hidden;
+      background-color: #000;
+    }
+    
+    @media (max-width: 820px) {
+      .game-container {
+        width: 95%;
+        height: 450px;
+      }
+    }
+    
+    .start-screen {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.8);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 10;
+    }
+    
+    .start-screen h2 {
+      color: #f00;
+      text-shadow: 2px 2px #0f0;
+    }
+    
+    .start-screen select, .start-screen button {
+      background-color: #222;
+      color: #0f0;
+      border: 2px solid #0f0;
+      padding: 10px 20px;
+      margin: 10px;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 1.2em;
+      cursor: pointer;
+    }
+    
+    .start-screen button:hover {
+      background-color: #0f0;
+      color: #111;
+    }
+    
+    #controls {
+      margin: 20px auto;
+      padding: 10px;
+      background-color: #222;
+      border: 1px solid #0f0;
+      width: 80%;
+      max-width: 600px;
+    }
+    
+    /* Mobile controls */
+    .mobile-controls {
+      display: none;
+      width: 100%;
+      position: relative;
+      margin-top: 20px;
+    }
+    
+    .mobile-btn {
+      background-color: rgba(0, 255, 0, 0.2);
+      border: 1px solid #0f0;
+      color: #0f0;
+      padding: 15px 0;
+      width: 33.33%;
+      font-size: 1.5em;
+      display: inline-block;
+    }
+    
+    .mobile-btn:active {
+      background-color: rgba(0, 255, 0, 0.5);
+    }
+    
+    @media (max-width: 768px) {
+      .mobile-controls {
+        display: block;
+      }
+    }
+    
+    /* Status display */
+    #hud {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      text-align: right;
+      color: #0f0;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      z-index: 5;
+    }
+    
+    /* Game over screen */
+    #game-over {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.8);
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 10;
+    }
+    
+    #game-over h2 {
+      color: #f00;
+      font-size: 3em;
+      margin-bottom: 10px;
+    }
+    
+    #game-over p {
+      color: #0f0;
+      font-size: 1.5em;
+      margin: 5px 0;
+    }
+    
+    #game-over button {
+      background-color: #222;
+      color: #0f0;
+      border: 2px solid #0f0;
+      padding: 10px 20px;
+      margin-top: 20px;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 1.2em;
+      cursor: pointer;
+    }
+    
+    #game-over button:hover {
+      background-color: #0f0;
+      color: #111;
+    }
+    
+    /* Leaderboard */
+    .leaderboard {
+      margin: 20px auto;
+      width: 80%;
+      max-width: 600px;
+      background-color: #222;
+      border: 2px solid #0f0;
+      padding: 20px;
+    }
+    
+    .leaderboard h3 {
+      color: #f00;
+      text-shadow: 1px 1px #0f0;
+    }
+    
+    .leaderboard table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    
+    .leaderboard th, .leaderboard td {
+      border: 1px solid #0f0;
+      padding: 8px;
+      text-align: center;
+    }
+    
+    .leaderboard th {
+      background-color: rgba(0, 255, 0, 0.2);
+    }
+    
+    footer {
+      margin-top: 50px;
+      padding: 20px;
+      font-size: 0.9em;
+      border-top: 1px solid #0f0;
+    }
+    
+    /* Audio player */
+    #audio-controls {
+      margin: 10px auto;
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation Bar -->
+  <div class="nav-bar">
+    <a href="../../index.html">Home</a>
+    <a href="../../leaderboard.html">Leaderboard</a>
+    <a href="../AntsSimulator/index.html">Ants Simulator</a>
+    <a href="../NerdSoccer/PenFootballGameWithWallBounce.html">Nerd Soccer</a>
+  </div>
+
+  <h1>Degenlander 🚀💎🙌</h1>
+  <p>Select a fucking stock and land that shit! Don't crash or you'll lose everything.</p>
+  
+  <div id="audio-controls">
+    <button onclick="toggleAudio()" id="audio-btn">Play Music</button>
+    <audio id="background-music" loop>
+      <source src="STI.mp3" type="audio/mpeg">
+    </audio>
+  </div>
+  
+  <div class="game-container">
+    <div id="hud">
+      <div>Fuel: <span id="fuel">100</span>%</div>
+      <div>Velocity X: <span id="velocity-x">0</span></div>
+      <div>Velocity Y: <span id="velocity-y">0</span></div>
+      <div>Score: <span id="score">0</span></div>
+    </div>
+    
+    <canvas id="game-canvas" width="800" height="600"></canvas>
+    
+    <div class="start-screen" id="start-screen">
+      <h2>Choose a fucking stock to land on:</h2>
+      <select id="stock-select">
+        <!-- Stock options will be loaded dynamically -->
+      </select>
+      <button id="start-btn">LFG!!! 🚀</button>
+      <p>Controls: Arrow keys to move, Space to activate double-down boost</p>
+    </div>
+    
+    <div id="game-over">
+      <h2>FUCKING REKT!</h2>
+      <p>You <span id="game-result">crashed</span>!</p>
+      <p>Final Score: <span id="final-score">0</span></p>
+      <p>Enter your name for the leaderboard:</p>
+      <input type="text" id="player-name" maxlength="10" placeholder="Your name">
+      <button id="save-score">Save Score</button>
+      <button id="play-again">Play Again</button>
+    </div>
+  </div>
+  
+  <div class="mobile-controls">
+    <span class="mobile-btn" id="left-btn">⬅️</span>
+    <span class="mobile-btn" id="thrust-btn">🔥</span>
+    <span class="mobile-btn" id="right-btn">➡️</span>
+  </div>
+  
+  <div id="controls">
+    <h3>How to Play:</h3>
+    <p>↑ or W = Thrust</p>
+    <p>← or A = Rotate Left</p>
+    <p>→ or D = Rotate Right</p>
+    <p>Space = Double Down (2x Thrust + 2x Score Multiplier, high risk!)</p>
+    <p>Goal: Land smoothly on the terrain. Vertical speed must be under 1.5 at landing.</p>
+  </div>
+  
+  <div class="leaderboard">
+    <h3>Top Diamond Hands:</h3>
+    <div id="leaderboard-container">
+      <table id="leaderboard">
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Name</th>
+            <th>Score</th>
+            <th>Stock</th>
+          </tr>
+        </thead>
+        <tbody id="leaderboard-body">
+          <!-- Leaderboard entries will be loaded dynamically -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+  
+  <footer>
+    <p>HODL forever. Not financial advice. Your results may vary. Moon landing not guaranteed.</p>
+    <img src="bmc_qr.png" alt="Buy me a coffee" width="100">
+  </footer>
+  
+  <!-- Firebase scripts -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <script>
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyCol18DWGnK9NgxDK2h7YwTOGGegNSlJGM",
+      authDomain: "degenlander.firebaseapp.com",
+      projectId: "degenlander",
+      storageBucket: "degenlander.firebasestorage.app",
+      messagingSenderId: "520104814068",
+      appId: "1:520104814068:web:07e9042a7077c603fa05a1",
+      measurementId: "G-38X89CMKNS"
+    };
+    
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+    
+    // Game variables
+    let canvas = document.getElementById('game-canvas');
+    let ctx = canvas.getContext('2d');
+    let gameRunning = false;
+    let keys = {};
+    let lander = {};
+    let terrain = [];
+    let stars = [];
+    let particles = [];
+    let score = 0;
+    let selectedStock = '';
+    let stockData = {};
+    let leaderboardData = [];
+    
+    // Audio control
+    function toggleAudio() {
+      const audio = document.getElementById('background-music');
+      const btn = document.getElementById('audio-btn');
+      
+      if (audio.paused) {
+        audio.play();
+        btn.textContent = 'Mute Music';
+      } else {
+        audio.pause();
+        btn.textContent = 'Play Music';
+      }
+    }
+    
+    // Load available stocks
+    fetch('stocks.json')
+      .then(response => response.json())
+      .then(data => {
+        const select = document.getElementById('stock-select');
+        data.forEach(stock => {
+          const option = document.createElement('option');
+          option.value = stock.ticker;
+          option.textContent = `${stock.ticker} - ${stock.name} ($${stock.price.toFixed(2)})`;
+          select.appendChild(option);
+        });
+        selectedStock = data[0].ticker;
+      })
+      .catch(error => console.error('Error loading stocks:', error));
+    
+    // Load leaderboard
+    function loadLeaderboard() {
+      const leaderboardRef = database.ref('leaderboard');
+      leaderboardRef.orderByChild('score').limitToLast(10).once('value', (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          leaderboardData = Object.values(data).sort((a, b) => b.score - a.score);
+          updateLeaderboardDisplay();
+        }
+      });
+    }
+    
+    function updateLeaderboardDisplay() {
+      const tbody = document.getElementById('leaderboard-body');
+      tbody.innerHTML = '';
+      
+      leaderboardData.forEach((entry, index) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${index + 1}</td>
+          <td>${entry.name}</td>
+          <td>${entry.score.toLocaleString()}</td>
+          <td>${entry.stock}</td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+    
+    // Save score to leaderboard
+    function saveScore(name, score, stock) {
+      if (name.trim() === '') return;
+      
+      const newScoreRef = database.ref('leaderboard').push();
+      newScoreRef.set({
+        name: name,
+        score: score,
+        stock: stock,
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+      }).then(() => {
+        loadLeaderboard();
+      }).catch(error => {
+        console.error('Error saving score:', error);
+      });
+    }
+    
+    // Create stars for background
+    function createStars() {
+      stars = [];
+      for (let i = 0; i < 100; i++) {
+        stars.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          size: Math.random() * 2 + 1,
+          brightness: Math.random()
+        });
+      }
+    }
+    
+    // Initialize game
+    function initGame() {
+      // Reset game state
+      gameRunning = true;
+      score = 0;
+      particles = [];
+      
+      // Create stars
+      createStars();
+      
+      // Initialize lander
+      lander = {
+        x: canvas.width / 2,
+        y: 50,
+        width: 20,
+        height: 30,
+        velocityX: 0,
+        velocityY: 0,
+        rotation: 0,
+        fuel: 100,
+        thrusting: false,
+        doubleDown: false,
+        landed: false,
+        crashed: false
+      };
+      
+      // Load terrain data for selected stock
+      fetch(`stock_${selectedStock}.json`)
+        .then(response => response.json())
+        .then(data => {
+          stockData = data;
+          terrain = data.points;
+          document.getElementById('start-screen').style.display = 'none';
+          gameLoop();
+        })
+        .catch(error => {
+          console.error('Error loading terrain data:', error);
+          alert('Failed to load stock data. Please try again.');
+        });
+    }
+    
+    // Start game
+    document.getElementById('start-btn').addEventListener('click', () => {
+      selectedStock = document.getElementById('stock-select').value;
+      initGame();
+    });
+    
+    // Event listeners for keyboard controls
+    window.addEventListener('keydown', (e) => {
+      keys[e.key] = true;
+    });
+    
+    window.addEventListener('keyup', (e) => {
+      keys[e.key] = false;
+    });
+    
+    // Mobile controls
+    document.getElementById('left-btn').addEventListener('touchstart', () => { keys['ArrowLeft'] = true; });
+    document.getElementById('left-btn').addEventListener('touchend', () => { keys['ArrowLeft'] = false; });
+    document.getElementById('thrust-btn').addEventListener('touchstart', () => { keys['ArrowUp'] = true; });
+    document.getElementById('thrust-btn').addEventListener('touchend', () => { keys['ArrowUp'] = false; });
+    document.getElementById('right-btn').addEventListener('touchstart', () => { keys['ArrowRight'] = true; });
+    document.getElementById('right-btn').addEventListener('touchend', () => { keys['ArrowRight'] = false; });
+    
+    // Game loop
+    function gameLoop() {
+      if (!gameRunning) return;
+      
+      update();
+      draw();
+      
+      requestAnimationFrame(gameLoop);
+    }
+    
+    // Update game state
+    function update() {
+      if (lander.landed || lander.crashed) return;
+      
+      // Update score
+      score += lander.doubleDown ? 2 : 1;
+      document.getElementById('score').textContent = score.toLocaleString();
+      
+      // Handle input
+      if ((keys['ArrowUp'] || keys['w'] || keys['W']) && lander.fuel > 0) {
+        const thrustPower = lander.doubleDown ? 0.08 : 0.04;
+        lander.velocityX += Math.sin(lander.rotation) * thrustPower;
+        lander.velocityY -= Math.cos(lander.rotation) * thrustPower;
+        lander.fuel -= lander.doubleDown ? 0.4 : 0.2;
+        lander.thrusting = true;
+        
+        // Add thrust particles
+        for (let i = 0; i < 3; i++) {
+          particles.push({
+            x: lander.x - Math.sin(lander.rotation) * 15,
+            y: lander.y + Math.cos(lander.rotation) * 15,
+            velocityX: -Math.sin(lander.rotation) * (Math.random() * 2 + 1),
+            velocityY: Math.cos(lander.rotation) * (Math.random() * 2 + 1),
+            size: Math.random() * 3 + 1,
+            life: 30
+          });
+        }
+      } else {
+        lander.thrusting = false;
+      }
+      
+      if (keys['ArrowLeft'] || keys['a'] || keys['A']) {
+        lander.rotation -= 0.05;
+      }
+      
+      if (keys['ArrowRight'] || keys['d'] || keys['D']) {
+        lander.rotation += 0.05;
+      }
+      
+      // Double down mode
+      lander.doubleDown = (keys[' '] && lander.fuel > 0);
+      
+      // Apply gravity
+      lander.velocityY += 0.02;
+      
+      // Update position
+      lander.x += lander.velocityX;
+      lander.y += lander.velocityY;
+      
+      // Boundary checking
+      if (lander.x < 0) lander.x = 0;
+      if (lander.x > canvas.width) lander.x = canvas.width;
+      
+      // Update HUD
+      document.getElementById('fuel').textContent = Math.max(0, Math.floor(lander.fuel));
+      document.getElementById('velocity-x').textContent = lander.velocityX.toFixed(2);
+      document.getElementById('velocity-y').textContent = lander.velocityY.toFixed(2);
+      
+      // Update particles
+      for (let i = particles.length - 1; i >= 0; i--) {
+        particles[i].x += particles[i].velocityX;
+        particles[i].y += particles[i].velocityY;
+        particles[i].life--;
+        
+        if (particles[i].life <= 0) {
+          particles.splice(i, 1);
+        }
+      }
+      
+      // Check for collision with terrain
+      checkLanding();
+    }
+    
+    // Check if lander has landed or crashed
+    function checkLanding() {
+      // Get lander corners
+      const corners = [
+        { x: lander.x, y: lander.y },
+        { x: lander.x + Math.sin(lander.rotation + Math.PI/4) * 15, y: lander.y - Math.cos(lander.rotation + Math.PI/4) * 15 },
+        { x: lander.x + Math.sin(lander.rotation - Math.PI/4) * 15, y: lander.y - Math.cos(lander.rotation - Math.PI/4) * 15 }
+      ];
+      
+      // Check each terrain segment
+      for (let i = 0; i < terrain.length - 1; i++) {
+        const t1 = terrain[i];
+        const t2 = terrain[i + 1];
+        
+        // Check if any corner is below terrain
+        for (const corner of corners) {
+          if (corner.x >= t1.x && corner.x <= t2.x) {
+            // Interpolate terrain height at this x-coordinate
+            const terrainY = t1.y + (t2.y - t1.y) * (corner.x - t1.x) / (t2.x - t1.x);
+            
+            if (corner.y >= terrainY) {
+              // Collision detected
+              if (lander.velocityY < 1.5 && Math.abs(lander.velocityX) < 1 && Math.abs(lander.rotation % (2 * Math.PI)) < 0.3) {
+                // Successful landing
+                lander.landed = true;
+                lander.y = terrainY - 15; // Adjust position to sit on terrain
+                endGame(true);
+              } else {
+                // Crash
+                lander.crashed = true;
+                createExplosion(lander.x, lander.y);
+                endGame(false);
+              }
+              return;
+            }
+          }
+        }
+      }
+      
+      // Check if out of bounds (bottom)
+      if (lander.y > canvas.height + 50) {
+        lander.crashed = true;
+        endGame(false);
+      }
+    }
+    
+    // Create explosion particles
+    function createExplosion(x, y) {
+      for (let i = 0; i < 50; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 5 + 2;
+        particles.push({
+          x: x,
+          y: y,
+          velocityX: Math.cos(angle) * speed,
+          velocityY: Math.sin(angle) * speed,
+          size: Math.random() * 4 + 2,
+          life: Math.random() * 60 + 30,
+          color: `hsl(${Math.floor(Math.random() * 30)}, 100%, 50%)`
+        });
+      }
+    }
+    
+    // End game
+    function endGame(success) {
+      gameRunning = false;
+      
+      // Show game over screen
+      const gameOverScreen = document.getElementById('game-over');
+      gameOverScreen.style.display = 'flex';
+      
+      document.getElementById('game-result').textContent = success ? 'landed successfully' : 'crashed';
+      
+      // Apply bonus for successful landing
+      if (success) {
+        score *= 2; // Double score for successful landing
+      }
+      
+      document.getElementById('final-score').textContent = score.toLocaleString();
+      
+      // Set up buttons
+      document.getElementById('save-score').onclick = () => {
+        const playerName = document.getElementById('player-name').value;
+        saveScore(playerName, score, selectedStock);
+        document.getElementById('save-score').disabled = true;
+      };
+      
+      document.getElementById('play-again').onclick = () => {
+        gameOverScreen.style.display = 'none';
+        document.getElementById('start-screen').style.display = 'flex';
+        document.getElementById('player-name').value = '';
+        document.getElementById('save-score').disabled = false;
+      };
+    }
+    
+    // Draw game
+    function draw() {
+      // Clear canvas
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // Draw stars
+      ctx.fillStyle = '#fff';
+      for (const star of stars) {
+        const flicker = 0.75 + Math.sin(Date.now() * 0.001 + star.brightness * 10) * 0.25;
+        ctx.globalAlpha = flicker * star.brightness;
+        ctx.beginPath();
+        ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      
+      // Draw particles
+      for (const particle of particles) {
+        if (particle.color) {
+          ctx.fillStyle = particle.color;
+        } else {
+          ctx.fillStyle = lander.doubleDown ? '#f00' : '#ff7';
+        }
+        ctx.globalAlpha = particle.life / 30;
+        ctx.beginPath();
+        ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      
+      // Draw terrain
+      ctx.strokeStyle = '#0f0';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let i = 0; i < terrain.length; i++) {
+        if (i === 0) {
+          ctx.moveTo(terrain[i].x, terrain[i].y);
+        } else {
+          ctx.lineTo(terrain[i].x, terrain[i].y);
+        }
+      }
+      ctx.stroke();
+      
+      // Draw price info
+      if (stockData.points && stockData.points.length > 0) {
+        ctx.font = '12px Courier New';
+        ctx.fillStyle = '#0f0';
+        ctx.fillText(`${selectedStock}: $${stockData.points[stockData.points.length-1].price.toFixed(2)}`, 10, 20);
+        ctx.fillText(`Range: $${stockData.minP.toFixed(2)} - $${stockData.maxP.toFixed(2)}`, 10, 40);
+      }
+      
+      // Draw lander if not crashed
+      if (!lander.crashed) {
+        ctx.save();
+        ctx.translate(lander.x, lander.y);
+        ctx.rotate(lander.rotation);
+        
+        // Draw ship body
+        ctx.fillStyle = '#ddd';
+        ctx.beginPath();
+        ctx.moveTo(0, -15);
+        ctx.lineTo(10, 15);
+        ctx.lineTo(-10, 15);
+        ctx.closePath();
+        ctx.fill();
+        
+        // Draw windows
+        ctx.fillStyle = '#5df';
+        ctx.beginPath();
+        ctx.arc(0, -5, 5, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Draw landing gear
+        ctx.strokeStyle = '#aaa';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(-8, 10);
+        ctx.lineTo(-12, 18);
+        ctx.moveTo(8, 10);
+        ctx.lineTo(12, 18);
+        ctx.stroke();
+        
+        // Draw thruster flame if thrusting
+        if (lander.thrusting) {
+          ctx.fillStyle = lander.doubleDown ? '#f00' : '#f80';
+          ctx.beginPath();
+          ctx.moveTo(-5, 15);
+          ctx.lineTo(5, 15);
+          ctx.lineTo(0, 15 + Math.random() * 10 + 10);
+          ctx.closePath();
+          ctx.fill();
+        }
+        
+        // Double-down indicator
+        if (lander.doubleDown) {
+          ctx.strokeStyle = '#f00';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(0, 0, 20, 0, Math.PI * 2);
+          ctx.stroke();
+          
+          // Pulse effect
+          const pulse = 0.5 + Math.sin(Date.now() * 0.01) * 0.5;
+          ctx.globalAlpha = pulse;
+          ctx.strokeStyle = '#f66';
+          ctx.beginPath();
+          ctx.arc(0, 0, 25, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+        }
+        
+        ctx.restore();
+      }
+    }
+    
+    // Load leaderboard on startup
+    loadLeaderboard();
+  </script>
+</body>
+</html>
