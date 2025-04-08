@@ -4,6 +4,7 @@ import time
 import os
 
 API_KEY = "KGONF7JN3HYIGUWO"  # Consider using environment variables in production
+MAX_STOCKS_TO_PROCESS = 3  # Alpha Vantage has rate limits (5 API calls per minute on free tier)
 
 stocks = [
     {"ticker": "AAPL", "name": "Apple Inc."},
@@ -55,9 +56,8 @@ def compute_terrain(stock_data, canvas_width=800, canvas_height=600):
     }
     return terrain
 
-# For testing, just process the first few stocks to avoid rate limits
-# Remove the slice [:3] for full production run
-for stock in stocks[:3]:
+# Process a limited number of stocks to avoid rate limits
+for stock in stocks[:MAX_STOCKS_TO_PROCESS]:
     ticker = stock["ticker"]
     url = f"https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol={ticker}&apikey={API_KEY}"
     print(f"Fetching data for {ticker}")

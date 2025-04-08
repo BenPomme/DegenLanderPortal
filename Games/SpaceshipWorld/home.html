@@ -362,8 +362,8 @@
     <p><span class="tutorialKey">↓</span> Accelerate backward</p>
     <p><span class="tutorialKey">←</span> <span class="tutorialKey">→</span> Rotate ship</p>
     <p>Your goal is to explore the universe and collect all upgrades while managing your fuel.</p>
-    <p>Complete all 5 rounds to win\!</p>
-    <button id="closeTutorial">Got it\!</button>
+    <p>Complete all 5 rounds to win!</p>
+    <button id="closeTutorial">Got it!</button>
   </div>
 
   <script>
@@ -372,7 +372,7 @@
     function updateLeaderboard() {
       leaderboard.sort((a,b)=> b.score - a.score);
       const leaderboardList = document.getElementById('leaderboardList');
-      if (\!leaderboardList) return;
+      if (!leaderboardList) return;
       
       leaderboardList.innerHTML='';
       for(let i=0; i<leaderboard.length && i<10; i++){
