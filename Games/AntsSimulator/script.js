@@ -910,21 +910,169 @@ class Bullet {
     distanceTo(entity) { return Math.hypot(this.x - entity.x, this.y - entity.y); }
 }
 
-// Load Images using verified working placeholder URLs
-const antImage = new Image(); 
-antImage.src = 'https://via.placeholder.com/50/00ff00/000000?text=Ant';
-const workerAntImage = new Image(); 
-workerAntImage.src = 'https://via.placeholder.com/50/ff00ff/000000?text=Worker+Ant';
-const soldierAntImage = new Image(); 
-soldierAntImage.src = 'https://via.placeholder.com/50/ff0000/000000?text=Soldier+Ant';
-const smartyImage = new Image(); 
-smartyImage.src = 'https://via.placeholder.com/50/0000ff/ffffff?text=Smarty';
-const aggressiveSmartyImage = new Image(); 
-aggressiveSmartyImage.src = 'https://via.placeholder.com/50/ffa500/000000?text=Agg+Smarty';
-const defensiveSmartyImage = new Image(); 
-defensiveSmartyImage.src = 'https://via.placeholder.com/50/00ffff/000000?text=Def+Smarty';
-const obstacleImage = new Image(); 
-obstacleImage.src = 'https://via.placeholder.com/50/cccccc/000000?text=Obs';
+// ---------------------------------------------------------------------------
+// Sprite factory.
+//
+// These used to be <img> tags pointed at https://via.placeholder.com/... which is
+// a dead service, so every ant rendered as an empty box (or nothing at all).
+// They are now drawn procedurally onto offscreen <canvas> elements. ctx.drawImage()
+// accepts a canvas exactly like an image, so every call site below is unchanged,
+// but the game now has zero external asset dependencies and looks far better.
+// ---------------------------------------------------------------------------
+const SPRITE_SIZE = 50;
+
+function makeSprite(drawFn, size = SPRITE_SIZE) {
+  const c = document.createElement('canvas');
+  c.width = size;
+  c.height = size;
+  const g = c.getContext('2d');
+  drawFn(g, size);
+  return c;
+}
+
+/** Shared ant body. `angle` is unused here; the engine rotates via transform. */
+function drawAntBody(g, s, opts) {
+  const cx = s / 2, cy = s / 2;
+  const { body, accent, glow, mandibles, shield, brain, angry } = opts;
+
+  g.save();
+  g.shadowColor = glow;
+  g.shadowBlur = 6;
+
+  // legs
+  g.strokeStyle = accent;
+  g.lineWidth = 1.6;
+  for (const side of [-1, 1]) {
+    for (let i = 0; i < 3; i++) {
+      const y = cy - 4 + i * 4;
+      g.beginPath();
+      g.moveTo(cx + side * 3, y);
+      g.quadraticCurveTo(cx + side * 9, y + 1, cx + side * 11, y + 6);
+      g.stroke();
+    }
+  }
+
+  // abdomen
+  g.fillStyle = body;
+  g.beginPath();
+  g.ellipse(cx, cy + 6, 6.5, 8.5, 0, 0, Math.PI * 2);
+  g.fill();
+
+  // thorax
+  g.beginPath();
+  g.ellipse(cx, cy - 1, 4.6, 5.4, 0, 0, Math.PI * 2);
+  g.fill();
+
+  // head
+  g.beginPath();
+  g.arc(cx, cy - 10, 4.4, 0, Math.PI * 2);
+  g.fill();
+
+  // antennae
+  g.strokeStyle = accent;
+  g.lineWidth = 1.4;
+  for (const side of [-1, 1]) {
+    g.beginPath();
+    g.moveTo(cx + side * 2, cy - 12);
+    g.quadraticCurveTo(cx + side * 6, cy - 17, cx + side * 9, cy - 15);
+    g.stroke();
+  }
+
+  // eyes
+  g.shadowBlur = 0;
+  g.fillStyle = angry ? '#ff2d55' : '#eaffea';
+  for (const side of [-1, 1]) {
+    g.beginPath();
+    g.arc(cx + side * 1.9, cy - 11, 1.2, 0, Math.PI * 2);
+    g.fill();
+  }
+  if (angry) {
+    g.strokeStyle = '#fff';
+    g.lineWidth = 0.9;
+    for (const side of [-1, 1]) {
+      g.beginPath();
+      g.moveTo(cx + side * 0.4, cy - 13.4);
+      g.lineTo(cx + side * 3.4, cy - 11.6);
+      g.stroke();
+    }
+  }
+
+  if (mandibles) {
+    g.strokeStyle = accent;
+    g.lineWidth = 1.5;
+    for (const side of [-1, 1]) {
+      g.beginPath();
+      g.moveTo(cx + side * 2.5, cy - 8);
+      g.quadraticCurveTo(cx + side * 6, cy - 6, cx + side * 4, cy - 3);
+      g.stroke();
+    }
+  }
+
+  if (brain) {
+    g.fillStyle = '#e6f0ff';
+    g.beginPath();
+    g.arc(cx, cy - 14.5, 3.6, Math.PI, Math.PI * 2);
+    g.fill();
+    g.strokeStyle = accent;
+    g.lineWidth = 0.7;
+    g.beginPath();
+    g.moveTo(cx - 3, cy - 14.5);
+    g.lineTo(cx + 3, cy - 14.5);
+    g.stroke();
+  }
+
+  if (shield) {
+    g.fillStyle = accent;
+    g.globalAlpha = 0.85;
+    g.beginPath();
+    g.moveTo(cx + 7, cy - 4);
+    g.lineTo(cx + 14, cy - 1);
+    g.lineTo(cx + 14, cy + 7);
+    g.lineTo(cx + 7, cy + 10);
+    g.closePath();
+    g.fill();
+    g.globalAlpha = 1;
+  }
+
+  g.restore();
+}
+
+const antImage = makeSprite((g, s) =>
+  drawAntBody(g, s, { body: '#00ff7f', accent: '#0affc8', glow: '#00ff7f', mandibles: false }));
+const workerAntImage = makeSprite((g, s) =>
+  drawAntBody(g, s, { body: '#ff4ce0', accent: '#ff9df0', glow: '#ff4ce0', mandibles: false }));
+const soldierAntImage = makeSprite((g, s) =>
+  drawAntBody(g, s, { body: '#ff2d55', accent: '#ff8a9c', glow: '#ff2d55', mandibles: true }));
+const smartyImage = makeSprite((g, s) =>
+  drawAntBody(g, s, { body: '#3d6bff', accent: '#9db4ff', glow: '#3d6bff', brain: true }));
+const aggressiveSmartyImage = makeSprite((g, s) =>
+  drawAntBody(g, s, { body: '#ffa500', accent: '#ffd27f', glow: '#ffa500', brain: true, angry: true, mandibles: true }));
+const defensiveSmartyImage = makeSprite((g, s) =>
+  drawAntBody(g, s, { body: '#00e5ff', accent: '#8ff5ff', glow: '#00e5ff', brain: true, shield: true }));
+
+const obstacleImage = makeSprite((g, s) => {
+  const cx = s / 2, cy = s / 2;
+  g.shadowColor = '#7a7a7a';
+  g.shadowBlur = 5;
+  g.fillStyle = '#4a4a4a';
+  g.beginPath();
+  g.moveTo(cx - 11, cy + 8);
+  g.lineTo(cx - 7, cy - 6);
+  g.lineTo(cx + 1, cy - 11);
+  g.lineTo(cx + 10, cy - 3);
+  g.lineTo(cx + 8, cy + 9);
+  g.lineTo(cx - 3, cy + 11);
+  g.closePath();
+  g.fill();
+  g.shadowBlur = 0;
+  g.fillStyle = '#6f6f6f';
+  g.beginPath();
+  g.moveTo(cx - 6, cy - 4);
+  g.lineTo(cx + 1, cy - 9);
+  g.lineTo(cx + 5, cy - 2);
+  g.closePath();
+  g.fill();
+});
 
 // Initialize Entities, Obstacles, Resources
 function initializeEntities() {

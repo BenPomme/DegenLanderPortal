@@ -1,8 +1,9 @@
-<\!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
   <title>Spaceship World - Fly to New Heights</title>
+  <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
   <style>
     /*****************************************
      * Game styling
@@ -19,7 +20,7 @@
     }
 
     #menu {
-      min-height: 100vh;
+      min-height: calc(100vh - var(--d-nav-h, 54px));
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -97,7 +98,7 @@
     /* Game Container */
     #gameContainer {
       width: 100%;
-      min-height: 100vh;
+      min-height: calc(100vh - var(--d-nav-h, 54px));
       display: none;
       flex-direction: column;
       align-items: center;
@@ -304,14 +305,14 @@
     }
   </style>
   
-  <\!-- Import shared DegenlanderPortal libraries -->
+  <!-- Import shared DegenlanderPortal libraries -->
   <script src="../../js/degen-theme.js"></script>
   <script src="../../js/sound-effects.js"></script>
 </head>
 <body>
   <div id="menu">
     <h1>SPACESHIP WORLD</h1>
-    <p>Enter your name and start the 5-round challenge\!</p>
+    <p>Enter your name and start the 5-round challenge!</p>
     <input type="text" id="playerName" placeholder="Your Name">
     <button id="startGameBtn">Start Game</button>
 
@@ -339,15 +340,15 @@
     <button id="restartBtn">Restart</button>
   </div>
 
-  <\!-- The hidden popup for upgrade choice -->
+  <!-- The hidden popup for upgrade choice -->
   <div id="upgradeModal">
-    <h2>Upgrade ExoPlanet Found\!</h2>
+    <h2>Upgrade ExoPlanet Found!</h2>
     <p>Pick your upgrade:</p>
     <button class="upgradeBtn" id="biggerTankBtn">Bigger Tank</button>
     <button class="upgradeBtn" id="fasterRocketBtn">Faster Rocket</button>
   </div>
 
-  <\!-- Touch Controls for mobile -->
+  <!-- Touch Controls for mobile -->
   <div id="touchControls">
     <div class="touchBtn" id="touchLeft">←</div>
     <div class="touchBtn" id="touchUp">↑</div>
@@ -355,7 +356,7 @@
     <div class="touchBtn" id="touchRight">→</div>
   </div>
   
-  <\!-- Tutorial Panel -->
+  <!-- Tutorial Panel -->
   <div id="tutorialPanel">
     <h2>How to Play</h2>
     <p><span class="tutorialKey">↑</span> Accelerate forward</p>
@@ -444,7 +445,15 @@
         let ax=Math.random()* WORLD_WIDTH;
         let ay=Math.random()* WORLD_HEIGHT;
         let r=15+ Math.random()*20;
-        arr.push({ x:ax, y:ay, r });
+        // rot / rotSpeed / shape drive the faceted look in draw()
+        let shape=[];
+        for(let k=0;k<7;k++) shape.push(Math.random());
+        arr.push({
+          x: ax, y: ay, r: r,
+          rot: Math.random()*Math.PI*2,
+          rotSpeed: (Math.random()-0.5)*0.012,
+          shape: shape
+        });
       }
       return arr;
     }
@@ -503,7 +512,7 @@
     let audioCtx=null;
     function playBeep(){
       try{
-        if(\!audioCtx) audioCtx=new AudioContext();
+        if(!audioCtx) audioCtx=new AudioContext();
         const osc= audioCtx.createOscillator();
         osc.type='sine';
         osc.frequency.value=440;
@@ -533,8 +542,9 @@
       playerName = playerNameInput.value.trim() || 'Anonymous';
       showGame();
       startNewGame();
+      startGameLoop();
       // Also play sound effect if available
-      if (typeof DegenSound \!== 'undefined') {
+      if (typeof DegenSound !== 'undefined') {
         DegenSound.play('game', 'powerUp');
       }
     }
@@ -573,7 +583,7 @@
     function finalizeRun(){
       leaderboard.push({ name: playerName, score: totalMoney });
       updateLeaderboard();
-      info.textContent='All 5 rounds done\! You got '+ totalMoney +' money total. Return to menu.';
+      info.textContent='All 5 rounds done! You got '+ totalMoney +' money total. Return to menu.';
       restartBtn.textContent='Return to Menu';
       restartBtn.style.display='inline-block';
       gameState='allDone';
@@ -627,6 +637,15 @@
       }
     }
 
+    // The original code defined gameLoop() but never called it from anywhere, so
+    // the canvas was never painted: the game "started" and stayed completely blank.
+    // startGameLoop() is idempotent so it is safe to call from both init and start.
+    let loopStarted = false;
+    function startGameLoop(){
+      if(loopStarted) return;
+      loopStarted = true;
+      requestAnimationFrame(gameLoop);
+    }
     function gameLoop(){
       update();
       draw();
@@ -634,6 +653,11 @@
     }
 
     function update(){
+      // Spin the asteroids so the faceted look reads as tumbling rock.
+      for(let i=0;i<asteroids.length;i++){
+        asteroids[i].rot += asteroids[i].rotSpeed;
+      }
+
       if(gameState==='playing'){
         updateSpaceFlight();
       } else if(gameState==='moonLander'){
@@ -676,7 +700,7 @@
       rocketY+= rocketVY;
 
       if(fuel<=0){
-        endRoundCollision('You ran out of fuel\!');
+        endRoundCollision('You ran out of fuel!');
         return;
       }
 
@@ -715,7 +739,7 @@
         let px= sunX+ orbitRadius*Math.cos(planetAngle);
         let py= sunY+ orbitRadius*Math.sin(planetAngle);
         rocketX= px; rocketY= py-150;
-        showAnnouncement('Moon Lander sub-phase\! Press Up to slow descent.');
+        showAnnouncement('Moon Lander sub-phase! Press Up to slow descent.');
       }
 
       centerCameraOnRocket();
@@ -727,7 +751,7 @@
       let dy= rocketY- sunY;
       let dist= Math.sqrt(dx*dx+ dy*dy);
       if(dist< rocketRadius+ sunRadius){
-        endRoundCollision('You flew into the Sun\!');
+        endRoundCollision('You flew into the Sun!');
         return 'sun';
       }
       let planetX= sunX+ orbitRadius*Math.cos(planetAngle);
@@ -743,7 +767,7 @@
         dy= rocketY- a.y;
         dist= Math.sqrt(dx*dx+ dy*dy);
         if(dist< rocketRadius+ a.r){
-          endRoundCollision('Hit an asteroid\!');
+          endRoundCollision('Hit an asteroid!');
           return 'asteroid';
         }
       }
@@ -780,7 +804,7 @@
     }
 
     function endRoundCollision(msg){
-      info.textContent= msg +' Round Over\! +'+ fuel +' money.';
+      info.textContent= msg +' Round Over! +'+ fuel +' money.';
       totalMoney+= fuel;
       gameState='roundOver';
       restartBtn.style.display='inline-block';
@@ -801,13 +825,13 @@
     function upgradeTank(){
       maxFuel+=200;
       fuel= maxFuel;
-      showAnnouncement('Bigger fuel tank\! Fuel= '+ fuel +'/'+ maxFuel);
+      showAnnouncement('Bigger fuel tank! Fuel= '+ fuel +'/'+ maxFuel);
       closeUpgradeModal();
     }
     
     function upgradeRocket(){
       maxSpeed*=1.5;
-      showAnnouncement('Faster rocket\! maxSpeed= '+ maxSpeed.toFixed(2));
+      showAnnouncement('Faster rocket! maxSpeed= '+ maxSpeed.toFixed(2));
       closeUpgradeModal();
     }
 
@@ -874,45 +898,149 @@
       }
     }
 
+    /* Starfield for the main view. Deterministic so it does not shimmer, and
+       drawn in screen space with parallax against the camera. */
+    const BG_STARS = (function(){
+      let out = [];
+      for(let i=0;i<260;i++){
+        out.push({
+          x: Math.random(),
+          y: Math.random(),
+          r: 0.4 + Math.random()*1.5,
+          a: 0.25 + Math.random()*0.7,
+          d: 0.03 + Math.random()*0.16,   // parallax depth
+          tw: Math.random()*Math.PI*2      // twinkle phase
+        });
+      }
+      return out;
+    })();
+
+    function drawSpaceBackground(){
+      let w = canvas.width, h = canvas.height;
+
+      // deep space gradient with a hint of the local sun colour
+      let sky = ctx.createLinearGradient(0, 0, 0, h);
+      sky.addColorStop(0,    '#03040c');
+      sky.addColorStop(0.55, '#060716');
+      sky.addColorStop(1,    '#0b0618');
+      ctx.fillStyle = sky;
+      ctx.fillRect(0, 0, w, h);
+
+      // faint nebula blooms that drift with the camera
+      let t = performance.now() * 0.00006;
+      function nebula(cx, cy, rad, col){
+        let g = ctx.createRadialGradient(cx, cy, 0, cx, cy, rad);
+        g.addColorStop(0, col);
+        g.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = g;
+        ctx.fillRect(cx - rad, cy - rad, rad*2, rad*2);
+      }
+      nebula(w*0.22 - cameraX*0.05, h*0.30 - cameraY*0.05, w*0.42, 'rgba(90,40,180,0.16)');
+      nebula(w*0.78 - cameraX*0.03, h*0.72 - cameraY*0.03, w*0.38, 'rgba(0,140,180,0.13)');
+      nebula(w*0.55, h*0.12 + Math.sin(t)*8, w*0.30, 'rgba(255,60,120,0.07)');
+
+      // stars with parallax
+      for(let i=0;i<BG_STARS.length;i++){
+        let s = BG_STARS[i];
+        let px = (s.x * w - cameraX * s.d) % w;
+        let py = (s.y * h - cameraY * s.d) % h;
+        if(px < 0) px += w;
+        if(py < 0) py += h;
+        let tw = 0.72 + Math.sin(t*60 + s.tw) * 0.28;
+        ctx.globalAlpha = s.a * tw;
+        ctx.fillStyle = (i % 11 === 0) ? '#ffd8a8' : (i % 7 === 0 ? '#a8d8ff' : '#ffffff');
+        ctx.beginPath();
+        ctx.arc(px, py, s.r, 0, Math.PI*2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+
     function draw(){
       ctx.clearRect(0,0,canvas.width,canvas.height);
-      if(gameState\!=='playing' && gameState\!=='moonLander' && gameState\!=='roundOver') return;
+      if(gameState!=='playing' && gameState!=='moonLander' && gameState!=='roundOver') return;
+
+      drawSpaceBackground();
 
       ctx.save();
       ctx.translate(-cameraX, -cameraY);
 
-      // sun
+      // sun: layered radial glow instead of a flat yellow circle
+      let sunGlow = ctx.createRadialGradient(sunX, sunY, sunRadius*0.4, sunX, sunY, sunRadius*4.5);
+      sunGlow.addColorStop(0,   'rgba(255,238,150,0.95)');
+      sunGlow.addColorStop(0.25,'rgba(255,180,60,0.55)');
+      sunGlow.addColorStop(0.6, 'rgba(255,110,20,0.18)');
+      sunGlow.addColorStop(1,   'rgba(255,80,0,0)');
       ctx.beginPath();
-      ctx.arc(sunX, sunY, sunRadius,0,Math.PI*2);
-      ctx.fillStyle='yellow';
+      ctx.arc(sunX, sunY, sunRadius*4.5, 0, Math.PI*2);
+      ctx.fillStyle = sunGlow;
       ctx.fill();
-      ctx.closePath();
+
+      ctx.beginPath();
+      ctx.arc(sunX, sunY, sunRadius, 0, Math.PI*2);
+      ctx.fillStyle='#ffe98a';
+      ctx.fill();
 
       // planet
       let planetX= sunX+ orbitRadius*Math.cos(planetAngle);
       let planetY= sunY+ orbitRadius*Math.sin(planetAngle);
+      let pShade = ctx.createRadialGradient(
+        planetX - planetRadiusVal*0.35, planetY - planetRadiusVal*0.35, planetRadiusVal*0.15,
+        planetX, planetY, planetRadiusVal*1.15);
+      pShade.addColorStop(0, '#7fd4ff');
+      pShade.addColorStop(0.55, '#2b6fd6');
+      pShade.addColorStop(1, '#0a1c46');
       ctx.beginPath();
       ctx.arc(planetX, planetY, planetRadiusVal,0,Math.PI*2);
-      ctx.fillStyle='blue';
+      ctx.fillStyle=pShade;
       ctx.fill();
-      ctx.closePath();
+      ctx.strokeStyle='rgba(160,220,255,0.5)';
+      ctx.lineWidth=1.5;
+      ctx.stroke();
 
       // exoPlanets
       for(let exo of exoPlanets){
+        // exo.color is a CSS keyword ('magenta' / 'lime'), so it cannot be suffixed
+        // with an alpha hex pair. Map to an explicit translucent colour instead.
+        let glowCol = (exo.color === 'magenta') ? 'rgba(255,0,255,0.35)' : 'rgba(0,255,0,0.35)';
+        let eGlow = ctx.createRadialGradient(exo.x, exo.y, exo.r*0.3, exo.x, exo.y, exo.r*2.6);
+        eGlow.addColorStop(0, exo.color);
+        eGlow.addColorStop(0.45, glowCol);
+        eGlow.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.beginPath();
+        ctx.arc(exo.x, exo.y, exo.r*2.6, 0, Math.PI*2);
+        ctx.fillStyle= eGlow;
+        ctx.fill();
         ctx.beginPath();
         ctx.arc(exo.x, exo.y, exo.r, 0, Math.PI*2);
         ctx.fillStyle= exo.color;
         ctx.fill();
-        ctx.closePath();
       }
 
-      // asteroids
+      // asteroids: irregular rotating rocks rather than flat grey circles
       for(let ast of asteroids){
+        ctx.save();
+        ctx.translate(ast.x, ast.y);
+        ctx.rotate(ast.rot || 0);
         ctx.beginPath();
-        ctx.arc(ast.x, ast.y, ast.r, 0, Math.PI*2);
-        ctx.fillStyle='gray';
-        ctx.fill();
+        let pts = 7;
+        for(let i=0;i<pts;i++){
+          let a = (i/pts)*Math.PI*2;
+          let rr = ast.r * (0.74 + ((ast.shape && ast.shape[i]) || 0.5) * 0.5);
+          let px = Math.cos(a)*rr, py = Math.sin(a)*rr;
+          if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+        }
         ctx.closePath();
+        let rockGrad = ctx.createLinearGradient(-ast.r, -ast.r, ast.r, ast.r);
+        rockGrad.addColorStop(0, '#9aa3ad');
+        rockGrad.addColorStop(0.5, '#5c646e');
+        rockGrad.addColorStop(1, '#2c3138');
+        ctx.fillStyle = rockGrad;
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.restore();
       }
       
       // Draw particles
@@ -1038,7 +1166,7 @@
       }
       
       // Play explosion sound if available
-      if (typeof DegenSound \!== 'undefined') {
+      if (typeof DegenSound !== 'undefined') {
         DegenSound.play('game', 'explosion');
       }
       
@@ -1097,7 +1225,7 @@
       closeTutorial = document.getElementById('closeTutorial');
       
       // Show tutorial if first time
-      if (\!localStorage.getItem('spaceshipTutorialSeen')) {
+      if (!localStorage.getItem('spaceshipTutorialSeen')) {
         tutorialPanel.style.display = 'block';
         localStorage.setItem('spaceshipTutorialSeen', 'true');
       }
@@ -1151,6 +1279,7 @@
       gameContainer.style.display = 'none';
       showMenu();
       updateLeaderboard();
+      startGameLoop();
       
       // Add event listeners
       startGameBtn.addEventListener('click', startGame);
@@ -1173,7 +1302,7 @@
       loadRocketImage();
       
       // Initialize sound effects if available
-      if (typeof DegenSound \!== 'undefined') {
+      if (typeof DegenSound !== 'undefined') {
         DegenSound.init({
           groups: {
             'game': {

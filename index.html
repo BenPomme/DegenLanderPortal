@@ -1,217 +1,136 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Degen Portal - Fuck Yeah!</title>
-  <style>
-    /* Retro degen style */
-    :root {
-      --bg-color: #111;
-      --text-color: #0f0;
-      --accent-color: #f00;
-      --hover-color: #fff;
-      --panel-color: #222;
-      --border-color: #0f0;
-    }
-    
-    .dark-mode {
-      --bg-color: #111;
-      --text-color: #0f0;
-      --accent-color: #f00;
-      --hover-color: #fff;
-      --panel-color: #222;
-      --border-color: #0f0;
-    }
-    
-    .light-mode {
-      --bg-color: #f5f5f5;
-      --text-color: #0a5; 
-      --accent-color: #d00;
-      --hover-color: #333;
-      --panel-color: #fff;
-      --border-color: #0a5;
-    }
-    
-    body {
-      background-color: var(--bg-color);
-      color: var(--text-color);
-      font-family: 'Courier New', Courier, monospace;
-      margin: 0;
-      padding: 0;
-      text-align: center;
-    }
-    
-    /* Navigation bar */
-    .nav-bar {
-      background-color: var(--panel-color);
-      padding: 10px 0;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      border-bottom: 2px solid var(--border-color);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-    
-    .nav-bar a {
-      color: var(--text-color);
-      text-decoration: none;
-      margin: 0 15px;
-      font-size: 1em;
-      transition: all 0.2s ease;
-    }
-    
-    .nav-bar a:hover {
-      color: var(--hover-color);
-      text-shadow: 0 0 8px var(--text-color);
-    }
-    
-    /* Theme toggle button */
-    #theme-toggle {
-      background-color: transparent;
-      border: 1px solid var(--text-color);
-      color: var(--text-color);
-      padding: 5px 10px;
-      border-radius: 5px;
-      cursor: pointer;
-      margin-left: 20px;
-    }
-    
-    #theme-toggle:hover {
-      background-color: var(--text-color);
-      color: var(--bg-color);
-    }
-    
-    h1 {
-      margin-top: 50px;
-      font-size: 3em;
-      text-shadow: 2px 2px var(--accent-color);
-    }
-    
-    p {
-      font-size: 1.2em;
-      margin: 20px auto;
-    }
-    
-    ul {
-      list-style: none;
-      padding: 0;
-    }
-    
-    li {
-      margin: 20px 0;
-      font-size: 1.5em;
-    }
-    
-    a {
-      color: var(--text-color);
-      text-decoration: none;
-      border: 2px solid var(--text-color);
-      padding: 10px 20px;
-      transition: all 0.3s ease;
-    }
-    
-    a:hover {
-      background-color: var(--text-color);
-      color: var(--bg-color);
-    }
-    
-    .meme {
-      margin: 20px auto;
-      width: 300px;
-      border: 2px solid var(--text-color);
-    }
-    
-    footer {
-      margin-top: 50px;
-      font-size: 0.8em;
-      color: #888;
-      padding: 20px;
-    }
-    
-    /* New game category styling */
-    .category-title {
-      margin-top: 40px;
-      color: var(--accent-color);
-      text-shadow: 1px 1px var(--text-color);
-      font-size: 1.8em;
-    }
-    
-    .new-tag {
-      background-color: var(--accent-color);
-      color: #fff;
-      padding: 3px 8px;
-      border-radius: 10px;
-      font-size: 0.6em;
-      position: relative;
-      top: -10px;
-      margin-left: 10px;
-    }
-  </style>
+  <title>DEGEN LANDER PORTAL — Free crypto arcade. No wallet. No mercy.</title>
+  <meta name="description" content="Eight free browser games for people who think a 60% drawdown is a buying opportunity. No wallet, no signup, no rug.">
+  <meta name="theme-color" content="#05060a">
+  <meta property="og:title" content="DEGEN LANDER PORTAL">
+  <meta property="og:description" content="Eight free crypto arcade games. No wallet. No signup. No mercy.">
+  <meta property="og:type" content="website">
+  <link rel="stylesheet" href="css/degen.css">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
 </head>
-<body class="dark-mode">
-  <!-- Navigation Bar -->
-  <div class="nav-bar">
-    <a href="index.html">Home</a>
-    <a href="leaderboard.html">Leaderboard</a>
-    <a href="Games/AntsSimulator/index.html">Ants Simulator</a>
-    <a href="Games/NerdSoccer/PenFootballGameWithWallBounce.html">Nerd Soccer</a>
-    <button id="theme-toggle">Toggle Theme</button>
+<body class="d-body">
+
+  <!-- Price tape. Populated by js/arcade.js -->
+  <div class="d-ticker" id="d-ticker" aria-hidden="true">
+    <div class="d-ticker__track" id="d-ticker-track"></div>
   </div>
-  
-  <h1>Welcome to the Fuckin' Degen Portal</h1>
-  <!-- A retro meme image -->
-  <img src="https://i.imgflip.com/1bij.jpg" alt="Meme" class="meme" />
-  <p>Pick a game or check out the leaderboards. Let's get this shit started!</p>
-  
-  <h2 class="category-title">Classic Games</h2>
-  <ul>
-    <li><a href="./Games/degenlander/index.html">Degenlander</a></li>
-    <li><a href="./Games/AntsSimulator/index.html">Ants Simulator</a></li>
-    <li><a href="./Games/NerdSoccer/PenFootballGameWithWallBounce.html">NerdSoccer</a></li>
-    <li><a href="./Games/SpaceshipWorld/home.html">SpaceshipWorld</a></li>
-  </ul>
-  
-  <h2 class="category-title">New Degen Games <span class="new-tag">NEW!</span></h2>
-  <ul>
-    <li><a href="./Games/CryptoShitter/index.html">CryptoShitter</a></li>
-    <li><a href="./Games/RugpullRoulette/index.html">Rugpull Roulette</a></li>
-    <li><a href="./Games/DegenerateSlots/index.html">Degenerate Slots</a></li>
-  </ul>
-  
-  <h2 class="category-title">Leaderboards</h2>
-  <ul>
-    <li><a href="./leaderboard.html">Leaderboards</a></li>
-  </ul>
-  
-  <footer>
-    <p>Fucking awesome, 'cause shit's awesome!</p>
+
+  <header class="d-hero">
+    <canvas class="d-hero__chart" id="heroChart" aria-hidden="true"></canvas>
+    <div class="d-hero__inner">
+      <span class="d-hero__eyebrow"><span class="dot"></span> 8 GAMES · FREE FOREVER · NO WALLET CONNECT</span>
+      <h1 class="d-hero__title d-glitch" data-text="DEGEN LANDER">DEGEN LANDER</h1>
+      <p class="d-hero__sub">
+        The arcade for people who <b>buy the top</b> and <b>panic at the bottom</b>.
+        Land rockets on candle charts, bet on which shitcoin gets rugged next,
+        and spin a slot machine that has never once been kind to anyone.
+        <b>No signup. No wallet. No rug.</b>
+      </p>
+      <div class="d-hero__cta">
+        <a class="d-btn d-btn--lg d-btn--gold" href="#arcade" id="ctaPlay">&#9654; PLAY NOW</a>
+        <a class="d-btn d-btn--lg" href="leaderboard.html">&#127942; HALL OF DEGENS</a>
+      </div>
+      <div class="d-stats d-hero__stats" id="heroStats"></div>
+    </div>
+  </header>
+
+  <main class="d-wrap">
+
+    <section class="d-section" id="arcade">
+      <div class="d-section__head">
+        <h2 class="d-section__title">&#127918; THE ARCADE</h2>
+        <span class="d-section__note">Every game runs in your browser. Nothing to install.</span>
+      </div>
+      <ul class="d-grid" id="gameGrid"></ul>
+    </section>
+
+    <section class="d-section" id="leaderboards">
+      <div class="d-section__head">
+        <h2 class="d-section__title">&#128200; TOP DEGENS THIS WEEK</h2>
+        <span class="d-section__note">Purely for bragging rights. Obviously.</span>
+      </div>
+      <div class="d-lb">
+        <div class="d-panel d-corners">
+          <h3 class="d-h3 d-green">MOST TENDIES</h3>
+          <table class="d-lb__table"><tbody id="lbTendies"></tbody></table>
+        </div>
+        <div class="d-panel d-corners">
+          <h3 class="d-h3 d-red">MOST RUGGED</h3>
+          <table class="d-lb__table"><tbody id="lbRugged"></tbody></table>
+        </div>
+      </div>
+      <div class="d-row" style="margin-top:18px">
+        <a class="d-btn" href="leaderboard.html">SEE THE FULL LEADERBOARD</a>
+      </div>
+    </section>
+
+    <section class="d-section">
+      <div class="d-brag">
+        <p><b class="d-gold">Are you a founder?</b> Every score on this site is fake except yours.<br>
+        Beat the top score and you get bragging rights, which are famously worth nothing.</p>
+        <a class="d-btn d-btn--red" href="#arcade">GO TAKE THE TOP SPOT</a>
+      </div>
+    </section>
+
+    <section class="d-section">
+      <div class="d-section__head">
+        <h2 class="d-section__title">&#9889; HOW THIS PLACE WORKS</h2>
+      </div>
+      <div class="d-steps">
+        <div class="d-step">
+          <h3>PICK A GAME</h3>
+          <p>Eight games, all built to be understood in about four seconds and lost at for about four hours.</p>
+        </div>
+        <div class="d-step">
+          <h3>GET DESTROYED</h3>
+          <p>Every game is tuned so that your first run is a disaster. That is the point. The chart is rigged against you, like the real one.</p>
+        </div>
+        <div class="d-step">
+          <h3>POST YOUR SCORE</h3>
+          <p>Type a name, hit submit, appear on the leaderboard. No account, no email, no verification. We are not your bank.</p>
+        </div>
+        <div class="d-step">
+          <h3>COME BACK TOMORROW</h3>
+          <p>The scores reset, your dignity does not. Daily and all-time boards are on the leaderboard page.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="d-section">
+      <div class="d-section__head">
+        <h2 class="d-section__title">&#128176; HOUSE RULES</h2>
+      </div>
+      <div class="d-panel">
+        <p class="d-mono d-muted" style="line-height:1.8;margin:0">
+          Nothing here costs money and nothing here pays money. There is no token, no NFT, no presale,
+          no "utility" and definitely no roadmap. The points are fake, the leaderboard is fake,
+          the charts are fake. The only real thing is how bad you are at the games.
+          <br><br>
+          <b class="d-green">Not financial advice.</b> It is barely even advice.
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="d-footer">
+    <p><b class="d-green">DEGEN LANDER PORTAL</b> — built for degenerates, by degenerates.</p>
+    <p>
+      <a href="index.html">Arcade</a> ·
+      <a href="leaderboard.html">Leaderboard</a> ·
+      <a href="#arcade">All games</a>
+    </p>
+    <p class="d-muted" style="font-size:12px;margin-top:14px">
+      Press <b class="d-gold">&#8593;&#8593;&#8595;&#8595;&#8592;&#8594;&#8592;&#8594;BA</b> if you think you deserve something.
+    </p>
   </footer>
-  
-  <script>
-    // Theme toggle functionality
-    const themeToggle = document.getElementById('theme-toggle');
-    const body = document.body;
-    
-    // Check for saved theme preference or use default dark mode
-    const savedTheme = localStorage.getItem('theme') || 'dark';
-    body.className = savedTheme + '-mode';
-    themeToggle.textContent = savedTheme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
-    
-    // Toggle between light and dark themes
-    themeToggle.addEventListener('click', () => {
-      if (body.classList.contains('dark-mode')) {
-        body.classList.replace('dark-mode', 'light-mode');
-        localStorage.setItem('theme', 'light');
-        themeToggle.textContent = '🌙 Dark Mode';
-      } else {
-        body.classList.replace('light-mode', 'dark-mode');
-        localStorage.setItem('theme', 'dark');
-        themeToggle.textContent = '☀️ Light Mode';
-      }
-    });
-  </script>
+
+  <script src="js/degen-theme.js"></script>
+  <script src="js/sound-effects.js"></script>
+  <script src="js/arcade.js"></script>
 </body>
 </html>

@@ -1,0 +1,737 @@
+/* ===========================================================================
+   DEGENLANDER PORTAL — core design system
+   A single stylesheet shared by the arcade, the lobby and every game.
+   Aesthetic: CRT terminal + underground casino + candle chart.
+   Everything is namespaced under d-* or scoped to the portal chrome so the
+   games keep their own layouts intact.
+   =========================================================================== */
+
+@font-face {
+  font-family: 'Press Start 2P';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../assets/fonts/press-start-2p-latin.woff2') format('woff2');
+}
+
+:root {
+  --d-bg:        #05060a;
+  --d-bg-2:      #0a0d16;
+  --d-panel:     rgba(11, 15, 26, 0.86);
+  --d-panel-2:   rgba(17, 23, 38, 0.9);
+  --d-line:      #1e2c3f;
+  --d-line-hot:  #2b4a63;
+
+  --d-green:     #00ff9d;
+  --d-green-2:   #00c978;
+  --d-green-dim: #0d7a52;
+  --d-red:       #ff2d55;
+  --d-red-2:     #c9183c;
+  --d-gold:      #ffd166;
+  --d-purple:    #b026ff;
+  --d-cyan:      #00e5ff;
+
+  --d-text:      #d9ffef;
+  --d-muted:     #7b93a6;
+  --d-dim:       #47586a;
+
+  --d-font:      'Press Start 2P', 'Courier New', ui-monospace, monospace;
+  --d-mono:      ui-monospace, 'SF Mono', Menlo, Consolas, 'Courier New', monospace;
+
+  --d-glow-green: 0 0 6px rgba(0, 255, 157, 0.65), 0 0 22px rgba(0, 255, 157, 0.22);
+  --d-glow-red:   0 0 6px rgba(255, 45, 85, 0.65), 0 0 22px rgba(255, 45, 85, 0.22);
+  --d-glow-gold:  0 0 6px rgba(255, 209, 102, 0.6), 0 0 22px rgba(255, 209, 102, 0.2);
+
+  --d-radius: 4px;
+  --d-nav-h: 54px;
+
+  /* Legacy aliases so the older game stylesheets keep working. */
+  --bg-color: var(--d-bg);
+  --panel-color: var(--d-panel);
+  --text-color: var(--d-green);
+  --accent-color: var(--d-red);
+  --border-color: var(--d-green);
+  --hover-color: #ffffff;
+}
+
+/* ---------------------------------------------------------------- reset --- */
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body.d-body,
+body.degen-body {
+  margin: 0;
+  min-height: 100vh;
+  background-color: var(--d-bg);
+  background-image:
+    radial-gradient(1200px 600px at 50% -10%, rgba(0, 255, 157, 0.07), transparent 60%),
+    radial-gradient(900px 500px at 90% 110%, rgba(176, 38, 255, 0.08), transparent 60%),
+    linear-gradient(rgba(30, 44, 63, 0.28) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(30, 44, 63, 0.28) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 44px 44px, 44px 44px;
+  color: var(--d-text);
+  font-family: var(--d-mono);
+  text-rendering: optimizeLegibility;
+}
+
+/* ------------------------------------------------------------ CRT layer --- */
+.d-crt {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2147483000;
+  mix-blend-mode: overlay;
+  opacity: 0.5;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.05) 0px,
+    rgba(255, 255, 255, 0.05) 1px,
+    rgba(0, 0, 0, 0.16) 2px,
+    rgba(0, 0, 0, 0.16) 3px
+  );
+}
+
+.d-vignette {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2147482999;
+  background: radial-gradient(ellipse at center, transparent 52%, rgba(0, 0, 0, 0.62) 100%);
+}
+
+body.d-nocrt .d-crt,
+body.d-nocrt .d-vignette { display: none; }
+
+/* On short/small screens the scanlines cost more than they give. */
+@media (max-width: 720px) {
+  .d-crt { opacity: 0.28; }
+}
+
+/* ----------------------------------------------------------------- nav --- */
+.d-nav {
+  /* Fixed rather than sticky: several games use `body { display:flex }` for their
+     own layout, and an in-flow nav would become a flex item and wreck them.
+     body.d-has-nav reserves the space instead, measured in js/degen-theme.js. */
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  /* Hard-coded, NOT var(--d-nav-h): js/degen-theme.js writes the measured height
+     into that variable, and sizing the nav from it creates a feedback loop that
+     grows the nav (and the body padding) without bound. */
+  min-height: 54px;
+  padding: 6px 12px;
+  background: rgba(5, 6, 10, 0.94);
+  backdrop-filter: blur(8px);
+  border-bottom: 2px solid var(--d-green);
+  box-shadow: 0 2px 0 rgba(0, 255, 157, 0.18), 0 10px 30px rgba(0, 0, 0, 0.6);
+  font-family: var(--d-font);
+  flex-wrap: wrap;
+}
+
+body.d-has-nav { padding-top: var(--d-nav-h); }
+
+/* Game pages adopt the portal chrome (nav + CRT) but keep their own body styling,
+   so no colour or typography is forced on them here. `.d-game-page` exists as a
+   hook for per-game overrides. */
+
+.d-nav__logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: 14px;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  color: var(--d-green);
+  text-decoration: none;
+  text-shadow: var(--d-glow-green);
+  white-space: nowrap;
+}
+
+.d-nav__logo b { color: var(--d-gold); text-shadow: var(--d-glow-gold); }
+
+.d-nav__links {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  gap: 2px;
+  align-items: center;
+}
+
+.d-nav__link {
+  position: relative;
+  padding: 8px 9px;
+  font-size: 9px;
+  line-height: 1.4;
+  color: var(--d-muted);
+  text-decoration: none;
+  border: 1px solid transparent;
+  border-radius: var(--d-radius);
+  white-space: nowrap;
+  transition: color 0.14s ease, background 0.14s ease, border-color 0.14s ease;
+}
+
+.d-nav__link:hover,
+.d-nav__link:focus-visible {
+  color: var(--d-bg);
+  background: var(--d-green);
+  border-color: var(--d-green);
+  outline: none;
+  text-shadow: none;
+}
+
+.d-nav__link.is-active {
+  color: var(--d-bg);
+  background: var(--d-gold);
+  border-color: var(--d-gold);
+}
+
+.d-nav__right { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+
+.d-nav__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  font-family: var(--d-mono);
+  font-size: 13px;
+  color: var(--d-green);
+  background: transparent;
+  border: 1px solid var(--d-line-hot);
+  border-radius: var(--d-radius);
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+
+.d-nav__icon:hover {
+  color: var(--d-bg);
+  background: var(--d-green);
+  border-color: var(--d-green);
+}
+
+/* --------------------------------------------------------------- ticker --- */
+.d-ticker {
+  position: relative;
+  overflow: hidden;
+  background: #000;
+  border-bottom: 1px solid var(--d-line);
+  font-family: var(--d-mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.d-ticker__track {
+  display: inline-flex;
+  gap: 26px;
+  padding: 7px 0;
+  will-change: transform;
+  animation: d-scroll 46s linear infinite;
+}
+
+.d-ticker:hover .d-ticker__track { animation-play-state: paused; }
+
+@keyframes d-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+.d-tick { display: inline-flex; align-items: center; gap: 6px; }
+.d-tick__sym { color: var(--d-muted); }
+.d-tick__px { color: var(--d-text); }
+.d-tick__up { color: var(--d-green); }
+.d-tick__down { color: var(--d-red); }
+
+/* -------------------------------------------------------------- buttons --- */
+.d-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 18px;
+  font-family: var(--d-font);
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--d-green);
+  background: rgba(0, 255, 157, 0.06);
+  border: 2px solid var(--d-green-dim);
+  border-radius: var(--d-radius);
+  cursor: pointer;
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: transform 0.12s ease, background 0.12s ease, color 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.d-btn:hover,
+.d-btn:focus-visible {
+  color: var(--d-bg);
+  background: var(--d-green);
+  border-color: var(--d-green);
+  box-shadow: var(--d-glow-green);
+  transform: translateY(-2px);
+  outline: none;
+}
+
+.d-btn:active { transform: translateY(0); }
+
+.d-btn--gold { color: var(--d-gold); background: rgba(255, 209, 102, 0.07); border-color: #8a6a1f; }
+.d-btn--gold:hover { color: #201703; background: var(--d-gold); border-color: var(--d-gold); box-shadow: var(--d-glow-gold); }
+
+.d-btn--red { color: var(--d-red); background: rgba(255, 45, 85, 0.07); border-color: #8c1c31; }
+.d-btn--red:hover { color: #fff; background: var(--d-red); border-color: var(--d-red); box-shadow: var(--d-glow-red); }
+
+.d-btn--ghost { color: var(--d-muted); background: transparent; border-color: var(--d-line-hot); }
+.d-btn--ghost:hover { color: var(--d-bg); background: var(--d-muted); border-color: var(--d-muted); box-shadow: none; }
+
+.d-btn--lg { padding: 15px 26px; font-size: 12px; }
+.d-btn--sm { padding: 8px 12px; font-size: 8px; }
+
+/* --------------------------------------------------------------- panels --- */
+.d-panel {
+  position: relative;
+  padding: 18px;
+  background: var(--d-panel);
+  border: 2px solid var(--d-line);
+  border-radius: var(--d-radius);
+  box-shadow: inset 0 0 60px rgba(0, 255, 157, 0.04), 0 14px 40px rgba(0, 0, 0, 0.5);
+}
+
+.d-panel--hot { border-color: var(--d-green); box-shadow: inset 0 0 60px rgba(0, 255, 157, 0.07), 0 0 18px rgba(0, 255, 157, 0.14); }
+
+/* Corner brackets, arcade-cabinet style. */
+.d-corners::before,
+.d-corners::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--d-green);
+  pointer-events: none;
+}
+.d-corners::before { top: -2px; left: -2px; border-right: 0; border-bottom: 0; }
+.d-corners::after  { bottom: -2px; right: -2px; border-left: 0; border-top: 0; }
+
+/* ----------------------------------------------------------- typography --- */
+.d-h1, .d-h2, .d-h3 { font-family: var(--d-font); line-height: 1.45; margin: 0 0 14px; }
+.d-h1 { font-size: clamp(20px, 4.6vw, 42px); }
+.d-h2 { font-size: clamp(14px, 2.4vw, 20px); }
+.d-h3 { font-size: 12px; }
+
+.d-green { color: var(--d-green); }
+.d-red   { color: var(--d-red); }
+.d-gold  { color: var(--d-gold); }
+.d-purple{ color: var(--d-purple); }
+.d-cyan  { color: var(--d-cyan); }
+.d-muted { color: var(--d-muted); }
+
+.d-glow-green { text-shadow: var(--d-glow-green); }
+.d-glow-red   { text-shadow: var(--d-glow-red); }
+.d-glow-gold  { text-shadow: var(--d-glow-gold); }
+
+.d-mono { font-family: var(--d-mono); }
+
+/* Chromatic-aberration glitch, applied to a hero title. */
+.d-glitch { position: relative; display: inline-block; }
+.d-glitch::before,
+.d-glitch::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.d-glitch::before { color: var(--d-red);   transform: translate(-2px, 0); opacity: 0.75; mix-blend-mode: screen; animation: d-glitch-a 3.6s infinite steps(2, end); }
+.d-glitch::after  { color: var(--d-cyan);  transform: translate(2px, 0);  opacity: 0.6;  mix-blend-mode: screen; animation: d-glitch-b 4.2s infinite steps(2, end); }
+
+@keyframes d-glitch-a {
+  0%, 92%, 100% { transform: translate(-2px, 0); clip-path: inset(0 0 0 0); }
+  93% { transform: translate(-5px, -2px); clip-path: inset(12% 0 46% 0); }
+  95% { transform: translate(3px, 1px);  clip-path: inset(58% 0 8% 0); }
+}
+@keyframes d-glitch-b {
+  0%, 90%, 100% { transform: translate(2px, 0); clip-path: inset(0 0 0 0); }
+  91% { transform: translate(5px, 2px); clip-path: inset(30% 0 40% 0); }
+  94% { transform: translate(-3px, -1px); clip-path: inset(6% 0 70% 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .d-glitch::before, .d-glitch::after { animation: none; }
+  .d-ticker__track { animation: none; }
+}
+
+/* --------------------------------------------------------------- badges --- */
+.d-badge {
+  display: inline-block;
+  padding: 4px 7px;
+  font-family: var(--d-font);
+  font-size: 7px;
+  line-height: 1.6;
+  letter-spacing: 0.06em;
+  color: #05060a;
+  background: var(--d-green);
+  border-radius: 2px;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+.d-badge--gold   { background: var(--d-gold); }
+.d-badge--red    { background: var(--d-red); color: #fff; }
+.d-badge--purple { background: var(--d-purple); color: #fff; }
+.d-badge--cyan   { background: var(--d-cyan); }
+.d-badge--out    { background: transparent; color: var(--d-muted); border: 1px solid var(--d-line-hot); }
+
+/* ------------------------------------------------------------ stat pill --- */
+.d-stats { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+
+.d-stat {
+  min-width: 118px;
+  padding: 10px 12px;
+  text-align: center;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--d-line);
+  border-radius: var(--d-radius);
+}
+
+.d-stat__k { display: block; font-family: var(--d-font); font-size: 7px; color: var(--d-muted); margin-bottom: 8px; letter-spacing: 0.05em; }
+.d-stat__v { display: block; font-family: var(--d-mono); font-size: 20px; font-weight: 700; color: var(--d-green); }
+
+/* --------------------------------------------------------------- toast --- */
+.d-toasts {
+  position: fixed;
+  right: 14px;
+  bottom: 14px;
+  z-index: 2147482000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: min(360px, calc(100vw - 28px));
+}
+
+.d-toast {
+  padding: 12px 14px;
+  font-family: var(--d-mono);
+  font-size: 13px;
+  color: var(--d-text);
+  background: rgba(6, 10, 16, 0.97);
+  border: 2px solid var(--d-green);
+  border-left-width: 6px;
+  border-radius: var(--d-radius);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  animation: d-toast-in 0.22s ease-out;
+}
+
+.d-toast--err { border-color: var(--d-red); }
+.d-toast--gold { border-color: var(--d-gold); }
+.d-toast--out { animation: d-toast-out 0.25s ease-in forwards; }
+
+@keyframes d-toast-in  { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
+@keyframes d-toast-out { to { opacity: 0; transform: translateX(28px); } }
+
+/* --------------------------------------------------------------- modal --- */
+.d-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2147482500;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(2, 3, 6, 0.86);
+  backdrop-filter: blur(4px);
+}
+.d-modal.is-open { display: flex; }
+
+/* -------------------------------------------------------------- footer --- */
+.d-footer {
+  margin-top: 46px;
+  padding: 26px 18px 34px;
+  text-align: center;
+  font-family: var(--d-mono);
+  font-size: 13px;
+  color: var(--d-muted);
+  border-top: 1px solid var(--d-line);
+  background: rgba(0, 0, 0, 0.35);
+}
+.d-footer a { color: var(--d-green); text-decoration: none; }
+.d-footer a:hover { text-decoration: underline; }
+
+/* ------------------------------------------------------------ game grid --- */
+.d-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(275px, 1fr));
+  gap: 18px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.d-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 232px;
+  background: var(--d-panel-2);
+  border: 2px solid var(--d-line);
+  border-radius: var(--d-radius);
+  text-decoration: none;
+  transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.d-card:hover,
+.d-card:focus-visible {
+  transform: translateY(-4px);
+  border-color: var(--d-green);
+  box-shadow: 0 0 0 1px rgba(0, 255, 157, 0.25), 0 16px 44px rgba(0, 0, 0, 0.62), 0 0 34px rgba(0, 255, 157, 0.13);
+  outline: none;
+}
+
+.d-card__art {
+  position: relative;
+  height: 118px;
+  overflow: hidden;
+  border-bottom: 2px solid var(--d-line);
+  background: #000;
+}
+
+.d-card__art canvas { display: block; width: 100%; height: 100%; }
+
+.d-card__body { padding: 13px 14px 15px; display: flex; flex-direction: column; gap: 9px; flex: 1; }
+
+.d-card__title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--d-font);
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--d-text);
+}
+
+.d-card__desc {
+  margin: 0;
+  font-family: var(--d-mono);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--d-muted);
+}
+
+.d-card__foot {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-family: var(--d-font);
+  font-size: 8px;
+}
+
+.d-card__play { color: var(--d-green); }
+.d-card:hover .d-card__play { text-shadow: var(--d-glow-green); }
+
+/* --------------------------------------------------------- click sparkle --- */
+.d-spark {
+  position: fixed;
+  z-index: 2147482600;
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  pointer-events: none;
+  border-radius: 50%;
+  background: var(--d-green);
+  box-shadow: 0 0 10px var(--d-green);
+  animation: d-spark 0.6s ease-out forwards;
+}
+@keyframes d-spark {
+  from { opacity: 1; transform: translate(var(--dx), var(--dy)) scale(1); }
+  to   { opacity: 0; transform: translate(calc(var(--dx) * 2.6), calc(var(--dy) * 2.6)) scale(0.2); }
+}
+
+/* --------------------------------------------------------------- layout --- */
+.d-wrap { width: min(1180px, calc(100% - 32px)); margin: 0 auto; }
+.d-center { text-align: center; }
+.d-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: center; }
+
+/* ------------------------------------------------------------- a11y ----- */
+.d-sr {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+:focus-visible { outline: 2px solid var(--d-gold); outline-offset: 2px; }
+
+@media (max-width: 640px) {
+  .d-nav { padding: 6px 8px; }
+  .d-nav__link { padding: 7px 7px; font-size: 8px; }
+  .d-nav__logo { font-size: 9px; margin-right: 8px; }
+  .d-grid { grid-template-columns: 1fr; }
+}
+
+/* ===========================================================================
+   ARCADE / HOME PAGE
+   =========================================================================== */
+
+.d-hero {
+  position: relative;
+  overflow: hidden;
+  padding: 54px 16px 40px;
+  text-align: center;
+  border-bottom: 2px solid var(--d-line);
+}
+
+/* Animated candle chart drawn behind the hero by js/arcade.js */
+.d-hero__chart {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.32;
+  pointer-events: none;
+}
+
+.d-hero__inner { position: relative; z-index: 2; width: min(980px, 100%); margin: 0 auto; }
+
+.d-hero__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 22px;
+  padding: 7px 13px;
+  font-family: var(--d-font);
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  color: var(--d-green);
+  background: rgba(0, 255, 157, 0.07);
+  border: 1px solid var(--d-green-dim);
+  border-radius: 999px;
+}
+
+.d-hero__eyebrow .dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--d-red);
+  box-shadow: 0 0 8px var(--d-red);
+  animation: d-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes d-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.35; transform: scale(0.75); }
+}
+
+.d-hero__title {
+  margin: 0 0 20px;
+  font-family: var(--d-font);
+  font-size: clamp(26px, 7.2vw, 74px);
+  line-height: 1.22;
+  letter-spacing: 0.01em;
+  color: var(--d-text);
+}
+
+.d-hero__sub {
+  max-width: 620px;
+  margin: 0 auto 30px;
+  font-family: var(--d-mono);
+  font-size: clamp(15px, 1.7vw, 18px);
+  line-height: 1.65;
+  color: var(--d-muted);
+}
+
+.d-hero__sub b { color: var(--d-green); }
+
+.d-hero__cta { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-bottom: 36px; }
+
+.d-hero__stats { margin-top: 6px; }
+
+/* ------------------------------------------------------------ sections --- */
+.d-section { margin: 62px 0; }
+
+.d-section__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 22px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--d-line);
+}
+
+.d-section__title {
+  margin: 0;
+  font-family: var(--d-font);
+  font-size: clamp(14px, 2.6vw, 22px);
+  color: var(--d-text);
+}
+
+.d-section__note { font-family: var(--d-mono); font-size: 13px; color: var(--d-muted); margin-left: auto; }
+
+/* --------------------------------------------------------- lb preview --- */
+.d-lb { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+
+.d-lb__table { width: 100%; border-collapse: collapse; font-family: var(--d-mono); font-size: 14px; }
+.d-lb__table th {
+  padding: 8px 10px;
+  font-family: var(--d-font);
+  font-size: 8px;
+  color: var(--d-muted);
+  text-align: left;
+  border-bottom: 1px solid var(--d-line);
+}
+.d-lb__table td { padding: 9px 10px; border-bottom: 1px solid rgba(30, 44, 63, 0.5); color: var(--d-text); }
+.d-lb__table tr:nth-child(1) td { color: var(--d-gold); }
+.d-lb__table tr:nth-child(2) td { color: #d8e6f0; }
+.d-lb__table tr:nth-child(3) td { color: var(--d-green); }
+.d-lb__rank { color: var(--d-dim); }
+
+/* ------------------------------------------------------------ brag bar --- */
+.d-brag {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 22px;
+  background: linear-gradient(100deg, rgba(255, 45, 85, 0.1), rgba(176, 38, 255, 0.1));
+  border: 2px solid var(--d-line-hot);
+  border-radius: var(--d-radius);
+}
+
+.d-brag p { margin: 0; font-family: var(--d-mono); font-size: 15px; line-height: 1.6; color: var(--d-text); }
+
+/* --------------------------------------------------------------- steps --- */
+.d-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; counter-reset: step; }
+
+.d-step { position: relative; padding: 20px 18px 18px; background: var(--d-panel); border: 2px solid var(--d-line); border-radius: var(--d-radius); }
+.d-step::before {
+  counter-increment: step;
+  content: "0" counter(step);
+  position: absolute;
+  top: -13px;
+  left: 16px;
+  padding: 5px 9px;
+  font-family: var(--d-font);
+  font-size: 9px;
+  color: #05060a;
+  background: var(--d-green);
+  border-radius: 2px;
+}
+.d-step h3 { margin: 8px 0 10px; font-family: var(--d-font); font-size: 11px; color: var(--d-text); line-height: 1.6; }
+.d-step p { margin: 0; font-family: var(--d-mono); font-size: 13.5px; line-height: 1.6; color: var(--d-muted); }
+
+@media (max-width: 640px) {
+  .d-hero { padding: 34px 14px 30px; }
+  .d-section { margin: 42px 0; }
+  .d-section__note { margin-left: 0; flex-basis: 100%; }
+}

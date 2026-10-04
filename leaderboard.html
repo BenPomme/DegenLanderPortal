@@ -1,402 +1,238 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Degen Leaderboards - Fucking Scoreboards</title>
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- Use Press Start 2P for that retro degen vibe -->
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <title>Leaderboard — DEGEN LANDER PORTAL</title>
+  <meta name="description" content="Top scores across every DegenLander game. No accounts, no email, no verification.">
+  <meta name="theme-color" content="#05060a">
+  <link rel="stylesheet" href="css/degen.css">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <style>
-    /* Retro degen style with theme support */
-    :root {
-      --bg-color: #111;
-      --text-color: #0f0;
-      --accent-color: #f00;
-      --hover-color: #fff;
-      --panel-color: #222;
-      --border-color: #0f0;
-      --alt-bg-color: #222;
-      --highlight-bg: #330;
-    }
-    
-    .dark-mode {
-      --bg-color: #111;
-      --text-color: #0f0;
-      --accent-color: #f00;
-      --hover-color: #fff;
-      --panel-color: #222;
-      --border-color: #0f0;
-      --alt-bg-color: #222;
-      --highlight-bg: #330;
-    }
-    
-    .light-mode {
-      --bg-color: #f5f5f5;
-      --text-color: #0a5; 
-      --accent-color: #d00;
-      --hover-color: #333;
-      --panel-color: #fff;
-      --border-color: #0a5;
-      --alt-bg-color: #e5e5e5;
-      --highlight-bg: #efe5c0;
-    }
-    
-    body {
-      background-color: var(--bg-color);
-      color: var(--text-color);
-      font-family: 'Press Start 2P', cursive;
-      margin: 0;
-      padding: 0;
-      text-align: center;
-    }
-    
-    /* Navigation bar */
-    .nav-bar {
-      background-color: var(--panel-color);
-      padding: 10px 0;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      border-bottom: 2px solid var(--border-color);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-    
-    .nav-bar a {
-      color: var(--text-color);
-      text-decoration: none;
-      margin: 0 15px;
-      font-size: 0.8em;
-      transition: all 0.2s ease;
-      border: none;
-      box-shadow: none;
-    }
-    
-    .nav-bar a:hover {
-      color: var(--hover-color);
-      text-shadow: 0 0 8px var(--text-color);
-      background-color: transparent;
-      transform: none;
-    }
-    
-    /* Theme toggle button */
-    #theme-toggle {
-      background-color: transparent;
-      border: 1px solid var(--text-color);
-      color: var(--text-color);
-      padding: 5px 10px;
-      border-radius: 5px;
+    .lb-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px; }
+    .lb-tab {
+      padding: 9px 13px;
+      font-family: var(--d-font);
+      font-size: 8px;
+      line-height: 1.5;
+      color: var(--d-muted);
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--d-line);
+      border-radius: var(--d-radius);
       cursor: pointer;
-      margin-left: 20px;
-      font-family: 'Press Start 2P', cursive;
-      font-size: 0.6em;
+      transition: all 0.14s ease;
     }
-    
-    #theme-toggle:hover {
-      background-color: var(--text-color);
-      color: var(--bg-color);
+    .lb-tab:hover { color: var(--d-green); border-color: var(--d-green-dim); }
+    .lb-tab.is-active { color: #05060a; background: var(--d-green); border-color: var(--d-green); }
+
+    .lb-table { width: 100%; border-collapse: collapse; font-family: var(--d-mono); font-size: 15px; }
+    .lb-table th {
+      padding: 11px 12px;
+      font-family: var(--d-font);
+      font-size: 8px;
+      color: var(--d-muted);
+      text-align: left;
+      border-bottom: 2px solid var(--d-line);
+      white-space: nowrap;
     }
-    
-    h1 {
-      font-size: 2.5em;
-      margin-top: 50px;
-      text-shadow: 0 0 10px rgba(255, 0, 0, 0.7);
-      animation: glowText 1.5s ease-in-out infinite alternate;
-    }
-    
-    @keyframes glowText {
-      from { text-shadow: 0 0 5px var(--accent-color); }
-      to { text-shadow: 0 0 15px var(--accent-color), 0 0 20px var(--accent-color); }
-    }
-    
-    p {
-      font-size: 1.1em;
-      margin-bottom: 20px;
-    }
-    
-    table {
-      margin: 20px auto;
-      border-collapse: collapse;
-      width: 90%;
-      max-width: 800px;
-      box-shadow: 0 0 20px var(--border-color);
-    }
-    
-    th, td {
-      border: 1px solid var(--border-color);
-      padding: 12px;
-    }
-    
-    th {
-      background-color: var(--panel-color);
-      font-size: 1.2em;
-      text-transform: uppercase;
-    }
-    
-    tr:nth-child(even) {
-      background-color: var(--alt-bg-color);
-    }
-    
-    tr:hover {
-      background-color: var(--panel-color);
-    }
-    
-    a {
-      color: var(--text-color);
-      text-decoration: none;
-      border: 2px solid var(--border-color);
-      padding: 10px 15px;
-      transition: all 0.3s ease;
-      display: inline-block;
-      margin: 10px;
-      box-shadow: 0 0 10px var(--border-color);
-    }
-    
-    a:hover {
-      background-color: var(--text-color);
-      color: var(--bg-color);
-      transform: translateY(-3px);
-      box-shadow: 0 5px 15px var(--border-color);
-    }
-    
-    .game-tabs {
-      display: flex;
-      justify-content: center;
-      flex-wrap: wrap;
-      margin: 20px 0;
-      gap: 10px;
-    }
-    
-    .game-tab {
-      padding: 10px 15px;
-      background: var(--panel-color);
-      border: 2px solid var(--border-color);
-      color: var(--text-color);
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-    
-    .game-tab:hover, .game-tab.active {
-      background: var(--text-color);
-      color: var(--bg-color);
-    }
-    
-    .top-player {
-      animation: glow 1.5s ease-in-out infinite alternate;
-    }
-    
-    @keyframes glow {
-      from { background-color: var(--alt-bg-color); }
-      to { background-color: var(--highlight-bg); }
-    }
-    
-    /* Mobile responsiveness */
-    @media (max-width: 768px) {
-      h1 { font-size: 1.8em; }
-      th, td { padding: 8px; font-size: 0.9em; }
-      .game-tab { padding: 8px 12px; font-size: 0.8em; }
-      a { padding: 8px 12px; }
-    }
+    .lb-table td { padding: 11px 12px; border-bottom: 1px solid rgba(30, 44, 63, 0.55); }
+    .lb-table tbody tr:hover { background: rgba(0, 255, 157, 0.04); }
+    .lb-table .r { text-align: right; font-variant-numeric: tabular-nums; }
+
+    .lb-1 td { color: var(--d-gold); font-weight: 700; }
+    .lb-2 td { color: #e6f2fb; }
+    .lb-3 td { color: var(--d-green); }
+
+    .lb-medal { font-family: var(--d-font); font-size: 11px; }
+    .lb-game { color: var(--d-muted); font-size: 13px; }
+    .lb-me { background: rgba(176, 38, 255, 0.1) !important; }
+    .lb-you { color: var(--d-purple); font-family: var(--d-font); font-size: 7px; margin-left: 7px; }
+
+    .lb-empty { padding: 34px 12px; text-align: center; color: var(--d-muted); font-family: var(--d-mono); }
+    .lb-scroll { overflow-x: auto; }
   </style>
 </head>
-<body class="dark-mode">
-  <!-- Navigation Bar -->
-  <div class="nav-bar">
-    <a href="index.html">Home</a>
-    <a href="leaderboard.html">Leaderboard</a>
-    <a href="Games/AntsSimulator/index.html">Ants Simulator</a>
-    <a href="Games/NerdSoccer/PenFootballGameWithWallBounce.html">Nerd Soccer</a>
-    <button id="theme-toggle">Toggle Theme</button>
-  </div>
+<body class="d-body">
 
-  <h1>Degen Leaderboards</h1>
-  <p>Check out the top scores from all our badass games. No bullshit—just scores.</p>
-  
-  <div class="game-tabs">
-    <div class="game-tab active" data-game="all">All Games</div>
-    <div class="game-tab" data-game="Degenlander">Degenlander</div>
-    <div class="game-tab" data-game="AntsSimulator">Ants Simulator</div>
-    <div class="game-tab" data-game="NerdSoccer">NerdSoccer</div>
-    <div class="game-tab" data-game="SpaceshipWorld">SpaceshipWorld</div>
-  </div>
-  
-  <table>
-    <thead>
-      <tr>
-        <th>Rank</th>
-        <th>Game</th>
-        <th>Player</th>
-        <th>Score</th>
-        <th>Date</th>
-      </tr>
-    </thead>
-    <tbody id="leaderboardBody">
-      <!-- Data will be populated by JavaScript -->
-    </tbody>
-  </table>
-  
+  <main class="d-wrap" style="padding-top:38px">
+
+    <header class="d-center" style="margin-bottom:34px">
+      <h1 class="d-h1 d-glitch" data-text="LEADERBOARD" style="color:var(--d-gold)">LEADERBOARD</h1>
+      <p class="d-mono d-muted" style="font-size:16px;line-height:1.6;max-width:620px;margin:0 auto">
+        Every score ever posted from this browser, plus a few house rows so the board is never empty.
+        <br><span class="d-green">No account. No email. No verification.</span>
+      </p>
+    </header>
+
+    <div id="myStats" class="d-stats" style="margin-bottom:30px"></div>
+
+    <div class="lb-tabs" id="lbTabs" role="tablist"></div>
+
+    <div class="d-panel d-corners lb-scroll">
+      <table class="lb-table">
+        <thead>
+          <tr>
+            <th style="width:70px">RANK</th>
+            <th>PLAYER</th>
+            <th id="thGame">GAME</th>
+            <th class="r" style="width:130px">SCORE</th>
+            <th class="r" style="width:120px">WHEN</th>
+          </tr>
+        </thead>
+        <tbody id="lbBody"></tbody>
+      </table>
+    </div>
+
+    <div class="d-row" style="margin-top:26px">
+      <a class="d-btn d-btn--gold" href="index.html#arcade">&#9654; GO BEAT IT</a>
+      <button class="d-btn d-btn--ghost" id="lbClear">CLEAR MY SCORES</button>
+    </div>
+
+    <p class="d-center d-mono d-muted" style="font-size:13px;margin-top:26px;line-height:1.7">
+      Rows tagged <span class="d-gold">HOUSE</span> are seeded by the site, not real players.
+      Everything else was posted from this browser.
+    </p>
+
+  </main>
+
+  <footer class="d-footer">
+    <p><b class="d-green">DEGEN LANDER PORTAL</b> — bragging rights only. Worth exactly $0.00.</p>
+    <p><a href="index.html">Arcade</a> · <a href="leaderboard.html">Leaderboard</a></p>
+  </footer>
+
+  <script src="js/degen-theme.js"></script>
+  <script src="js/sound-effects.js"></script>
+  <script src="js/leaderboard.js"></script>
   <script>
-    // Theme toggle functionality
-    const themeToggle = document.getElementById('theme-toggle');
-    const body = document.body;
-    
-    // Check for saved theme preference or use default dark mode
-    const savedTheme = localStorage.getItem('theme') || 'dark';
-    body.className = savedTheme + '-mode';
-    themeToggle.textContent = savedTheme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
-    
-    // Toggle between light and dark themes
-    themeToggle.addEventListener('click', () => {
-      if (body.classList.contains('dark-mode')) {
-        body.classList.replace('dark-mode', 'light-mode');
-        localStorage.setItem('theme', 'light');
-        themeToggle.textContent = '🌙 Dark Mode';
-      } else {
-        body.classList.replace('light-mode', 'dark-mode');
-        localStorage.setItem('theme', 'dark');
-        themeToggle.textContent = '☀️ Light Mode';
-      }
-    });
-    
-    // Sample leaderboard data - in a real app, this would come from a database
-    const leaderboardData = [
-      { id: 1, game: "Degenlander", player: "Fucking Legend", score: 9999, date: "2025-03-10" },
-      { id: 2, game: "Ants Simulator", player: "Bug Buster", score: 8765, date: "2025-03-09" },
-      { id: 3, game: "NerdSoccer", player: "Geeky Winner", score: 5432, date: "2025-03-08" },
-      { id: 4, game: "SpaceshipWorld", player: "SpaceFucker", score: 6789, date: "2025-03-07" },
-      { id: 5, game: "Degenlander", player: "Diamond Hands", score: 8888, date: "2025-03-06" },
-      { id: 6, game: "Ants Simulator", player: "Colony Master", score: 7654, date: "2025-03-05" },
-      { id: 7, game: "NerdSoccer", player: "Brain Ball", score: 4321, date: "2025-03-04" },
-      { id: 8, game: "SpaceshipWorld", player: "Astro Degen", score: 5678, date: "2025-03-03" },
-      { id: 9, game: "Degenlander", player: "HODL King", score: 7777, date: "2025-03-02" },
-      { id: 10, game: "Ants Simulator", player: "Insect God", score: 6543, date: "2025-03-01" }
-    ];
-    
-    // Function to render the leaderboard
-    function renderLeaderboard(gameFilter = 'all') {
-      const tbody = document.getElementById('leaderboardBody');
-      tbody.innerHTML = '';
-      
-      // Filter data if needed
-      let filteredData = leaderboardData;
-      if (gameFilter !== 'all') {
-        filteredData = leaderboardData.filter(entry => entry.game === gameFilter);
-      }
-      
-      // Sort by score (highest first)
-      filteredData.sort((a, b) => b.score - a.score);
-      
-      // Render rows
-      filteredData.forEach((entry, index) => {
-        const row = document.createElement('tr');
-        // Add top-player class to the top player(s)
-        if (index === 0) row.classList.add('top-player');
-        
-        row.innerHTML = `
-          <td>${index + 1}</td>
-          <td>${entry.game}</td>
-          <td>${entry.player}</td>
-          <td>${entry.score}</td>
-          <td>${entry.date}</td>
-        `;
-        tbody.appendChild(row);
-      });
-      
-      // If no results, display message
-      if (filteredData.length === 0) {
-        const row = document.createElement('tr');
-        row.innerHTML = '<td colspan="5">No scores found for this game yet.</td>';
-        tbody.appendChild(row);
-      }
+  (function () {
+    'use strict';
+    var T = window.DegenTheme, S = window.DegenScores;
+    var $ = function (id) { return document.getElementById(id); };
+
+    var GAME_LABELS = {
+      all: 'ALL GAMES',
+      degenlander: 'DEGEN LANDER',
+      rugpull: 'RUGPULL ROULETTE',
+      slots: 'DEGENERATE SLOTS',
+      cryptoshitter: 'CRYPTO SHITTER',
+      spaceship: 'SPACESHIP WORLD',
+      ants: 'ANT SIMULATOR',
+      nerdsoccer: 'NERD SOCCER',
+      laby: 'NEON LABYRINTH',
+    };
+
+    var current = 'all';
+
+    function relTime(ts) {
+      if (!ts) return '—';
+      var s = Math.max(1, Math.floor((Date.now() - ts) / 1000));
+      if (s < 60) return s + 's ago';
+      var m = Math.floor(s / 60);
+      if (m < 60) return m + 'm ago';
+      var h = Math.floor(m / 60);
+      if (h < 24) return h + 'h ago';
+      var d = Math.floor(h / 24);
+      if (d < 30) return d + 'd ago';
+      return new Date(ts).toISOString().slice(0, 10);
     }
-    
-    // Initialize and add event listeners
-    document.addEventListener('DOMContentLoaded', function() {
-      // Initial render
-      renderLeaderboard();
-      
-      // Tab switching
-      const tabs = document.querySelectorAll('.game-tab');
-      tabs.forEach(tab => {
-        tab.addEventListener('click', function() {
-          // Update active tab
-          tabs.forEach(t => t.classList.remove('active'));
-          this.classList.add('active');
-          
-          // Render filtered leaderboard
-          renderLeaderboard(this.dataset.game);
+
+    function buildTabs() {
+      var host = $('lbTabs');
+      var keys = ['all'].concat(Object.keys(GAME_LABELS).filter(function (k) { return k !== 'all'; }));
+      host.innerHTML = keys.map(function (k) {
+        return '<button class="lb-tab' + (k === current ? ' is-active' : '') +
+          '" role="tab" data-game="' + k + '">' + GAME_LABELS[k] + '</button>';
+      }).join('');
+      host.addEventListener('click', function (e) {
+        var btn = e.target.closest('.lb-tab');
+        if (!btn) return;
+        current = btn.getAttribute('data-game');
+        Array.prototype.forEach.call(host.children, function (c) {
+          c.classList.toggle('is-active', c === btn);
         });
+        if (window.DegenSound) DegenSound.play('ui', 'click');
+        render();
       });
-      
-      // Try to load local storage data if available
-      try {
-        const localData = localStorage.getItem('degenLeaderboardData');
-        if (localData) {
-          const parsedData = JSON.parse(localData);
-          if (Array.isArray(parsedData) && parsedData.length > 0) {
-            // Merge with sample data - in a real app we'd handle this differently
-            parsedData.forEach(item => {
-              if (!leaderboardData.some(d => d.id === item.id)) {
-                leaderboardData.push(item);
-              }
-            });
-            renderLeaderboard();
-          }
-        }
-      } catch (e) {
-        console.error('Error loading local leaderboard data:', e);
-      }
-      
-      // Try to fetch Firebase data if available
-      try {
-        // Check if Firebase is loaded from any game
-        if (typeof firebase !== 'undefined' && firebase.database) {
-          const leaderboardRef = firebase.database().ref('leaderboard');
-          leaderboardRef.orderByChild('score').limitToLast(20).once('value', (snapshot) => {
-            const fbData = snapshot.val();
-            if (fbData) {
-              // Convert Firebase object to array and add to leaderboard
-              Object.keys(fbData).forEach((key, index) => {
-                const item = fbData[key];
-                leaderboardData.push({
-                  id: key,
-                  game: item.game || "Degenlander",
-                  player: item.name,
-                  score: item.score,
-                  date: new Date(item.timestamp).toISOString().split('T')[0]
-                });
-              });
-              renderLeaderboard();
-            }
-          }).catch(err => {
-            console.error("Firebase data load error", err);
-          });
-        }
-      } catch (e) {
-        console.error('Error loading Firebase data:', e);
-      }
-    });
-  </script>
-  
-  <!-- Firebase scripts - same as in games for consistency -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-  <script src="config.js"></script>
-  
-  <script>
-    // Firebase configuration - using centralized config
-    try {
-      if (!firebase.apps.length) {
-        // Initialize Firebase using the imported config
-        firebase.initializeApp(firebaseConfig);
-        
-        // Test connection and log success
-        console.log("Firebase initialized with project:", firebaseConfig.projectId);
-      }
-    } catch (e) {
-      console.error("Firebase init error", e);
     }
+
+    function render() {
+      var rows = S.rows(current);
+      var body = $('lbBody');
+      $('thGame').style.display = current === 'all' ? '' : 'none';
+
+      if (!rows.length) {
+        body.innerHTML = '<tr><td colspan="5" class="lb-empty">Nothing here yet. ' +
+          'Go play something and post a score.</td></tr>';
+        return;
+      }
+
+      body.innerHTML = rows.map(function (r, i) {
+        var medal = i === 0 ? '01' : i === 1 ? '02' : i === 2 ? '03' : String(i + 1).padStart(2, '0');
+        var cls = i < 3 ? ' class="lb-' + (i + 1) + (r.mine ? ' lb-me' : '') + '"' : (r.mine ? ' class="lb-me"' : '');
+        var nameCell = escapeHtml(r.name) +
+          (r.house ? ' <span class="d-badge d-badge--out">HOUSE</span>' : '') +
+          (r.mine ? '<span class="lb-you">YOU</span>' : '');
+        var gameCell = current === 'all'
+          ? '<td class="lb-game">' + (GAME_LABELS[r.game] || r.game) + '</td>' : '';
+        return '<tr' + cls + '>' +
+          '<td class="lb-medal">' + medal + '</td>' +
+          '<td>' + nameCell + '</td>' +
+          gameCell +
+          '<td class="r">' + r.score.toLocaleString('en-US') + '</td>' +
+          '<td class="r lb-game">' + relTime(r.ts) + '</td>' +
+          '</tr>';
+      }).join('');
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+      });
+    }
+
+    function stats() {
+      var board = S.rows('all');
+      var mine = board.filter(function (r) { return r.mine; });
+      var best = mine.reduce(function (a, r) { return Math.max(a, r.score); }, 0);
+      var games = {};
+      mine.forEach(function (r) { games[r.game] = true; });
+
+      // Rank of the player's single best row on the combined board.
+      var rank = '—';
+      if (mine.length) {
+        for (var i = 0; i < board.length; i++) {
+          if (board[i].mine && board[i].score === best) { rank = '#' + (i + 1); break; }
+        }
+      }
+
+      var cards = [
+        ['SCORES POSTED', String(mine.length)],
+        ['BEST SCORE', best ? best.toLocaleString('en-US') : '—'],
+        ['GAMES PLAYED', String(Object.keys(games).length)],
+        ['BEST RANK', rank],
+      ];
+      $('myStats').innerHTML = cards.map(function (c) {
+        return '<div class="d-stat"><span class="d-stat__k">' + c[0] + '</span>' +
+          '<span class="d-stat__v">' + c[1] + '</span></div>';
+      }).join('');
+    }
+
+    function boot() {
+      buildTabs();
+      render();
+      stats();
+      $('lbClear').addEventListener('click', function () {
+        if (!confirm('Delete every score you have posted from this browser?')) return;
+        S.clear();
+        T.toast('Your scores are gone. Fresh start.', 'gold');
+        render();
+        stats();
+      });
+    }
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+    else boot();
+  })();
   </script>
 </body>
 </html>

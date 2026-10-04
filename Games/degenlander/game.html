@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>DEGEN LANDER - Game</title>
+  <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <!-- Import retro font for degen aesthetics -->
   <link href="https://fonts.googleapis.com/css?family=Press+Start+2P" rel="stylesheet">
@@ -1265,35 +1266,13 @@
       gameLoop();
     }
     window.onload = initGame;
-    
-    // Get player name and stock symbol from URL parameters
-    const urlParams = new URLSearchParams(window.location.search);
-    const playerName = urlParams.get('playerName') || 'Player';
-    const stockSymbol = urlParams.get('stockSymbol') || 'AAPL';
-    
-    document.getElementById('playerName').innerText = playerName;
-    document.getElementById('stockSymbol').innerText = stockSymbol;
-    
-    // Add Back to Home button
-    const backButton = document.createElement('button');
-    backButton.innerHTML = 'BACK TO FUCKING HOME';
-    backButton.style.position = 'absolute';
-    backButton.style.top = '10px';
-    backButton.style.left = '10px';
-    backButton.style.zIndex = '1000';
-    backButton.style.padding = '10px 20px';
-    backButton.style.backgroundColor = '#0f0';
-    backButton.style.color = '#000';
-    backButton.style.border = 'none';
-    backButton.style.borderRadius = '5px';
-    backButton.style.fontWeight = 'bold';
-    backButton.style.cursor = 'pointer';
-    
-    backButton.addEventListener('click', function() {
-        window.location.href = '../../index.html';
-    });
-    
-    document.body.appendChild(backButton);
+
+    // Show who is playing / which stock they picked, using the HUD the game already owns.
+    // (An earlier copy-paste block here re-declared urlParams/backButton and wrote into
+    //  #playerName / #stockSymbol, neither of which exist in this file, so it crashed the
+    //  whole script with "Identifier 'backButton' has already been declared".)
+    document.getElementById('info').textContent =
+      `Degen: ${playerName}  |  Stock: ${stockSymbol}  |  Pick a difficulty to launch.`;
   </script>
   
   <!-- End Level Options Overlay -->

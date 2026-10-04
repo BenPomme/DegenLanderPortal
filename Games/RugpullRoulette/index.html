@@ -4,10 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Rugpull Roulette - The Degenerates' Casino</title>
+  <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <!-- Import shared DegenlanderPortal libraries -->
-  <script src="/js/degen-theme.js"></script>
-  <script src="/js/sound-effects.js"></script>
+  <script src="../../js/degen-theme.js"></script>
+  <script src="../../js/sound-effects.js"></script>
   <style>
     * {
       margin: 0;
@@ -18,7 +19,7 @@
       background-color: var(--bg-color, #0a0a0a);
       font-family: 'Press Start 2P', cursive;
       color: var(--text-color, #33ff33);
-      min-height: 100vh;
+      min-height: calc(100vh - var(--d-nav-h, 54px));
       overflow-x: hidden;
       display: flex;
       flex-direction: column;
@@ -828,10 +829,10 @@
         gameOverMessage.textContent = 'You made some gains. Not bad for a brain-dead degen with shit for brains.';
       } else if (playerBalance < STARTING_BALANCE * 5) {
         gameOverTitle.textContent = 'APE STRONG, MOTHERFUCKER!';
-        gameOverMessage.textContent = 'Impressive gains! You've got diamond hands, you crazy bastard!';
+        gameOverMessage.textContent = 'Impressive gains! You\'ve got diamond hands, you crazy bastard!';
       } else {
         gameOverTitle.textContent = 'CRYPTO CHAD SUPREME!';
-        gameOverMessage.textContent = 'You're a fucking legend! Buy that Lambo and fuck everyone\'s wife!';
+        gameOverMessage.textContent = 'You\'re a fucking legend! Buy that Lambo and fuck everyone\'s wife!';
       }
       
       // Play game over sound

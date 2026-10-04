@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Labyrinthe Degen 18+ Ultra Moderne</title>
+  <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
   <style>
     /* Reset & Base */
@@ -132,14 +133,25 @@
     <button class="retryButton" id="submitScore">Submit Score</button>
     <button class="retryButton" id="retryButton">Retry</button>
   </div>
+  <script src="../../js/degen-theme.js"></script>
+  <script src="../../js/sound-effects.js"></script>
   <script>
     document.addEventListener("DOMContentLoaded", function() {
       // Variable de contrôle
       let controls = "keyboard"; // contrôle par défaut
 
-      // Déclaration d'un son "fart" (récupéré en ligne)
-      const fartSound = new Audio("https://www.soundjay.com/mechanical/sounds/fart-01.mp3");
-      fartSound.volume = 0.5;
+      // The original code streamed a fart.mp3 from soundjay.com, which is no longer
+      // reachable (the browser blocked it with ERR_BLOCKED_BY_ORB). It is now
+      // synthesised locally by the shared sound engine, so nothing is downloaded
+      // and the effect always plays. The object below keeps the old `.play()` API.
+      const fartSound = {
+        volume: 0.5,
+        play: function () {
+          if (window.DegenSound) {
+            DegenSound.play('game', 'rugpull');
+          }
+        }
+      };
 
       // Toutes les fonctions et variables du jeu sont encapsulées dans une IIFE
       (function() {

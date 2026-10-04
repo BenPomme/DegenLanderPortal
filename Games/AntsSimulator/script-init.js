@@ -48,59 +48,18 @@ dayNightToggle.addEventListener('click', function() {
     }
 });
 
-// Initialize the final leaderboard
-updateFinalLeaderboard();
-
-// Preload ant images
-function preloadImages() {
-    // Create image elements for preloading
-    const imageUrls = [
-        './ant.png',
-        './worker_ant.png',
-        './soldier_ant.png',
-        './smarty.png',
-        './aggressive_smarty.png',
-        './defensive_smarty.png',
-        './obstacle.png'
-    ];
-    
-    // Create a counter to track when all images are loaded
-    let loadedImages = 0;
-    
-    // Create image elements and set onload handlers
-    imageUrls.forEach(url => {
-        const img = new Image();
-        img.onload = function() {
-            loadedImages++;
-            // When all images are loaded, the game is ready to start
-            if (loadedImages === imageUrls.length) {
-                console.log("All ant images preloaded successfully");
-                document.getElementById('startButton').disabled = false;
-            }
-        };
-        
-        img.onerror = function() {
-            console.warn(`Failed to load image: ${url}`);
-            loadedImages++;
-            // Even if an image fails to load, we should still enable the start button
-            if (loadedImages === imageUrls.length) {
-                console.log("All ant images preloaded (some with fallbacks)");
-                document.getElementById('startButton').disabled = false;
-            }
-        };
-        
-        // Set the source to trigger loading
-        img.src = url;
-    });
-}
-
-// Disable start button until images are loaded
-document.getElementById('startButton').disabled = true;
+// NOTE: the old code here called updateFinalLeaderboard() and resizeCanvas() at parse
+// time, but both are defined in script.js, which is loaded *after* this file. That threw
+// "updateFinalLeaderboard is not defined" and killed the rest of this script.
+// It also ran a preloadImages() routine that waited on 7 local PNGs that do not exist in
+// this repo, keeping the Start button disabled until every one of them 404'd.
+// The ant sprites are now drawn procedurally in script.js, so there is nothing to preload.
+// Everything that needs script.js is therefore deferred until the page has fully loaded.
 
 // Initialize DegenSound with game sound effects
 document.addEventListener('DOMContentLoaded', function() {
     // Check if DegenSound exists
-    if (typeof DegenSound \!== 'undefined') {
+    if (typeof DegenSound !== 'undefined') {
         DegenSound.init({
             groups: {
                 'game': {
@@ -117,11 +76,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Preload ant images before the user starts the game
-preloadImages();
-
-// Start with canvas resized properly
-resizeCanvas();
+// Enable the start button immediately: sprites are generated, not downloaded.
+document.getElementById('startButton').disabled = false;
 
 // Call apply theme function on load to ensure proper styling
 document.addEventListener('DOMContentLoaded', function() {
@@ -134,4 +90,11 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('startButton').addEventListener('click', function() {
         console.log("Starting ant simulation...");
     });
+});
+
+// Now that every script (including script.js) has been parsed, it is safe to touch
+// functions that live in the other file.
+window.addEventListener('load', function() {
+    if (typeof resizeCanvas === 'function') resizeCanvas();
+    if (typeof updateFinalLeaderboard === 'function') updateFinalLeaderboard();
 });
