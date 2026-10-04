@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Leaderboard — DEGEN LANDER PORTAL</title>
+  <title>Leaderboard | DEGEN LANDER PORTAL</title>
   <meta name="description" content="Top scores across every DegenLander game. No accounts, no email, no verification.">
   <meta name="theme-color" content="#05060a">
   <link rel="stylesheet" href="css/degen.css">
@@ -96,7 +96,7 @@
   </main>
 
   <footer class="d-footer">
-    <p><b class="d-green">DEGEN LANDER PORTAL</b> — bragging rights only. Worth exactly $0.00.</p>
+    <p><b class="d-green">DEGEN LANDER PORTAL</b>: bragging rights only. Worth exactly $0.00.</p>
     <p><a href="index.html">Arcade</a> · <a href="leaderboard.html">Leaderboard</a></p>
   </footer>
 
@@ -124,7 +124,7 @@
     var current = 'all';
 
     function relTime(ts) {
-      if (!ts) return '—';
+      if (!ts) return '-';
       var s = Math.max(1, Math.floor((Date.now() - ts) / 1000));
       if (s < 60) return s + 's ago';
       var m = Math.floor(s / 60);
@@ -198,7 +198,7 @@
       mine.forEach(function (r) { games[r.game] = true; });
 
       // Rank of the player's single best row on the combined board.
-      var rank = '—';
+      var rank = '-';
       if (mine.length) {
         for (var i = 0; i < board.length; i++) {
           if (board[i].mine && board[i].score === best) { rank = '#' + (i + 1); break; }
@@ -207,7 +207,7 @@
 
       var cards = [
         ['SCORES POSTED', String(mine.length)],
-        ['BEST SCORE', best ? best.toLocaleString('en-US') : '—'],
+        ['BEST SCORE', best ? best.toLocaleString('en-US') : '-'],
         ['GAMES PLAYED', String(Object.keys(games).length)],
         ['BEST RANK', rank],
       ];

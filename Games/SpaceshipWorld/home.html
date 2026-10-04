@@ -2,6 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Spaceship World - Fly to New Heights</title>
   <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
   <style>
@@ -307,6 +308,8 @@
   
   <!-- Import shared DegenlanderPortal libraries -->
   <script src="../../js/degen-theme.js"></script>
+  <script src="../../js/leaderboard.js"></script>
+  <script src="../../js/game-bridge.js"></script>
   <script src="../../js/sound-effects.js"></script>
 </head>
 <body>
@@ -584,6 +587,8 @@
       leaderboard.push({ name: playerName, score: totalMoney });
       updateLeaderboard();
       info.textContent='All 5 rounds done! You got '+ totalMoney +' money total. Return to menu.';
+      // Post the completed 5-round run to the portal-wide leaderboard.
+      if (window.DegenGame) window.DegenGame.finish('spaceship', playerName, Math.round(totalMoney));
       restartBtn.textContent='Return to Menu';
       restartBtn.style.display='inline-block';
       gameState='allDone';

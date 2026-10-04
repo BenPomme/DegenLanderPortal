@@ -1,7 +1,9 @@
 "use strict"; // Enable strict mode for better error handling
 
-// Set TensorFlow backend for ML
-tf.setBackend('webgl');
+// NOTE: this file used to start with `tf.setBackend('webgl')`, which pulled in the
+// entire TensorFlow.js bundle (~1 MB over the network, and a hard crash whenever
+// the CDN was unreachable) purely to set a backend that nothing here ever uses.
+// The "smart ant" behaviour is all hand-rolled heuristics further down.
 
 // Helper function to play sound safely
 function playSound(id) {
@@ -1179,6 +1181,8 @@ function submitScore(name, score) {
     finalScores.sort((a, b) => b.score - a.score);
     localStorage.setItem('finalScoreLeaderboard', JSON.stringify(finalScores));
     updateFinalLeaderboard();
+    // Also post to the portal-wide board so the run shows up on leaderboard.html.
+    if (window.DegenGame) window.DegenGame.finish('ants', name, score);
 }
 function updateFinalLeaderboard() {
     let finalScores = JSON.parse(localStorage.getItem('finalScoreLeaderboard') || '[]');

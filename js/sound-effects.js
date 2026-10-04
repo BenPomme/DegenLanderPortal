@@ -1,5 +1,5 @@
 /* ===========================================================================
-   DEGENLANDER PORTAL — sound engine
+   DEGENLANDER PORTAL: sound engine
 
    Replaces the original js/sound-effects.js, which pointed every single sound
    at one MDN "t-rex roar" URL (a demo asset that is no longer hosted), and the
@@ -89,7 +89,7 @@
       osc.stop(t0 + dur + 0.02);
     },
 
-    /** Filtered noise burst — explosions, hits, thrust. */
+    /** Filtered noise burst: explosions, hits, thrust. */
     noise: function (opt) {
       if (!ctx || DegenSound.isMuted || !DegenSound.soundEnabled) return;
       opt = opt || {};
@@ -196,8 +196,8 @@
 
     // ---------------------------------------------------------------- play ---
     /**
-     * play('game', 'explosion')  — legacy form
-     * play('explosion')          — short form
+     * play('game', 'explosion')   (legacy form)
+     * play('explosion')           (short form)
      */
     play: function (a, b) {
       if (!DegenSound.soundEnabled) return;
@@ -287,7 +287,7 @@
   if (localStorage.getItem('degen_muted') === '1') DegenSound.isMuted = true;
   window.DegenSound = DegenSound;
 
-  // Warm up as soon as the DOM is ready — creating an AudioContext before any
+  // Warm up as soon as the DOM is ready: creating an AudioContext before any
   // gesture is allowed, it just starts suspended.
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function () { DegenSound.init(); });

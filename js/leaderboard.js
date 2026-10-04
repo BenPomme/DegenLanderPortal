@@ -1,9 +1,9 @@
 /* ===========================================================================
-   DEGENLANDER PORTAL — scores
+   DEGENLANDER PORTAL: scores
 
    The original leaderboard used Firebase Realtime Database at
-   degenlander.firebaseio.com. That database no longer exists — it now answers
-   `{"error":"404 Not Found"}` — and no `databaseURL` was ever configured, so the
+   degenlander.firebaseio.com. That database no longer exists: it now answers
+   `{"error":"404 Not Found"}`. No `databaseURL` was ever configured, so the
    board could never load for anyone. This module replaces it with a store that
    always works and needs no server:
 

@@ -1,48 +1,103 @@
 # DegenLander Portal
 
-A collection of retro-styled games with crypto/finance themes including:
-- Degenlander
-- Ants Simulator
-- NerdSoccer
-- SpaceshipWorld
-- CryptoShitter
-- RugpullRoulette
-- DegenerateSlots
+A free browser arcade of crypto-themed games. No wallet, no signup, no backend.
 
-## Development Setup
+**Live:** https://benpomme.github.io/DegenLanderPortal/
 
-1. Clone the repository
-2. Create a `.env` file in the root directory with the following variables:
-```
-FIREBASE_API_KEY=your_api_key
-FIREBASE_AUTH_DOMAIN=your_auth_domain
-FIREBASE_PROJECT_ID=your_project_id
-FIREBASE_STORAGE_BUCKET=your_storage_bucket
-FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
-FIREBASE_APP_ID=your_app_id
-```
+## The games
 
-3. Set up Firebase:
-   - Add your domain to authorized domains in Firebase Authentication Settings
-   - Apply the security rules from js/firebase-rules.json to your Firebase Realtime Database
-   - Restrict API access in Firebase Console if needed
+| Game | What it is |
+|---|---|
+| [Degen Lander](Games/degenlander/index.html) | Land a rocket on a live candle chart without crashing |
+| [Rugpull Roulette](Games/RugpullRoulette/index.html) | Bet on which shitcoin gets rugged next, ten rounds |
+| [Degenerate Slots](Games/DegenerateSlots/index.html) | A slot machine that has never once been kind |
+| [Crypto Shitter](Games/CryptoShitter/index.html) | Dump your bags before the dev pulls liquidity |
+| [Spaceship World](Games/SpaceshipWorld/home.html) | Five rounds across the solar system |
+| [Ant Simulator](Games/AntsSimulator/index.html) | Command a colony and out-breed the smart ants |
+| [Nerd Soccer](Games/NerdSoccer/PenFootballGameWithWallBounce.html) | Penalty shootout with wall bounces |
+| [Neon Labyrinth](Games/laby/labirinthgame.html) | Escape the maze before the clock eats you |
 
-4. Update stock data (for Degenlander):
-```
-cd Games/degenlander
-python update_stock_data.py
+## Running it locally
+
+The site is plain static HTML, CSS and JavaScript. There is no build step.
+
+```bash
+python3 -m http.server 8811
+# then open http://127.0.0.1:8811/
 ```
 
-## Security Notes
+Any static file server works. Opening the HTML files directly with `file://`
+mostly works, but a server is recommended so relative paths and `fetch` behave
+the same as in production.
 
-- The Firebase configuration is stored in config.js and included in the relevant HTML files
-- .env file should never be committed to the repository
-- Security is primarily enforced through Firebase Rules rather than API key protection
-- Always restrict database access using proper Firebase Security Rules
+## How it is put together
+
+```
+index.html              the arcade
+leaderboard.html        global scores
+css/degen.css           the whole design system (colours, nav, cards, CRT)
+js/degen-theme.js       portal core: base path, nav injection, CRT, toasts
+js/arcade.js            arcade page: ticker, stats, animated game cards
+js/sound-effects.js     Web Audio synthesizer, generates every sound effect
+js/leaderboard.js       the score store
+js/game-bridge.js       adapter the games call when a run ends
+assets/fonts/           self-hosted Press Start 2P (latin subset)
+Games/<name>/           one self-contained folder per game
+docs/VIRAL-IDEAS.md     10 concrete growth ideas, ranked
+```
+
+### Adding a game
+
+1. Drop the folder under `Games/`.
+2. Include the portal scripts, using relative paths so project-page hosting works:
+
+```html
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+<script src="../../js/degen-theme.js"></script>
+<script src="../../js/sound-effects.js"></script>
+<script src="../../js/leaderboard.js"></script>
+<script src="../../js/game-bridge.js"></script>
+```
+
+3. Add an entry to the `GAMES` array in `js/degen-theme.js`. The nav, the arcade
+   grid and the leaderboard tabs all read from that one list.
+4. When a run ends, call:
+
+```js
+DegenGame.finish('your-game-id', playerName, score);
+```
+
+### Conventions that matter
+
+- **Every internal path must be relative.** The site is published as a GitHub
+  Pages *project* page, so it lives under `/DegenLanderPortal/`, not at a domain
+  root. Root-absolute paths like `/js/foo.js` silently 404.
+- **Always include a viewport meta tag.** Without it, mobile Chrome falls back to
+  a 980px layout viewport and the page renders as an unreadable thumbnail.
+- **No new third-party CDNs.** Earlier versions loaded Tailwind, TensorFlow.js and
+  placeholder images from CDNs that either vanished or were blocked. Everything
+  needed is vendored or generated.
+
+## Scores and privacy
+
+Scores are stored in the browser's `localStorage`. Nothing is uploaded anywhere,
+there are no cookies and there is no analytics. The seeded rows on the
+leaderboard are labelled `HOUSE` on purpose: they exist so a fresh browser does
+not see an empty table, and they are not presented as real players.
+
+The old Firebase Realtime Database (`degenlander.firebaseio.com`) no longer
+exists, so the previous cross-device leaderboard cannot work. `js/leaderboard.js`
+isolates all storage behind one small API, so swapping in a real backend later
+means editing that one file. See `docs/VIRAL-IDEAS.md` for the options.
 
 ## Deployment
 
-The site is deployed at [degenlander.com](https://degenlander.com) using GitHub Pages with a custom domain.
+GitHub Pages, free tier, deployed by `.github/workflows/deploy.yml` on every push
+to `main`. There is no custom domain: an earlier `CNAME` pointed at
+`degenlander.com`, whose DNS stopped resolving, which made GitHub Pages redirect
+the entire site to a dead domain. If a custom domain is wanted again, add it in
+the repository's Pages settings and re-add the `CNAME` file, after the domain's
+DNS actually resolves.
 
 ## License
 

@@ -1,5 +1,5 @@
 /* ===========================================================================
-   DEGENLANDER PORTAL — core design system
+   DEGENLANDER PORTAL: core design system
    A single stylesheet shared by the arcade, the lobby and every game.
    Aesthetic: CRT terminal + underground casino + candle chart.
    Everything is namespaced under d-* or scoped to the portal chrome so the
@@ -577,6 +577,24 @@ body.d-has-nav { padding-top: var(--d-nav-h); }
   .d-nav__link { padding: 7px 7px; font-size: 8px; }
   .d-nav__logo { font-size: 9px; margin-right: 8px; }
   .d-grid { grid-template-columns: 1fr; }
+}
+
+/* On narrow screens the ten nav links cannot all fit on one line and, because each
+   is `white-space: nowrap`, the row was forcing the whole layout viewport wider
+   than the phone (measured 425px of links inside a 390px viewport). Let the row
+   scroll sideways instead so the nav stays a single 54px bar. */
+@media (max-width: 860px) {
+  .d-nav { flex-wrap: nowrap; }
+  .d-nav__links {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    min-width: 0;
+  }
+  .d-nav__links::-webkit-scrollbar { display: none; }
+  .d-nav__right { flex: 0 0 auto; }
 }
 
 /* ===========================================================================

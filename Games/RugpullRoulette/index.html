@@ -8,6 +8,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <!-- Import shared DegenlanderPortal libraries -->
   <script src="../../js/degen-theme.js"></script>
+  <script src="../../js/leaderboard.js"></script>
+  <script src="../../js/game-bridge.js"></script>
   <script src="../../js/sound-effects.js"></script>
   <style>
     * {
@@ -813,6 +815,8 @@
     function endGame() {
       gameActive = false;
       spinning = false;
+      // Post the run to the portal-wide leaderboard.
+      if (window.DegenGame) window.DegenGame.finish('rugpull', null, Math.max(0, Math.round(playerBalance)));
       
       // Update final balance
       finalBalance.textContent = `$${playerBalance.toFixed(2)}`;

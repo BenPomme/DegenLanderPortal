@@ -1,10 +1,10 @@
 /* ===========================================================================
-   DEGENLANDER PORTAL — core module
+   DEGENLANDER PORTAL: core module
    Loaded by every page. Works out where the portal root is, injects the shared
    stylesheet when a page has not linked it directly, builds the navigation bar,
    adds the CRT overlay, and exposes small helpers (toast, sparkles, base path).
 
-   IMPORTANT — hosting: this site is published as a GitHub Pages *project* page,
+   IMPORTANT, hosting: this site is published as a GitHub Pages *project* page,
    i.e. https://<user>.github.io/DegenLanderPortal/. Every internal path must
    therefore be relative. This module derives the root from its own <script src>
    so the same code works at a domain root, on github.io, or from file://.
@@ -141,7 +141,7 @@
       return 0;
     });
     ordered.forEach(function (g) {
-      navLink(base(g.path), g.short || g.name, active === g.id, g.name + ' — ' + g.blurb);
+      navLink(base(g.path), g.short || g.name, active === g.id, g.name + ': ' + g.blurb);
     });
 
     var right = el('div', { class: 'd-nav__right' });

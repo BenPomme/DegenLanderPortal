@@ -1,7 +1,7 @@
 // Firebase configuration for DegenLander Portal.
 //
 // This file is loaded directly by static HTML on GitHub Pages, so it CANNOT use
-// `process.env` — that is a Node-only global and referencing it throws
+// `process.env`, that is a Node-only global and referencing it throws
 // "ReferenceError: process is not defined" in the browser, which previously killed
 // the leaderboard completely.
 //

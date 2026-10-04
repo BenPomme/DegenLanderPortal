@@ -1,5 +1,5 @@
 /* ===========================================================================
-   DEGENLANDER PORTAL — arcade page
+   DEGENLANDER PORTAL: arcade page
    Builds the price tape, the hero stat strip, the game grid (with an animated
    canvas preview per game) and the leaderboard teasers.
    Depends on js/degen-theme.js (window.DegenTheme) being loaded first.
@@ -288,7 +288,7 @@
       var a = document.createElement('a');
       a.className = 'd-card';
       a.href = T.base(game.path);
-      a.setAttribute('aria-label', game.name + ' — ' + game.blurb);
+      a.setAttribute('aria-label', game.name + ': ' + game.blurb);
 
       var art = document.createElement('div');
       art.className = 'd-card__art';
