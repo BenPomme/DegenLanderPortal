@@ -101,6 +101,9 @@ launch Google Chrome via `executablePath` instead.
 - The leaderboard is per-browser (`localStorage`). A shared board is the main thing
   standing between this and real virality. See `docs/VIRAL-IDEAS.md`; the top three
   ideas are share cards, a daily shared seed, and challenge links.
+- Challenge links (idea 3) are half-built: `Games/degenlander/` already accepts
+  `?seed=&diff=&ticker=`, so a link can reproduce an exact landing site. What is
+  missing is the "beat my score" banner and the head-to-head result.
 - `Games/degenlander/` contains four overlapping variants (index, game, simple-game,
   direct-game, test-stocks). `index.html` is the one the arcade links to. The others
   are reachable but are not linked from the portal nav; they could be consolidated.
@@ -108,3 +111,85 @@ launch Google Chrome via `executablePath` instead.
   revival). It is now in the nav as "NEON LABYRINTH" under an English title.
 - The `.d-crt` scanline overlay is a `position:fixed` element with `mix-blend-mode`.
   It is cheap, but worth re-measuring on low-end Android if FPS ever matters.
+
+---
+
+## Degen Lander: engine rewrite (2026-10-06)
+
+`Games/degenlander/index.html` was rebuilt around a new simulation engine in
+`Games/degenlander/lander.js` (~1350 lines). The old version is recoverable from
+git history; it was replaced rather than patched because the physics model itself
+was the problem.
+
+### What was wrong with the old one
+
+- **No delta-time anywhere.** Position, velocity, rotation and fuel were all
+  incremented by a fixed amount per frame, so the game ran 2.4x fast on a 144 Hz
+  monitor and slowly on a 30 Hz one.
+- **Gravity was 0.02 px/frame²**, about 72 px/s². The ship drifted down like a
+  leaf; there was no sense of mass.
+- **Rotation had no angular momentum.** The angle was changed directly and the
+  velocity vector was never rotated with the ship, so thrusting while turning did
+  nothing interesting.
+- **Score was `+= 1` per frame**, doubled by holding Space. The optimal strategy
+  was to hover as long as possible, which is the exact opposite of a landing game.
+- **The landing test was wrong in three ways:** it sampled three points that were
+  not the hull or the legs, it compared the ship's angle to zero instead of to the
+  terrain slope, and `rotation % (2*Math.PI) < 0.3` is false for every negative
+  angle, so one direction of tilt could never land.
+
+### What the new engine does
+
+- **Fixed 120 Hz integration** with an accumulator, interpolated for rendering, so
+  the simulation is identical at any refresh rate. Verified: 1x1000 ms and
+  25x40 ms produce bit-identical state.
+- **Real units.** The playfield is 40 m x 30 m at 20 px/m; gravity is 1.78 m/s²,
+  thrust 4.3 m/s², and both are scaled per site and difficulty.
+- **Thrust along the ship's axis**, with a proportional throttle channel. The
+  keyboard maps onto that channel as 0 or 1, so the feel is unchanged, but the
+  engine is now throttleable.
+- **Angular momentum**: RCS torque, damping, and a rate limit. The ship keeps
+  spinning until you counter it.
+- **Mass matters**: thrust-to-weight improves as fuel burns, so the last seconds
+  of a tank behave differently from the first.
+- **Swept collision** at ~0.28 m per sub-step, so nothing tunnels through the
+  chart at high descent rates.
+- **Five-condition landing test**, all shown live on the HUD: both legs down, hull
+  never contacting, descent rate, sideways slide, tilt against the *local surface
+  normal*, and residual spin.
+
+### Challenges
+
+A run is a ladder of landing sites rather than a single drop. Land, then bank the
+score or double down onto a site with a smaller pad, stronger wind and tighter
+limits. The beacon is a real target and precision is the biggest scoring term, so
+the skill being rewarded is the skill the game is about.
+
+### Verification
+
+`.scratch/audit/lander-physics.js` runs 24 assertions against the analytic
+solution, not against screenshots:
+
+```
+node .scratch/audit/lander-physics.js     # 24 passed, 0 failed
+node .scratch/audit/lander-visual.js      # full flow + screenshots
+```
+
+It checks free fall against `v = g*t` and `y = ½g t²`, frame-rate independence,
+that thrust acts along the ship's axis (two identical runs, one burning), angular
+momentum, that fuel burn is proportional to simulated time, that an uncontrolled
+descent crashes with a stated reason, and that a closed-loop guidance autopilot
+can actually land. That last one is the important one: it proves the game is
+winnable and that the envelope is not impossible to hit.
+
+Three bugs were found by that suite rather than by looking at the screen:
+
+1. `advanceTime` rounded each call to whole physics steps, so 25 calls of 40 ms
+   integrated 125 steps instead of 120 and the physics looked frame-rate
+   dependent. It now carries the remainder.
+2. The landing test required both feet to cross the ground **in the same
+   1/120 s sub-step**, which essentially never happens. A single leg touching
+   first is normal and the gear should absorb it, so that is no longer fatal; the
+   tilt check is what rejects a bad attitude.
+3. The `scored` event was queued for the next drain, so the cash-out panel could
+   arrive a step late or not at all. It is now delivered in the same pass.

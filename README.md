@@ -17,6 +17,33 @@ A free browser arcade of crypto-themed games. No wallet, no signup, no backend.
 | [Nerd Soccer](Games/NerdSoccer/PenFootballGameWithWallBounce.html) | Penalty shootout with wall bounces |
 | [Neon Labyrinth](Games/laby/labirinthgame.html) | Escape the maze before the clock eats you |
 
+### Degen Lander
+
+The flagship is a small physics sim rather than a flavour-text minigame. The
+terrain is a real stock chart, the ship has mass, angular momentum and a finite
+amount of fuel, and a touchdown only counts when both legs are down, the hull is
+clear, the descent rate and sideways slide are inside the envelope, and the ship
+is lined up with the slope it is landing on.
+
+Controls: `↑`/`W` thrust, `←` `→` rotate, `P` pause, `F` fullscreen. On touch,
+the three pads under the canvas do the same thing.
+
+A run is a ladder. Land on the beacon, then bank the score or double down onto a
+harder site with a smaller pad, stronger wind and tighter limits. Precision is
+the biggest scoring term, so the game rewards the skill it is about.
+
+The simulation runs at a fixed 120 Hz with an accumulator and is interpolated for
+rendering, so it behaves identically on a 30 Hz laptop and a 240 Hz monitor. The
+engine lives in `Games/degenlander/lander.js` and exposes `window.advanceTime(ms)`
+and `window.render_game_to_text()` for automated testing.
+
+`?seed=` `?diff=` and `?ticker=` are accepted, so a link can reproduce an exact
+landing site, for example:
+
+```
+Games/degenlander/index.html?seed=20261006&diff=hard&ticker=TSLA
+```
+
 ## Running it locally
 
 The site is plain static HTML, CSS and JavaScript. There is no build step.
@@ -41,6 +68,7 @@ js/arcade.js            arcade page: ticker, stats, animated game cards
 js/sound-effects.js     Web Audio synthesizer, generates every sound effect
 js/leaderboard.js       the score store
 js/game-bridge.js       adapter the games call when a run ends
+Games/degenlander/lander.js   the Degen Lander physics engine
 assets/fonts/           self-hosted Press Start 2P (latin subset)
 Games/<name>/           one self-contained folder per game
 docs/VIRAL-IDEAS.md     10 concrete growth ideas, ranked
