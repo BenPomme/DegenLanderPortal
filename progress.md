@@ -193,3 +193,93 @@ Three bugs were found by that suite rather than by looking at the screen:
    tilt check is what rejects a bad attitude.
 3. The `scored` event was queued for the next drain, so the cash-out panel could
    arrive a step late or not at all. It is now delivered in the same pass.
+
+---
+
+## Nerd Soccer: physics and a real learning opponent (2026-10-06)
+
+Rebuilt as `soccer-ai.js` (the learners) plus `soccer.js` (arena, physics, match)
+with the page as a thin shell. The old file is in git history.
+
+### What the old one actually did
+
+- **No delta-time.** Ball and players advanced by a fixed amount per frame.
+- **Spin was fake.** `y += spin * 0.05` adds spin straight to vertical velocity.
+  There was no Magnus force and no friction coupling.
+- **Contact discarded the tangential component.**
+  `dx = speed * cos(angle)` set the ball's velocity along the centre-to-centre
+  line every single touch, so the incoming angle never mattered.
+- **Walls were perfectly elastic** (`dx *= -1`), and the whole bottom 120 px of
+  each wall was a goal with no posts to hit.
+- **The AI was not AI.** Jumps were `Math.random() < jumpProbability`, the
+  prediction `ball.x + ball.dx * 60` ignored wall bounces entirely, and the
+  `this.strategy = { playerGoals, botGoals, adjustPosition }` object was declared
+  and then never written to.
+
+### Physics now
+
+Fixed 120 Hz step with an accumulator and interpolated rendering. Real units:
+9.81 m/s^2, a 0.43 kg size-5 ball, quadratic air drag, a Magnus force from spin,
+and Coulomb friction at contacts that converts spin into velocity. Goalposts the
+ball rebounds off. Swept sub-stepping so a 60 m/s shot cannot tunnel.
+
+Two sign errors and one unit error were caught by the test suite, not by eye:
+
+1. Positions are pixels and velocities are m/s, and the integration never scaled
+   by pixels-per-metre, so the ball moved 60x too slowly.
+2. The contact-plane test in `projectToGoal` ran *after* the wall handler clamped
+   the ball back inside, so every projected shot returned "not on target".
+3. `applyContactFriction` was called with rotated normals (a horizontal normal for
+   the floor, vertical for the walls), so the friction impulse acted on the wrong
+   axis and cancelled the bounce. Bounce restitution measured 0.097 against a
+   configured 0.314. It is now 0.292.
+4. The rolling-contact velocity used `vt + spin*R` where the correct relation is
+   `vt - spin*R`, and the spin update had a matching sign error. A sliding ball
+   picked up *backspin* and topspin braked the ball instead of driving it on.
+
+### The learning
+
+Three learners, all measured:
+
+- **`MLP`** (17 inputs, 26 hidden, 3 outputs). Softmax output, cross-entropy,
+  momentum SGD. `gradCheck()` compares the analytic gradient to central finite
+  differences; the maximum error is 2.2e-11, so the backprop is verified rather
+  than assumed.
+- **`IntentModel`** predicts which band of the goal you are about to attack from
+  your pose and your history. Every shot you take is one training example, and a
+  recency-weighted histogram tracks habits so a player who changes what they do
+  is followed rather than averaged forever.
+- **`QLearner`** twice: one for which defensive action saves, one for which band
+  to shoot at. Rewards come from real goals and real saves during play.
+
+The 17th, 16th and 15th inputs are derived contact geometry (the direction from
+striker to ball and the closing speed). Without those the network was being asked
+to infer the contact normal from a raw pose and could not do it from a few hundred
+examples; the loss stayed at chance. Adding observable geometry is legitimate, it
+is what a keeper actually sees, and it moved the loss from 1.043 to 0.697 against
+a chance level of ln(3) = 1.099.
+
+Everything persists to localStorage, and there is a "erase its memory" button so
+the difference is visible.
+
+### Verification
+
+```
+node .scratch/audit/mlp-check.js      # 9 passed: gradients, learning, persistence
+node .scratch/audit/soccer-physics.js # 29 passed: physics + learning
+node .scratch/audit/soccer-match.js   # headless match scorelines
+```
+
+The learning assertions are the point:
+
+- intent accuracy reading a habitual shooter improves from 84% to 90%
+- the histogram identifies the habit (87% low for an always-low shooter)
+- keeper greedy save rate improves from 23% to 100% across 27 states
+- the attack policy moves away from the keeper's strong side
+- 12 strikes driven through the live game loop all reach the learner
+
+The physics assertions are checked against independent reference calculations:
+free fall against an RK4 integration of the same drag equation (0.05% agreement),
+frame-rate independence between 1x1000 ms and 100x10 ms, mechanical energy that
+never increases, restitution against e^2, Magnus curvature sign, and no
+tunnelling at 60 m/s.

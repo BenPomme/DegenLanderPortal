@@ -3,732 +3,430 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Modern Pen Football Game - Degen Edition</title>
+  <title>NERD SOCCER - the keeper is watching you</title>
   <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
-  <!-- Use a retro degen font -->
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <meta name="description" content="Arena football with real ball physics and an opponent that learns your shooting habits and adapts.">
+  <script src="../../js/degen-theme.js"></script>
+  <script src="../../js/sound-effects.js"></script>
+  <script src="../../js/leaderboard.js"></script>
+  <script src="../../js/game-bridge.js"></script>
   <style>
-    /* Reset */
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { height: 100%; font-family: 'Press Start 2P', cursive; }
-    body { background-color: #111; display: flex; justify-content: center; align-items: center; overflow: hidden; }
-    /* Game Container with degen neon border */
-    #gameContainer {
+    body {
+      background: #05060a;
+      color: #d9ffef;
+      font-family: 'Press Start 2P', 'Courier New', monospace;
+      margin: 0; padding: 0;
+      text-align: center;
+      overflow-x: hidden;
+    }
+    h1 { margin: 16px 0 4px; font-size: 1.5em; color: #ffd166; text-shadow: 0 0 14px rgba(255,209,102,0.45), 2px 2px 0 #ff2d55; }
+    .tagline { margin: 0 auto 14px; max-width: 680px; font-family: ui-monospace, Menlo, monospace; font-size: 14px; line-height: 1.6; color: #7b93a6; }
+    .wrap { width: min(1180px, calc(100% - 20px)); margin: 0 auto 40px; }
+    #stage {
       position: relative;
-      width: 90vw;
-      max-width: 1000px;
-      aspect-ratio: 2 / 1;
-      background: radial-gradient(circle, #111, #000);
-      border: 5px solid #0f0;
-      border-radius: 10px;
-      box-shadow: 0 0 20px #0f0;
-      overflow: hidden;
-    }
-    /* Canvas fills container */
-    canvas { width: 100%; height: 100%; display: block; }
-    /* Score Board with degen style */
-    #scoreBoard {
-      position: absolute;
-      top: 10px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(0, 0, 0, 0.8);
-      padding: 10px 20px;
-      border-radius: 20px;
-      box-shadow: 0 0 10px #0f0;
-      font-size: 24px;
-      font-weight: bold;
-      color: #0f0;
-      display: flex;
-      gap: 50px;
-      z-index: 10;
-    }
-    /* Start Screen */
-    #startScreen {
-      position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0, 0, 0, 0.95);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      color: #0f0;
-      z-index: 20;
-      transition: opacity 0.5s ease;
-    }
-    #startScreen.hidden {
-      opacity: 0;
-      pointer-events: none;
-    }
-    #startButton, #settingsButton {
-      margin-top: 20px;
-      padding: 10px 30px;
-      font-size: 20px;
-      border: none;
-      border-radius: 5px;
-      background-color: #0f0;
-      color: #000;
-      cursor: pointer;
-      transition: background-color 0.3s ease, color 0.3s ease;
-    }
-    #startButton:hover, #settingsButton:hover {
-      background-color: #f00;
-      color: #fff;
-    }
-    /* Settings Menu */
-    #settingsMenu {
-      position: absolute;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      background: rgba(0, 0, 0, 0.95);
-      padding: 30px;
-      border-radius: 10px;
-      box-shadow: 0 0 20px #0f0;
-      z-index: 30;
-      display: none;
-      flex-direction: column;
-      gap: 20px;
-    }
-    #settingsMenu.active { display: flex; }
-    #settingsMenu h2 { text-align: center; margin-bottom: 10px; color: #0f0; }
-    .setting { display: flex; justify-content: space-between; align-items: center; }
-    .setting label { font-size: 18px; color: #0f0; }
-    .setting input[type="range"], .setting select { width: 150px; }
-    #closeSettings {
-      align-self: center;
-      padding: 8px 20px;
-      font-size: 16px;
-      border: none;
-      border-radius: 5px;
-      background-color: #0f0;
-      color: #000;
-      cursor: pointer;
-      transition: background-color 0.3s ease;
-    }
-    #closeSettings:hover { background-color: #f00; color: #fff; }
-    /* Pause Button */
-    #pauseButton {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background: rgba(255, 255, 255, 0.8);
-      border: none;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      cursor: pointer;
-      font-size: 18px;
-      box-shadow: 0 0 5px #0f0;
-      z-index: 10;
-    }
-    #pauseButton:hover { background: rgba(255, 255, 255, 1); }
-    /* Pause Overlay */
-    #pauseOverlay {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(0,0,0,0.5);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      color: #f00;
-      font-size: 36px;
-      z-index: 15;
-      display: none;
-    }
-    /* Game Over Screen with Leaderboard Submission */
-    #gameOverScreen {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(0,0,0,0.8);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      color: #0f0;
-      z-index: 40;
-      transition: opacity 0.5s ease;
-      opacity: 0;
-      pointer-events: none;
-    }
-    #gameOverScreen.active {
-      opacity: 1;
-      pointer-events: all;
-    }
-    #gameOverScreen h1 { margin-bottom: 20px; color: #f00; }
-    #gameOverScreen p { font-size: 20px; margin-bottom: 20px; }
-    #gameOverScreen input[type="text"] {
-      padding: 10px;
-      font-size: 18px;
-      border: 2px solid #0f0;
-      border-radius: 5px;
-      background: #000;
-      color: #0f0;
-      margin-bottom: 20px;
-    }
-    #gameOverScreen button {
-      margin-top: 10px;
-      padding: 10px 30px;
-      font-size: 20px;
-      border: none;
-      border-radius: 5px;
-      background-color: #0f0;
-      color: #000;
-      cursor: pointer;
-      transition: background-color 0.3s ease, color 0.3s ease;
-    }
-    #gameOverScreen button:hover {
-      background-color: #f00;
-      color: #fff;
-    }
-    /* Bonus Notification Overlay */
-    #bonusNotification {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 48px;
-      color: #f00;
-      text-shadow: 0 0 10px #f00;
-      z-index: 35;
-      display: none;
-    }
-    /* Goal Notification Overlay */
-    #goalNotification {
-      position: absolute;
-      top: 30%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 48px;
-      color: #fff;
-      text-shadow: 0 0 10px #f00;
-      z-index: 35;
-      display: none;
-    }
-    /* Energy Bar for Bot */
-    #botEnergyBar {
-      position: absolute;
-      bottom: 10px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 200px;
-      height: 20px;
-      background: rgba(255, 255, 255, 0.8);
-      border-radius: 10px;
-      overflow: hidden;
-      box-shadow: 0 0 5px #0f0;
-      z-index: 10;
-    }
-    #botEnergyFill {
-      height: 100%;
-      background: #FFD700;
+      margin: 0 auto;
       width: 100%;
-      transition: width 0.2s ease;
+      max-width: 900px;
+      aspect-ratio: 900 / 520;
+      background: #02040a;
+      border: 3px solid #00ff9d;
+      border-radius: 6px;
+      box-shadow: 0 0 0 1px rgba(0,255,157,0.22), 0 18px 50px rgba(0,0,0,0.7);
+      overflow: hidden;
     }
-    /* Responsive */
-    @media (max-width: 600px) {
-      #scoreBoard { flex-direction: column; gap: 10px; }
-      #scoreBoard div { font-size: 20px; }
-      #settingsMenu { width: 80%; }
-      .setting input[type="range"], .setting select { width: 100px; }
-      #pauseButton { width: 35px; height: 35px; font-size: 16px; }
-      #botEnergyBar { width: 150px; height: 15px; }
+    #gameCanvas { display: block; width: 100%; height: 100%; touch-action: none; }
+    .overlay {
+      position: absolute; inset: 0;
+      display: none; flex-direction: column; align-items: center; justify-content: center;
+      gap: 12px; padding: 20px;
+      background: rgba(3,6,12,0.93);
+      backdrop-filter: blur(3px);
+      z-index: 10; overflow-y: auto;
     }
+    .overlay.show { display: flex; }
+    .overlay h2 { margin: 0; font-size: 1.1em; color: #ff2d55; text-shadow: 0 0 12px rgba(255,45,85,0.5); }
+    .overlay h2.good { color: #00ff9d; text-shadow: 0 0 12px rgba(0,255,157,0.5); }
+    .overlay p { margin: 0; max-width: 580px; font-family: ui-monospace, Menlo, monospace; font-size: 14px; line-height: 1.65; color: #9fb3c4; }
+    .overlay label { font-size: 9px; color: #7b93a6; display: block; margin-bottom: 6px; }
+    input[type="text"] {
+      background: #0a1018; color: #00ff9d;
+      border: 2px solid #0d7a52; border-radius: 4px;
+      padding: 10px 12px; font-family: inherit; font-size: 10px;
+      width: min(360px, 86%); max-width: 100%; min-width: 0;
+    }
+    input[type="text"]:focus { outline: none; border-color: #00ff9d; }
+    button { font-family: inherit; cursor: pointer; border-radius: 4px; transition: transform .12s ease, background .12s ease, color .12s ease; }
+    button:active { transform: translateY(1px); }
+    .btn { padding: 12px 20px; font-size: 10px; color: #00ff9d; background: rgba(0,255,157,0.07); border: 2px solid #0d7a52; text-transform: uppercase; }
+    .btn:hover { background: #00ff9d; color: #05060a; border-color: #00ff9d; }
+    .btn.gold { color: #ffd166; background: rgba(255,209,102,0.08); border-color: #8a6a1f; }
+    .btn.gold:hover { background: #ffd166; color: #201703; border-color: #ffd166; }
+    .btn.ghost { color: #7b93a6; background: transparent; border-color: #2b4a63; }
+    .btn.ghost:hover { background: #7b93a6; color: #05060a; }
+    .row { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+    .diffs { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+    .diff { padding: 10px 14px; font-size: 9px; color: #7b93a6; background: rgba(0,0,0,0.4); border: 2px solid #1e2c3f; }
+    .diff[aria-pressed="true"] { color: #05060a; background: #00ff9d; border-color: #00ff9d; }
+    .diff small { display: block; margin-top: 5px; font-size: 7px; opacity: .8; }
+    .cols { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 14px; margin-top: 12px; }
+    @media (max-width: 860px) { .cols { grid-template-columns: 1fr; } }
+    .panel {
+      padding: 14px;
+      background: rgba(8,12,20,0.9);
+      border: 2px solid #16233a;
+      border-radius: 5px;
+      text-align: left;
+    }
+    .panel h3 { margin: 0 0 12px; font-size: 10px; color: #00ff9d; letter-spacing: .04em; }
+    .panel h3 .sub { color: #7b93a6; font-size: 8px; }
+    .kv { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; font-family: ui-monospace, Menlo, monospace; font-size: 13.5px; }
+    .kv .k { color: #7b93a6; }
+    .kv .v { color: #d9ffef; }
+    .kv .v.green { color: #00ff9d; }
+    .kv .v.gold { color: #ffd166; }
+    .kv .v.red { color: #ff2d55; }
+    .bars { margin-top: 12px; }
+    .bar-row { display: grid; grid-template-columns: 54px 1fr 44px; align-items: center; gap: 8px; margin-bottom: 7px; font-family: ui-monospace, monospace; font-size: 12px; color: #9fb3c4; }
+    .bar { height: 9px; background: rgba(255,255,255,0.07); border-radius: 5px; overflow: hidden; }
+    .bar i { display: block; height: 100%; background: #00ff9d; width: 0%; transition: width .25s ease; }
+    .bar.hot i { background: #ffd166; }
+    .bar.cold i { background: #5db8ff; }
+    .predict { margin-top: 12px; padding: 10px; background: rgba(255,209,102,0.07); border: 1px solid #8a6a1f; border-radius: 4px; font-family: ui-monospace, monospace; font-size: 13.5px; color: #ffd166; line-height: 1.5; }
+    .help { margin-top: 18px; padding: 16px; background: rgba(8,12,20,0.75); border: 2px solid #16233a; border-radius: 5px; text-align: left; }
+    .help h3 { margin: 0 0 10px; font-size: 10px; color: #00ff9d; }
+    .help ul { margin: 0; padding-left: 18px; font-family: ui-monospace, Menlo, monospace; font-size: 14px; line-height: 1.85; color: #9fb3c4; }
+    .help kbd { display: inline-block; padding: 2px 7px; font-family: ui-monospace, monospace; font-size: 12px; color: #ffd166; background: rgba(255,209,102,0.1); border: 1px solid #8a6a1f; border-radius: 3px; }
+    .mobile { display: none; gap: 10px; justify-content: center; margin: 12px auto 0; max-width: 560px; }
+    .pad { flex: 1; padding: 20px 0; font-size: 18px; color: #00ff9d; background: rgba(0,255,157,0.08); border: 2px solid #0d7a52; border-radius: 6px; user-select: none; touch-action: none; }
+    .pad.mid { flex: 1.4; color: #ffd166; background: rgba(255,209,102,0.1); border-color: #8a6a1f; }
+    .pad:active { background: #00ff9d; color: #05060a; }
+    .pad.mid:active { background: #ffd166; color: #201703; }
+    @media (hover: none) and (pointer: coarse) { .mobile { display: flex; } }
+    footer { margin: 24px auto 0; font-family: ui-monospace, monospace; font-size: 13px; color: #47586a; line-height: 1.8; }
   </style>
 </head>
 <body>
-  <script src="../../js/degen-theme.js"></script>
-  <script src="../../js/leaderboard.js"></script>
-  <script src="../../js/game-bridge.js"></script>
-  <script src="../../js/sound-effects.js"></script>
-  <div id="gameContainer">
-    <!-- Start Screen -->
-    <div id="startScreen">
-      <h1>Pen Football</h1>
-      <button id="startButton">Start Game</button>
-      <button id="settingsButton">Settings</button>
-    </div>
-    <!-- Settings Menu -->
-    <div id="settingsMenu">
-      <h2>Settings</h2>
-      <div class="setting">
-        <label for="volume">Volume</label>
-        <input type="range" id="volume" min="0" max="1" step="0.1" value="0.5">
+
+  <h1>NERD SOCCER</h1>
+  <p class="tagline">
+    Real ball physics: drag, Magnus curl, friction at contact. And an opponent that
+    watches where you shoot, learns the pattern, and starts reading you.
+  </p>
+
+  <div class="wrap">
+    <div id="stage">
+      <canvas id="gameCanvas" width="900" height="520"></canvas>
+
+      <div class="overlay show" id="startScreen">
+        <h2>FIRST TO FIVE</h2>
+        <p>Move with the arrow keys, jump with Up or Space. Run into the ball to strike
+           it. The bot defends the left goal and attacks the right one.</p>
+        <label style="margin-top:8px">DIFFICULTY</label>
+        <div class="diffs" id="difficulty">
+          <button class="diff" data-diff="easy" aria-pressed="false">CASUAL<small>slower reactions</small></button>
+          <button class="diff" data-diff="medium" aria-pressed="true">COMPETITIVE<small>reads your habits</small></button>
+          <button class="diff" data-diff="hard" aria-pressed="false">DERANGED<small>reads you fast</small></button>
+        </div>
+        <button class="btn gold" id="startButton" style="margin-top:8px">KICK OFF</button>
+        <button class="btn ghost" id="wipeBrain">ERASE ITS MEMORY</button>
       </div>
-      <div class="setting">
-        <label for="difficulty">Difficulty</label>
-        <select id="difficulty">
-          <option value="easy">Easy</option>
-          <option value="medium" selected>Medium</option>
-          <option value="hard">Hard</option>
-        </select>
+
+      <div class="overlay" id="gameOverScreen">
+        <h2 id="overTitle">FULL TIME</h2>
+        <p id="finalScore"></p>
+        <label for="playerName" style="margin-top:8px">NAME ON THE BOARD</label>
+        <input type="text" id="playerName" maxlength="14" placeholder="Anon Degen">
+        <div class="row">
+          <button class="btn" id="submitScore">POST SCORE</button>
+          <button class="btn ghost" id="restartButton">RUN IT BACK</button>
+        </div>
       </div>
-      <div class="setting">
-        <label for="controls">Controls</label>
-        <select id="controls">
-          <option value="keyboard" selected>Keyboard</option>
-          <option value="touch">Touch</option>
-        </select>
+    </div>
+
+    <div class="mobile">
+      <button class="pad" id="padLeft" aria-label="Move left">&#8592;</button>
+      <button class="pad mid" id="padJump" aria-label="Jump">&#8593;</button>
+      <button class="pad" id="padRight" aria-label="Move right">&#8594;</button>
+    </div>
+
+    <div class="cols">
+      <div class="panel">
+          <h3>THE OPPONENT'S BRAIN <span class="sub">live, not scripted</span></h3>
+        <div class="kv" id="brainStats"></div>
+        <div class="predict" id="brainPredict">Watching...</div>
+        <div class="bars" id="habitBars"></div>
       </div>
-      <button id="closeSettings">Close</button>
+      <div class="panel">
+        <h3>HOW IT LEARNS</h3>
+        <p style="margin:0;font-family:ui-monospace,Menlo,monospace;font-size:13.5px;line-height:1.7;color:#9fb3c4">
+          Every shot you take is a training example. A small neural network learns to map
+          your pose before contact onto the part of the goal you actually hit, and two
+          Q-learners work out which saves and which shots pay off by playing.
+          The weights are saved in your browser, so it is still better next time.
+        </p>
+        <div class="kv" style="margin-top:12px" id="learnStats"></div>
+      </div>
     </div>
-    <!-- Score Board -->
-    <div id="scoreBoard">
-      <div id="playerScore">Player: 0</div>
-      <div id="botScore">Bot: 0</div>
+
+    <div class="help">
+      <h3>HOW TO PLAY</h3>
+      <ul>
+        <li>Left and right to run. Build up speed before you hit the ball, because contact power scales with how fast you are moving into it.</li>
+        <li>Up or Space to jump, twice for a double jump. Hitting the ball downward off a jump is the strongest strike.</li>
+        <li>Strike the ball off-centre to put spin on it. Curl is drawn as a ring around the ball: cyan one way, purple the other.</li>
+        <li>The gold band on your goal is where the bot currently thinks you are going to shoot.</li>
+        <li>First to five. It remembers you between matches.</li>
+      </ul>
     </div>
-    <!-- Bonus Notification Overlay -->
-    <div id="bonusNotification"></div>
-    <!-- Goal Notification Overlay -->
-    <div id="goalNotification"></div>
-    <!-- Bot Energy Bar -->
-    <div id="botEnergyBar">
-      <div id="botEnergyFill"></div>
-    </div>
-    <!-- Pause Button -->
-    <button id="pauseButton">||</button>
-    <!-- Pause Overlay -->
-    <div id="pauseOverlay">Paused</div>
-    <!-- Game Over Screen with Leaderboard Submission -->
-    <div id="gameOverScreen">
-      <h1>Game Over</h1>
-      <p id="finalScore">Final Score</p>
-      <input type="text" id="playerName" placeholder="Enter your name">
-      <button id="submitScore">Submit Score</button>
-      <button id="restartButton">Restart Game</button>
-      <button id="returnSettings">Settings</button>
-    </div>
-    <!-- Canvas -->
-    <canvas id="gameCanvas"></canvas>
+
+    <footer>Not financial advice. The goalkeeper is a neural network and it is taking notes.</footer>
   </div>
-  
+
+  <script src="soccer-ai.js"></script>
+  <script src="soccer.js"></script>
   <script>
-    (function() {
-      // Wrap all game code in this IIFE to prevent duplicate global declarations
+  (function () {
+    'use strict';
+    var $ = function (id) { return document.getElementById(id); };
+    var AI = window.SoccerAI;
+    var G = window.SoccerGame;
+    var difficulty = 'medium';
+    var brain = null;
 
-      // Select DOM elements
-      const canvas = document.getElementById("gameCanvas");
-      const ctx = canvas.getContext("2d");
-      const scoreBoard = document.getElementById("scoreBoard");
-      const playerScoreEl = document.getElementById("playerScore");
-      const botScoreEl = document.getElementById("botScore");
-      const startScreen = document.getElementById("startScreen");
-      const startButton = document.getElementById("startButton");
-      const settingsButton = document.getElementById("settingsButton");
-      const settingsMenu = document.getElementById("settingsMenu");
-      const closeSettings = document.getElementById("closeSettings");
-      const volumeControl = document.getElementById("volume");
-      const difficultySelect = document.getElementById("difficulty");
-      const controlsSelect = document.getElementById("controls");
-      const pauseButtonEl = document.getElementById("pauseButton");
-      const pauseOverlay = document.getElementById("pauseOverlay");
-      const gameOverScreen = document.getElementById("gameOverScreen");
-      const finalScoreEl = document.getElementById("finalScore");
-      const restartButtonEl = document.getElementById("restartButton");
-      const returnSettingsButton = document.getElementById("returnSettings");
-      const botEnergyFill = document.getElementById("botEnergyFill");
-      const bonusNotification = document.getElementById("bonusNotification");
-      const goalNotification = document.getElementById("goalNotification");
+    var DIFF = {
+      easy:   { lr: 0.030, epsilon: 0.30 },
+      medium: { lr: 0.055, epsilon: 0.22 },
+      hard:   { lr: 0.085, epsilon: 0.14 }
+    };
 
-      // Set canvas size based on container
-      const gameContainer = document.getElementById("gameContainer");
-      function resizeCanvas() {
-        canvas.width = gameContainer.clientWidth;
-        canvas.height = gameContainer.clientHeight;
+    /* ---------------------------------------------------------------- warm-up
+     * Pretrain before the first whistle.
+     *
+     * The intent net is fitted on real contact outcomes produced by the same
+     * impulse model the match uses (G.contactOutcome), so it starts with a
+     * physics prior rather than random weights. The two Q-learners then get a
+     * synthetic season against scripted opponents with known habits. This is a
+     * prior, not the learning: real play keeps refining all three, and the
+     * live panel shows the difference.
+     */
+    function warmUp(b, shots, episodes, seed) {
+      var rng = AI.mulberry32(seed || 20261006);
+      var ph = G.physics;
+      var W = ph.W, FLOOR_Y = ph.FLOOR_Y, H = ph.H;
+      var made = 0;
+      var i;
+
+      // Sampled the way play actually looks: a shooter running into a ball that
+      // is sitting in front of them, with the contact offset deciding the aim.
+      // Purely random poses almost never put the ball on target, which is why an
+      // earlier version collected zero usable examples.
+      var attempts = 0;
+      while (made < shots && attempts < shots * 40) {
+        attempts++;
+        var bx = W * (0.30 + rng() * 0.58);
+        var by = FLOOR_Y - 24 - rng() * 150;
+        var sep = G.PLAYER_R + G.physics.BALL_R;
+        // Shooter behind the ball, so the contact normal points at the goal.
+        var offX = -sep * (0.55 + rng() * 0.85);
+        var offY = (rng() - 0.5) * sep * 2.0;
+        var px = bx + offX;
+        var py = by + offY;
+        var speed = 2.2 + rng() * 7.5;
+        var ang = (rng() - 0.5) * 1.15;
+        var pvx = Math.cos(ang) * speed;
+        var pvy = Math.sin(ang) * speed;
+        var bvx = (rng() - 0.5) * 8;
+        var bvy = (rng() - 0.5) * 8;
+        var out = G.contactOutcome(px, py, pvx, pvy, bx, by, bvx, bvy, true);
+        var proj = G.projectToGoal(bx, by, out.vx, out.vy, out.spin, W);
+        if (!proj) continue;
+        b.intent.fit({
+          sx: px / W, sy: py / H, svx: pvx, svy: pvy,
+          bx: bx / W, by: by / H, bvx: bvx, bvy: bvy,
+          dx: (bx - px) / W, dy: (by - py) / H,
+          histHigh: 1 / 3, histMid: 1 / 3, histLow: 1 / 3, scoreDiff: 0
+        }, proj.band, 0.035);
+        made++;
       }
-      window.addEventListener('resize', resizeCanvas);
-      resizeCanvas();
 
-      // Game Constants and Variables
-      let gravity = 0.25;
-      const playerRadius = 25;
-      const ballRadius = 15;
-      const goalHeight = 120;
-      const goalWidth = 15;
-      let maxGoals = 5;
-      let difficulty = 'medium';
-      let controls = 'keyboard';
-      let gameRunning = false;
-      let isPaused = false;
-      // Global game variables (declared once)
-      let player, bot, ball;
-      let playerScore = 0, botScore = 0;
-      let playerStreak = 0, botStreak = 0, lastGoalTime = 0;
-      const baseGoalPoints = 100;
-      let bonusActive = false, bonusTimer = 0;
+      var habitIdx = 0;
+      for (var e = 0; e < episodes; e++) {
+        if (e % 220 === 0) habitIdx = (habitIdx + 1) % AI.HABITS.length;
+        var habit = AI.HABITS[habitIdx];
+        var trueBand = AI.pickBand(habit, rng, { shotIndex: e });
 
-      // Audio Effects
-      const kickSound = new Audio('https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3');
-      const scoreSound = new Audio('https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3');
-      kickSound.volume = volumeControl.value;
-      scoreSound.volume = volumeControl.value;
-      volumeControl.addEventListener('input', () => {
-        kickSound.volume = volumeControl.value;
-        scoreSound.volume = volumeControl.value;
+        var ballDist = rng();
+        var botOff = -1 + rng() * 2;
+        var dKey = b.defenceKey(trueBand, ballDist, botOff);
+        var dAction = b.defence.act(dKey);
+        var want = [0, 1, 2, 3, 4][trueBand === 0 ? 1 : (trueBand === 2 ? 3 : 2)];
+        var dist = Math.abs(dAction - want);
+        var saveChance = dist === 0 ? 1 : (dist === 1 ? 0.35 : 0.05);
+        b.defence.update(dKey, dAction, rng() < saveChance ? 1 : -1, dKey, true);
+
+        var h = habit.mix || [0.33, 0.34, 0.33];
+        var aKey = b.attackKey(h[0], h[2], 0.5);
+        var aAction = b.attack.act(aKey);
+        var cover = h[aAction];
+        var scored = rng() > (0.25 + cover * 0.55);
+        b.attack.update(aKey, aAction, scored ? 1 : -1, aKey, true);
+      }
+      b.episodes = episodes;
+      return made;
+    }
+
+    /* ----------------------------------------------------------------- panel */
+    var BAND_NAMES = ['HIGH', 'MID', 'LOW'];
+
+    function renderPanel() {
+      if (!brain) return;
+      var s = brain.stats();
+      var conf = s.prediction ? Math.round(s.prediction.confidence * 100) : 0;
+      var acc = Math.round(s.intentAccuracy * 100);
+      var accClass = acc >= 55 ? 'green' : (acc >= 40 ? 'gold' : 'red');
+
+      $('brainStats').innerHTML =
+        '<span class="k">Your shots it has seen</span><span class="v">' + s.shotsSeen + '</span>' +
+        '<span class="k">Reading you right (last 25)</span><span class="v ' + accClass + '">' + acc + '%</span>' +
+        '<span class="k">Saves (last 20 shots at it)</span><span class="v green">' + Math.round(s.saveRate * 100) + '%</span>' +
+        '<span class="k">Its record vs you</span><span class="v">' + s.goalsFor + ' scored / ' + s.conceded + ' conceded</span>' +
+        '<span class="k">Matches finished</span><span class="v">' + s.episodes + '</span>';
+
+      if (s.prediction) {
+        $('brainPredict').innerHTML =
+          'It expects your next shot: <b>' + BAND_NAMES[s.prediction.band] + '</b> (' + conf + '% confident)<br>' +
+          '<span style="color:#9fb3c4;font-size:12px">HIGH ' +
+          Math.round(s.prediction.probs[0] * 100) + '% &middot; MID ' +
+          Math.round(s.prediction.probs[1] * 100) + '% &middot; LOW ' +
+          Math.round(s.prediction.probs[2] * 100) + '%</span>';
+      } else {
+        $('brainPredict').textContent = 'Watching. Shoot at its goal to give it something to learn.';
+      }
+
+      var h = s.humanHist;
+      var max = Math.max(h[0], h[1], h[2], 0.01);
+      $('habitBars').innerHTML = BAND_NAMES.map(function (n, i) {
+        var pct = Math.round(h[i] * 100);
+        var cls = h[i] >= max - 1e-6 ? 'hot' : 'cold';
+        return '<div class="bar-row"><span>' + n + '</span>' +
+          '<span class="bar ' + cls + '"><i style="width:' + pct + '%"></i></span>' +
+          '<span>' + pct + '%</span></div>';
+      }).join('');
+
+      $('learnStats').innerHTML =
+        '<span class="k">Network 17 / 26 / 3</span><span class="v">' + (s.loss ? 'loss ' + s.loss.toFixed(3) : 'loss n/a') + '</span>' +
+        '<span class="k">Defence Q-updates</span><span class="v">' + s.defenceUpdates + '</span>' +
+        '<span class="k">Attack Q-updates</span><span class="v">' + s.attackUpdates + '</span>' +
+        '<span class="k">Exploration rate</span><span class="v">' + s.epsilonDefence.toFixed(3) + '</span>' +
+        '<span class="k">States explored</span><span class="v">' + (s.defenceStates + s.attackStates) + '</span>';
+    }
+
+    setInterval(function () { try { renderPanel(); } catch (e) {} }, 200);
+
+    /* ------------------------------------------------------------------ flow */
+    function kickOff() {
+      brain = G.brain();
+      var d = DIFF[difficulty];
+      brain.intent.lr = d.lr;
+      brain.defence.epsilon = Math.max(brain.defence.epsilon, d.epsilon);
+      brain.attack.epsilon = Math.max(brain.attack.epsilon, d.epsilon);
+      G.newMatch({ difficulty: difficulty });
+      $('startScreen').classList.remove('show');
+      $('gameOverScreen').classList.remove('show');
+      $('submitScore').disabled = false;
+      $('submitScore').textContent = 'POST SCORE';
+    }
+
+    G.onEvent(function (ev) {
+      if (ev.t === 'over') {
+        var won = ev.winner === 'player';
+        $('overTitle').textContent = won ? 'YOU WIN' : 'IT READ YOU';
+        $('overTitle').className = won ? 'good' : '';
+        $('finalScore').textContent = 'Final score  ' + ev.player + ' - ' + ev.bot +
+          (won ? '. It will remember this.' : '. It has your habits now.');
+        $('gameOverScreen').classList.add('show');
+        if (window.DegenSound) DegenSound.play('game', won ? 'jackpot' : 'lose');
+      }
+    });
+
+    $('startButton').addEventListener('click', kickOff);
+    $('restartButton').addEventListener('click', function () {
+      $('gameOverScreen').classList.remove('show');
+      kickOff();
+    });
+    $('wipeBrain').addEventListener('click', function () {
+      if (!confirm('Erase everything the opponent has learned about you?')) return;
+      brain = G.brain();
+      brain.reset();
+      warmUp(brain, 600, 900, Date.now() & 0x7fffffff);
+      brain.save();
+      renderPanel();
+      alert('Memory wiped. It knows nothing about you again.');
+    });
+    $('submitScore').addEventListener('click', function () {
+      var name = ($('playerName').value || '').trim() || 'Anon Degen';
+      var s = G.snapshot();
+      var score = Math.max(0, s.score.player * 500 - s.score.bot * 250);
+      if (score <= 0) { alert('Score a goal first.'); return; }
+      if (window.DegenGame) window.DegenGame.finish('nerdsoccer', name, score);
+      $('submitScore').disabled = true;
+      $('submitScore').textContent = 'POSTED';
+    });
+
+    Array.prototype.forEach.call(document.querySelectorAll('.diff'), function (b) {
+      b.addEventListener('click', function () {
+        difficulty = b.getAttribute('data-diff');
+        Array.prototype.forEach.call(document.querySelectorAll('.diff'), function (o) {
+          o.setAttribute('aria-pressed', o === b ? 'true' : 'false');
+        });
+        if (window.DegenSound) DegenSound.play('ui', 'click');
       });
+    });
 
-      // Utility functions for overlays
-      function randomDegenMessage() {
-        const messages = ["FUCK YEAH!", "BOOM!", "SCORE, BITCH!", "HOLY SHIT!", "DAMN!"];
-        return messages[Math.floor(Math.random() * messages.length)];
-      }
-      function showGoalNotification(message) {
-        goalNotification.textContent = message;
-        goalNotification.style.display = "block";
-        setTimeout(() => { goalNotification.style.display = "none"; }, 2000);
-      }
-      function showBonusNotification(message) {
-        bonusNotification.textContent = message;
-        bonusNotification.style.display = "block";
-      }
-      function hideBonusNotification() {
-        bonusNotification.style.display = "none";
-      }
+    /* -------------------------------------------------------------- controls */
+    window.addEventListener('keydown', function (e) {
+      if (e.repeat) return;
+      if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') { G.setKey('left', true); e.preventDefault(); }
+      if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') { G.setKey('right', true); e.preventDefault(); }
+      if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W' || e.key === ' ') { G.setKey('jump', true); e.preventDefault(); }
+    });
+    window.addEventListener('keyup', function (e) {
+      if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') G.setKey('left', false);
+      if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') G.setKey('right', false);
+      if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W' || e.key === ' ') G.setKey('jump', false);
+    });
+    window.addEventListener('blur', function () {
+      G.setKey('left', false); G.setKey('right', false); G.setKey('jump', false);
+    });
 
-      // Entity Classes
-      class Entity {
-        constructor(x, y, radius, color) {
-          this.x = x;
-          this.y = y;
-          this.radius = radius;
-          this.color = color;
-          this.dx = 0;
-          this.dy = 0;
-          this.jumping = false;
-          this.doubleJumpAvailable = true;
-          this.energy = 100;
-          this.maxEnergy = 100;
-          this.energyRechargeRate = 0.2;
-          this.energyDepletionRate = 0.5;
-        }
-        draw() {
-          const gradient = ctx.createRadialGradient(this.x - 5, this.y - 5, this.radius * 0.1, this.x, this.y, this.radius);
-          gradient.addColorStop(0, '#fff');
-          gradient.addColorStop(1, this.color);
-          ctx.fillStyle = gradient;
-          ctx.beginPath();
-          ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.shadowColor = "rgba(0,0,0,0.3)";
-          ctx.shadowBlur = 4;
-          ctx.fill();
-          ctx.shadowBlur = 0;
-        }
-        move() {
-          this.x += this.dx;
-          this.y += this.dy;
-          if (this.y + this.radius < canvas.height) {
-            this.dy += gravity;
-          } else {
-            this.y = canvas.height - this.radius;
-            this.dy = 0;
-            this.jumping = false;
-            this.doubleJumpAvailable = true;
-          }
-          if (this.x - this.radius < 0) {
-            this.x = this.radius;
-            this.dx = 0;
-          }
-          if (this.x + this.radius > canvas.width) {
-            this.x = canvas.width - this.radius;
-            this.dx = 0;
-          }
-          if (this instanceof Bot) {
-            if (this.energy < this.maxEnergy) {
-              this.energy += this.energyRechargeRate;
-              if (this.energy > this.maxEnergy) this.energy = this.maxEnergy;
-            }
-          }
-        }
-      }
-      class Player extends Entity {
-        constructor(x, y, color) { super(x, y, playerRadius, color); }
-        update() { this.move(); }
-      }
-      class Bot extends Entity {
-        constructor(x, y, color, difficulty) {
-          super(x, y, playerRadius, color);
-          this.strategy = { playerGoals: 0, botGoals: 0, adjustPosition: 0 };
-          this.difficulty = difficulty;
-        }
-        ai(ball) {
-          let speed, jumpProbability;
-          switch(this.difficulty) {
-            case 'easy': speed = 1; jumpProbability = 0.005; break;
-            case 'medium': speed = 1.5; jumpProbability = 0.01; break;
-            case 'hard': speed = 2; jumpProbability = 0.02; break;
-            default: speed = 1.5; jumpProbability = 0.01;
-          }
-          const predictionFrames = 60;
-          const predictedX = ball.x + ball.dx * predictionFrames;
-          const predictedY = ball.y + ball.dy * predictionFrames + 0.5 * gravity * Math.pow(predictionFrames, 2);
-          const clampedPredictedX = Math.max(ball.radius, Math.min(predictedX, canvas.width - ball.radius));
-          if (clampedPredictedX > this.x + this.strategy.adjustPosition && this.energy > 10) {
-            this.dx = speed;
-            this.energy -= this.energyDepletionRate;
-          } else if (clampedPredictedX < this.x - this.strategy.adjustPosition && this.energy > 10) {
-            this.dx = -speed;
-            this.energy -= this.energyDepletionRate;
-          } else { this.dx = 0; }
-          if (predictedY < this.y && Math.random() < jumpProbability && this.energy > 20 && !this.jumping) {
-            this.dy = -8;
-            this.jumping = true;
-            this.energy -= 20;
-          }
-        }
-        update(ball) { this.ai(ball); this.move(); }
-      }
-      class Ball {
-        constructor(x, y, radius, color) {
-          this.x = x;
-          this.y = y;
-          this.radius = radius;
-          this.color = color;
-          this.dx = 0;
-          this.dy = 0;
-          this.spin = 0;
-        }
-        draw() {
-          const gradient = ctx.createRadialGradient(this.x - 3, this.y - 3, this.radius * 0.1, this.x, this.y, this.radius);
-          gradient.addColorStop(0, '#fff');
-          gradient.addColorStop(1, this.color);
-          ctx.fillStyle = gradient;
-          ctx.beginPath();
-          ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.shadowColor = "rgba(0,0,0,0.2)";
-          ctx.shadowBlur = 3;
-          ctx.fill();
-          ctx.shadowBlur = 0;
-        }
-        move() {
-          this.x += this.dx;
-          this.y += this.dy + this.spin * 0.05;
-          this.dy += gravity;
-          if (this.y + this.radius > canvas.height) {
-            this.y = canvas.height - this.radius;
-            this.dy *= -0.7;
-            this.spin *= 0.9;
-          }
-          if (this.x - this.radius < 0) {
-            if (this.y > canvas.height - goalHeight) { scoreGoal("bot"); }
-            else { this.x = this.radius; this.dx *= -1; this.spin *= -0.5; }
-          }
-          if (this.x + this.radius > canvas.width) {
-            if (this.y > canvas.height - goalHeight) { scoreGoal("player"); }
-            else { this.x = canvas.width - this.radius; this.dx *= -1; this.spin *= -0.5; }
-          }
-        }
-        reset() { this.x = canvas.width / 2; this.y = canvas.height / 2; this.dx = 0; this.dy = 0; this.spin = 0; }
-        checkCollision(entity) {
-          const distX = this.x - entity.x;
-          const distY = this.y - entity.y;
-          const distance = Math.hypot(distX, distY);
-          if (distance < this.radius + entity.radius) {
-            kickSound.currentTime = 0;
-            kickSound.play();
-            const angle = Math.atan2(distY, distX);
-            const speed = Math.hypot(this.dx, this.dy);
-            this.dx = speed * Math.cos(angle);
-            this.dy = speed * Math.sin(angle);
-            const impactPoint = (this.x - entity.x) / entity.radius;
-            this.spin += impactPoint * 2;
-          }
-        }
-        update(entity1, entity2) {
-          this.move();
-          this.checkCollision(entity1);
-          this.checkCollision(entity2);
-        }
-      }
+    function bindPad(id, prop) {
+      var el = $(id);
+      var on = function (e) { e.preventDefault(); G.setKey(prop, true); };
+      var off = function (e) { e.preventDefault(); G.setKey(prop, false); };
+      el.addEventListener('touchstart', on, { passive: false });
+      el.addEventListener('touchend', off, { passive: false });
+      el.addEventListener('touchcancel', off, { passive: false });
+      el.addEventListener('mousedown', on);
+      el.addEventListener('mouseup', off);
+      el.addEventListener('mouseleave', off);
+    }
+    bindPad('padLeft', 'left');
+    bindPad('padRight', 'right');
+    bindPad('padJump', 'jump');
 
-      // Global game variables for scoring and bonus (declared only once)
-      // (player, bot, ball, playerScore, botScore, playerStreak, botStreak, lastGoalTime, bonusActive, bonusTimer have been declared above)
-
-      function scoreGoal(scoringSide) {
-        const currentTime = Date.now();
-        if (currentTime - lastGoalTime < 10000) {
-          scoringSide === "player" ? playerStreak++ : botStreak++;
-        } else {
-          scoringSide === "player" ? playerStreak = 1 : botStreak = 1;
-        }
-        lastGoalTime = currentTime;
-        let points = baseGoalPoints * (scoringSide === "player" ? playerStreak : botStreak);
-        if (bonusActive) points *= 2;
-        if (scoringSide === "player") {
-          playerScore += points;
-          playerScoreEl.textContent = `Player: ${playerScore}`;
-          scoreSound.currentTime = 0;
-          scoreSound.play();
-          showGoalNotification("PLAYER SCORED! " + randomDegenMessage());
-        } else {
-          botScore += points;
-          botScoreEl.textContent = `Bot: ${botScore}`;
-          scoreSound.currentTime = 0;
-          scoreSound.play();
-          showGoalNotification("BOT SCORED! " + randomDegenMessage());
-        }
-        ball.reset();
-        checkGameOver();
-      }
-
-      function checkForBonus() {
-        if (!bonusActive && Math.random() < 0.005) {
-          bonusActive = true;
-          bonusTimer = Date.now();
-          showBonusNotification("DEGEN BONUS: Score x2!");
-        }
-        if (bonusActive && Date.now() - bonusTimer > 10000) {
-          bonusActive = false;
-          hideBonusNotification();
-        }
-      }
-
-      function submitLeaderboard() {
-        const playerName = document.getElementById("playerName").value.trim();
-        if (playerName === "") { alert("Enter your name, you degen!"); return; }
-        let leaderboard = JSON.parse(localStorage.getItem("footballLeaderboard") || "[]");
-        leaderboard.push({ name: playerName, score: playerScore });
-        leaderboard.sort((a, b) => b.score - a.score);
-        localStorage.setItem("footballLeaderboard", JSON.stringify(leaderboard));
-        // Also post to the portal-wide board so the run shows up on leaderboard.html.
-        if (window.DegenGame) window.DegenGame.finish('nerdsoccer', playerName, playerScore);
-      }
-
-      function drawField() {
-        const fieldGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-        fieldGradient.addColorStop(0, "#000");
-        fieldGradient.addColorStop(1, "#111");
-        ctx.fillStyle = fieldGradient;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.strokeStyle = "#0f0";
-        ctx.lineWidth = 2;
-        ctx.setLineDash([15, 15]);
-        ctx.beginPath();
-        ctx.moveTo(canvas.width / 2, 0);
-        ctx.lineTo(canvas.width / 2, canvas.height);
-        ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.beginPath();
-        ctx.arc(canvas.width / 2, canvas.height / 2, 60, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.fillStyle = "#0f0";
-        ctx.fillRect(0, canvas.height - goalHeight, goalWidth, goalHeight);
-        ctx.fillRect(canvas.width - goalWidth, canvas.height - goalHeight, goalWidth, goalHeight);
-      }
-
-      function initializeGame() {
-        player = new Player(100, canvas.height - playerRadius, "#1E90FF");
-        bot = new Bot(canvas.width - 100, canvas.height - playerRadius, "#32CD32", difficulty);
-        ball = new Ball(canvas.width / 2, canvas.height / 2, ballRadius, "#FFD700");
-        playerScore = 0; botScore = 0;
-        playerScoreEl.textContent = `Player: 0`;
-        botScoreEl.textContent = `Bot: 0`;
-        playerStreak = 0; botStreak = 0; lastGoalTime = 0;
-        bonusActive = false;
-        hideBonusNotification();
-        gameOverScreen.classList.remove("active");
-      }
-
-      const keys = { ArrowLeft: false, ArrowRight: false, Space: false };
-      window.addEventListener("keydown", (e) => {
-        if (controls !== 'keyboard') return;
-        if (e.code === "ArrowLeft") keys.ArrowLeft = true;
-        if (e.code === "ArrowRight") keys.ArrowRight = true;
-        if (e.code === "Space") {
-          if (!player.jumping) { player.dy = -8; player.jumping = true; }
-          else if (player.doubleJumpAvailable) { player.dy = -8; player.doubleJumpAvailable = false; }
-        }
-      });
-      window.addEventListener("keyup", (e) => {
-        if (controls !== 'keyboard') return;
-        if (e.code === "ArrowLeft") keys.ArrowLeft = false;
-        if (e.code === "ArrowRight") keys.ArrowRight = false;
-      });
-      let touchStartX = null, touchStartY = null;
-      canvas.addEventListener("touchstart", (e) => {
-        if (controls !== 'touch') return;
-        const touch = e.touches[0];
-        touchStartX = touch.clientX;
-        touchStartY = touch.clientY;
-      });
-      canvas.addEventListener("touchend", (e) => {
-        if (controls !== 'touch' || touchStartX === null) return;
-        const touch = e.changedTouches[0];
-        const deltaX = touch.clientX - touchStartX;
-        const deltaY = touch.clientY - touchStartY;
-        if (Math.abs(deltaX) > Math.abs(deltaY)) {
-          if (deltaX > 30) player.dx = 3;
-          else if (deltaX < -30) player.dx = -3;
-        } else {
-          if (deltaY < -30) {
-            if (!player.jumping) { player.dy = -8; player.jumping = true; }
-            else if (player.doubleJumpAvailable) { player.dy = -8; player.doubleJumpAvailable = false; }
-          }
-        }
-        touchStartX = null;
-        touchStartY = null;
-      });
-      canvas.addEventListener("touchmove", (e) => { if (controls === 'touch') e.preventDefault(); }, { passive: false });
-      function handlePlayerMovement() {
-        if (controls === 'keyboard') {
-          if (keys.ArrowLeft) player.dx = -3;
-          else if (keys.ArrowRight) player.dx = 3;
-          else player.dx = 0;
-        }
-      }
-
-      function gameLoop() {
-        if (!gameRunning || isPaused) return;
-        requestAnimationFrame(gameLoop);
-        checkForBonus();
-        drawField();
-        handlePlayerMovement();
-        player.update();
-        bot.update(ball);
-        ball.update(player, bot);
-        player.draw();
-        bot.draw();
-        ball.draw();
-      }
-
-      function checkGameOver() {
-        if (playerScore >= maxGoals || botScore >= maxGoals) {
-          gameRunning = false;
-          gameOverScreen.classList.add("active");
-          finalScoreEl.textContent = `Final Score - Player: ${playerScore} | Bot: ${botScore}`;
-        }
-      }
-
-      document.getElementById("submitScore").addEventListener("click", submitLeaderboard);
-      startButton.addEventListener("click", () => {
-        initializeGame();
-        startScreen.classList.add("hidden");
-        gameRunning = true;
-        gameLoop();
-      });
-      settingsButton.addEventListener("click", () => { settingsMenu.classList.add("active"); });
-      closeSettings.addEventListener("click", () => { settingsMenu.classList.remove("active"); });
-      difficultySelect.addEventListener("change", (e) => { difficulty = e.target.value; if (bot) bot.difficulty = difficulty; });
-      controlsSelect.addEventListener("change", (e) => { controls = e.target.value; });
-      restartButton.addEventListener("click", () => {
-        gameOverScreen.classList.remove("active");
-        initializeGame();
-        gameRunning = true;
-        gameLoop();
-      });
-      returnSettingsButton.addEventListener("click", () => {
-        gameOverScreen.classList.remove("active");
-        settingsMenu.classList.add("active");
-      });
-      pauseButtonEl.addEventListener("click", () => {
-        if (!gameRunning) return;
-        isPaused = !isPaused;
-        if (isPaused) pauseOverlay.style.display = "flex";
-        else { pauseOverlay.style.display = "none"; gameLoop(); }
-      });
-    })();
+    /* ------------------------------------------------------------ bootstrap */
+    brain = window.SoccerBoot($('gameCanvas'));
+    var fresh = brain.stats().shotsSeen === 0;
+    if (fresh) {
+      var n = warmUp(brain, 900, 1600, 20261006);
+      brain.save();
+      console.log('[soccer] warm-up: ' + n + ' simulated strikes, 1600 synthetic episodes');
+    } else {
+      console.log('[soccer] loaded a brain that has already seen ' + brain.stats().shotsSeen + ' shots');
+    }
+    renderPanel();
+    window.__soccerInternals = { warmUp: warmUp, DIFF: DIFF, renderPanel: renderPanel };
+  })();
   </script>
 </body>
 </html>

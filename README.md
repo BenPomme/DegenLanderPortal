@@ -44,6 +44,30 @@ landing site, for example:
 Games/degenlander/index.html?seed=20261006&diff=hard&ticker=TSLA
 ```
 
+### Nerd Soccer
+
+Arena football with real ball physics: a 0.43 kg size-5 ball, 9.81 m/s² gravity,
+quadratic air drag, a Magnus force so spin genuinely curls the ball, and Coulomb
+friction at contacts so topspin drives it on and backspin checks it. The
+goalposts are physical and the ball rebounds off them.
+
+The opponent learns. `Games/NerdSoccer/soccer-ai.js` holds a one-hidden-layer
+neural network trained by real backpropagation (the analytic gradient is checked
+against finite differences to 2e-11 in the test suite) plus two Q-learners, one
+for which save to attempt and one for where to shoot. Every shot you take is a
+training example for the intent model, which predicts which band of the goal you
+are about to attack from your pose and your recent habits. It all persists in
+localStorage, so it is still better against you next time.
+
+The panel under the pitch shows what it currently believes: shots seen, how often
+it is reading you correctly, its save rate, your band histogram, and its
+prediction for your next shot. There is an "erase its memory" button on the start
+screen if you want to feel good about yourself again.
+
+Controls: `←` `→` run, `↑` or `Space` jump (twice for a double jump). Contact
+power scales with how fast you run into the ball, and striking it off-centre puts
+spin on it.
+
 ## Running it locally
 
 The site is plain static HTML, CSS and JavaScript. There is no build step.
@@ -69,6 +93,8 @@ js/sound-effects.js     Web Audio synthesizer, generates every sound effect
 js/leaderboard.js       the score store
 js/game-bridge.js       adapter the games call when a run ends
 Games/degenlander/lander.js   the Degen Lander physics engine
+Games/NerdSoccer/soccer-ai.js the learning opponent (MLP + two Q-learners)
+Games/NerdSoccer/soccer.js    arena football physics and match loop
 assets/fonts/           self-hosted Press Start 2P (latin subset)
 Games/<name>/           one self-contained folder per game
 docs/VIRAL-IDEAS.md     10 concrete growth ideas, ranked
