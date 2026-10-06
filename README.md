@@ -17,6 +17,20 @@ A free browser arcade of crypto-themed games. No wallet, no signup, no backend.
 | [Nerd Soccer](Games/NerdSoccer/PenFootballGameWithWallBounce.html) | Penalty shootout with wall bounces |
 | [Neon Labyrinth](Games/laby/labirinthgame.html) | Escape the maze before the clock eats you |
 
+Every game states its goal, its skill, and how you win and lose, both on its own
+start screen and on its arcade card.
+
+| Game | Goal | Skill | Lose |
+|---|---|---|---|
+| Degen Lander | Bank a score, then decide whether to double down | Rocket control | Crash with points pending |
+| Rugpull Roulette | Reach $2,700 in 10 rounds | Reading dossiers | Broke, or rounds run out |
+| Degenerate Slots | Turn $1,000 into $2,000 in 22 spins | Reel timing | Broke, or spins run out |
+| Crypto Shitter | Turn $10,000 into $50,000 in 120s | Chart timing | Below $1,000, or time up short |
+| Spaceship World | Land on all 5 exoplanets | Fuel management | Three wrecks |
+| Ant Simulator | Survive 5 waves of smarties | Resource management | Every ant captured |
+| Nerd Soccer | First to five | Reading the keeper | The keeper reads you |
+| Neon Labyrinth | Escape 5 mazes | Navigation under pressure | Caught once |
+
 ### Degen Lander
 
 The flagship is a small physics sim rather than a flavour-text minigame. The

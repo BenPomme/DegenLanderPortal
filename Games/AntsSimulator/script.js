@@ -1077,25 +1077,61 @@ const obstacleImage = makeSprite((g, s) => {
 });
 
 // Initialize Entities, Obstacles, Resources
+
+/* ---------------------------------------------------------------------------
+   WAVE SYSTEM
+
+   The simulator used to have no objective at all: 7 smarties spawned once, and
+   the only terminal state was every ant dying. There was nothing to aim at and
+   no way to win.
+
+   Now there are five waves. Each wave spawns more smarties than the last, and
+   clearing wave 5 wins the run. Losing is unchanged: if every ant is taken, the
+   colony is gone. The skill is resource allocation, spending what the workers
+   collect on the right mix of ants, walls and powers.
+--------------------------------------------------------------------------- */
+const WAVE_TOTAL = 5;
+let waveNumber = 0;
+let waveCleared = false;
+let waveBannerTimer = 0;
+
+/** Fire one wave of smarties at the colony. Each wave is larger and angrier. */
+function spawnWave(n) {
+    waveNumber = n;
+    const count = 4 + n * 2;                   // 6, 8, 10, 12, 14
+    const aggressiveChance = 0.18 + n * 0.06;  // more aggressors each wave
+    for (let i = 0; i < count; i++) {
+        const roll = Math.random();
+        const smartyType = roll < aggressiveChance ? 'aggressiveSmarty'
+            : (roll < aggressiveChance + 0.25 ? 'defensiveSmarty' : 'smarty');
+        let x, y;
+        if (Math.random() < 0.5) { x = Math.random() * canvas.width; y = Math.random() < 0.5 ? 0 : canvas.height; }
+        else { x = Math.random() < 0.5 ? 0 : canvas.width; y = Math.random() * canvas.height; }
+        if (smartyType === 'aggressiveSmarty') { entities.push(new AggressiveSmarty(x, y, Math.random() - 0.5, Math.random() - 0.5)); }
+        else if (smartyType === 'defensiveSmarty') { entities.push(new DefensiveSmarty(x, y, Math.random() - 0.5, Math.random() - 0.5)); }
+        else { entities.push(new Entity(x, y, Math.random() - 0.5, Math.random() - 0.5, 'smarty')); }
+    }
+    waveCleared = false;
+    waveBannerTimer = 2.5;
+    if (window.DegenSound) DegenSound.play('game', 'levelUp');
+}
+
+function smartiesRemaining() {
+    return entities.filter(e => e.type === 'smarty' || e.type === 'aggressiveSmarty' || e.type === 'defensiveSmarty').length;
+}
+
 function initializeEntities() {
     entities = []; permanentWalls = []; obstacles = []; resourceDrops = []; bullets = [];
     collectedResources = 0; resources = 0; smartyIdCounter = 1;
+    waveNumber = 0; waveCleared = false; waveBannerTimer = 0;
     updateStats(); resetCharts();
     generateNewAnts(20);
     for (let i = 0; i < 5; i++) { entities.push(new WorkerAnt(antBase.x, antBase.y, Math.random() - 0.5, Math.random() - 0.5)); }
     for (let i = 0; i < 3; i++) { entities.push(new SoldierAnt(antBase.x, antBase.y, Math.random() - 0.5, Math.random() - 0.5)); }
-    for (let i = 0; i < 7; i++) {
-        const smartyType = Math.random() < 0.5 ? "smarty" : (Math.random() < 0.5 ? "aggressiveSmarty" : "defensiveSmarty");
-        let x, y;
-        if (Math.random() < 0.5) { x = Math.random() * canvas.width; y = Math.random() < 0.5 ? 0 : canvas.height; }
-        else { x = Math.random() < 0.5 ? 0 : canvas.width; y = Math.random() * canvas.height; }
-        if (smartyType === "aggressiveSmarty") { entities.push(new AggressiveSmarty(x, y, Math.random() - 0.5, Math.random() - 0.5)); }
-        else if (smartyType === "defensiveSmarty") { entities.push(new DefensiveSmarty(x, y, Math.random() - 0.5, Math.random() - 0.5)); }
-        else { entities.push(new Entity(x, y, Math.random() - 0.5, Math.random() - 0.5, "smarty")); }
-    }
     entities.push(new Entity(antBase.x, antBase.y, 0, 0, "superAnt"));
     generateObstacles();
     generateResources();
+    spawnWave(1);
 }
 function generateObstacles() {
     for (let i = 0; i < 10; i++) {
@@ -1249,19 +1285,27 @@ function updateCharts(elapsed, resourcesCollected, antsCount, bulletsInAir) {
 const panzoomInstance = Panzoom(canvas, { maxScale: 3, minScale: 0.5, contain: 'outside' });
 canvas.parentElement.addEventListener('wheel', panzoomInstance.zoomWithWheel);
 // End Summary Modal and Score Submission
-function displayEndSummary() {
+function displayEndSummary(outcome) {
     cancelAnimationFrame(animationFrame);
     const endSummaryDiv = document.getElementById('endSummary');
     const summaryContentDiv = document.getElementById('summaryContent');
     const elapsedSeconds = Math.floor((Date.now() - simulationStartTime) / 1000);
     const remainingAnts = entities.filter(e => e.type === "ant" || e.type === "workerAnt" || e.type === "soldierAnt").length;
-    finalScore = collectedResources + (remainingAnts * 10) + elapsedSeconds;
+    const won = outcome === 'won';
+    // Winning is worth far more than surviving, so the score reflects the goal.
+    finalScore = collectedResources + (remainingAnts * 10) + elapsedSeconds + (won ? waveNumber * 500 : 0);
+    const heading = won
+        ? '<h3 style="color:#00ff9d;margin-top:0">COLONY SURVIVED ALL ' + WAVE_TOTAL + ' WAVES</h3>'
+        : '<h3 style="color:#ff2d55;margin-top:0">COLONY WIPED OUT</h3>';
     summaryContentDiv.innerHTML = `
+        ${heading}
         <p>Your Score: ${finalScore}</p>
+        <p>Waves Cleared: ${won ? WAVE_TOTAL : Math.max(0, waveNumber - 1)} of ${WAVE_TOTAL}</p>
         <p>Collected Resources: ${collectedResources}</p>
         <p>Remaining Ants: ${remainingAnts}</p>
         <p>Time Elapsed: ${elapsedSeconds} seconds</p>
-        <p>${remainingAnts > 0 ? "You survived! Fuck yeah!" : "Game over, you degen!"}</p>
+        <p>${won ? "You held the line for five waves. Fuck yeah!"
+                 : "Every last ant is gone. You lost the colony, you degen."}</p>
     `;
     document.getElementById('scoreSubmission').style.display = 'block';
     endSummaryDiv.style.display = 'flex';
@@ -1405,6 +1449,24 @@ function animate() {
         displayEndSummary();
         return;
     }
+
+    // Wave progression. Clearing a wave advances the ladder; clearing the last
+    // one wins the run.
+    if (!waveCleared && smartiesRemaining() === 0) {
+        waveCleared = true;
+        if (waveNumber >= WAVE_TOTAL) {
+            cancelAnimationFrame(animationFrame);
+            displayEndSummary('won');
+            return;
+        }
+        const cleared = waveNumber;
+        waveBannerTimer = 3.0;
+        info.textContent = 'WAVE ' + cleared + ' CLEARED. Next wave incoming.';
+        setTimeout(() => {
+            if (!isPaused) spawnWave(cleared + 1);
+        }, 2500);
+    }
+
     updateStats();
     setTimeout(() => { animationFrame = requestAnimationFrame(animate); }, 1000 / (60 * simulationSpeed));
 }

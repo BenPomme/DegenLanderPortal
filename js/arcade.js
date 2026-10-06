@@ -315,6 +315,14 @@
       desc.className = 'd-card__desc';
       desc.textContent = game.blurb;
 
+      // State the goal and the skill on the card itself. Every game in the
+      // arcade now has a named objective and a named skill, and the arcade is
+      // where a player decides what to spend their time on.
+      var goal = document.createElement('p');
+      goal.className = 'd-card__goal';
+      goal.innerHTML = '<b>GOAL</b> ' + game.goal +
+        (game.skill ? ' &nbsp;<b>SKILL</b> ' + game.skill : '');
+
       var foot = document.createElement('div');
       foot.className = 'd-card__foot';
       var players = document.createElement('span');
@@ -328,6 +336,7 @@
 
       body.appendChild(title);
       body.appendChild(desc);
+      body.appendChild(goal);
       body.appendChild(foot);
       a.appendChild(art);
       a.appendChild(body);

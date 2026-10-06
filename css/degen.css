@@ -523,6 +523,26 @@ body.d-has-nav { padding-top: var(--d-nav-h); }
   color: var(--d-muted);
 }
 
+/* Goal and skill line on an arcade card. */
+.d-card__goal {
+  margin: 0;
+  font-family: var(--d-mono);
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--d-text);
+  opacity: 0.86;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(30, 44, 63, 0.9);
+}
+
+.d-card__goal b {
+  color: var(--d-green);
+  font-weight: 400;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  margin-right: 3px;
+}
+
 .d-card__foot {
   margin-top: auto;
   display: flex;

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Labyrinthe Degen 18+ Ultra Moderne</title>
+  <title>NEON LABYRINTH - five levels, one life</title>
   <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
   <style>
@@ -110,21 +110,21 @@
 <body>
   <canvas id="gameCanvas" width="800" height="600"></canvas>
   <div id="upgradeScreen">
-    <h2>Choisissez votre Amélioration</h2>
+    <h2>CHOOSE AN UPGRADE</h2>
     <button class="upgradeButton" id="speedUpgrade">
-      Augmenter la Vitesse
-      <div class="tooltip">Augmente la vitesse du joueur de 0.5 unités.</div>
+      FASTER RUNNER
+      <div class="tooltip">Permanent: +0.5 to your movement speed.</div>
     </button>
     <button class="upgradeButton" id="boostUpgrade">
-      Boost Temporaire
-      <div class="tooltip">Accélération temporaire de 2 unités pendant 5 secondes.</div>
+      TEMPORARY BOOST
+      <div class="tooltip">One press of Shift gives 5 seconds of +2 speed.</div>
     </button>
     <button class="upgradeButton" id="shieldUpgrade">
-      Bouclier Temporaire
+      TEMPORARY SHIELD
       <div class="tooltip">Protection temporaire pendant 5 secondes.</div>
     </button>
     <button class="upgradeButton" id="nextLevelButton">
-      Commencer le Niveau Suivant
+      START THE NEXT LEVEL
     </button>
   </div>
   <div id="gameOverScreen">
@@ -182,6 +182,7 @@
         const FOV_RADIUS = 10; // Champ de vision en tuiles
 
         let currentLevel = 1;
+        const TOTAL_LEVELS = 5;   // finish level 5 and the run is won
         let gameOver = false;
         let win = false;
         let applesCollected = 0;
@@ -458,13 +459,13 @@
           ctx.fillStyle = '#ecf0f1';
           ctx.font = '18px Roboto';
           ctx.textAlign = 'left';
-          ctx.fillText(`Niveau: ${currentLevel}`, 10, 25);
-          ctx.fillText(`Pommes: ${applesCollected}/${totalApples}`, 10, 50);
-          ctx.fillText(`Score: ${score}`, 10, 75);
+          ctx.fillText(`LEVEL: ${currentLevel} / ${TOTAL_LEVELS}`, 10, 25);
+          ctx.fillText(`APPLES: ${applesCollected}/${totalApples}`, 10, 50);
+          ctx.fillText(`SCORE: ${score}`, 10, 75);
           if (player.shield) {
             ctx.fillStyle = '#1abc9c';
             ctx.font = '16px Roboto';
-            ctx.fillText(`Bouclier: ${Math.ceil(player.shieldTimer / 60)}s`, 10, 100);
+            ctx.fillText(`SHIELD: ${Math.ceil(player.shieldTimer / 60)}s`, 10, 100);
           }
           if (player.boost) {
             ctx.fillStyle = '#e67e22';
@@ -490,7 +491,7 @@
           leaderboard.push({ name, score });
           leaderboard.sort((a, b) => b.score - a.score);
           localStorage.setItem("labyrinthLeaderboard", JSON.stringify(leaderboard));
-          alert("Score soumis!");
+          alert("Score posted!");
         }
 
         // ----- Upgrade Screen Handlers -----
@@ -518,9 +519,34 @@
           gameLoop(); // Relancer la boucle de jeu
         });
 
+        /**
+         * End the run and say plainly whether it was won or lost.
+         *
+         * The old flow had no finish line: clearing a level always opened the
+         * upgrade panel and bumped the level counter, so "winning" was not a
+         * thing that could happen.
+         */
+        function finishRun(won) {
+          gameOver = true;
+          const titleEl = gameOverScreen.querySelector('h2');
+          if (titleEl) {
+            titleEl.textContent = won ? 'MAZE ESCAPED' : 'CAUGHT IN THE DARK';
+            titleEl.style.color = won ? '#00ff9d' : '#ff2d55';
+          }
+          finalScoreEl.textContent = won
+            ? `Final Score: ${score}  -  all ${TOTAL_LEVELS} levels cleared.`
+            : `Final Score: ${score}  -  caught on level ${currentLevel} of ${TOTAL_LEVELS}.`;
+          if (window.DegenGame && score > 0) window.DegenGame.finish('laby', null, Math.round(score));
+          gameOverScreen.style.display = 'block';
+        }
+
         // ----- Game Over Screen Handler -----
         retryButton.addEventListener('click', () => {
           gameOverScreen.style.display = 'none';
+          // A fresh run, not a free retry of the level you just died on.
+          currentLevel = 1;
+          score = 0;
+          applesCollected = 0;
           initLevel();
           gameOver = false;
           gameLoop();
@@ -585,9 +611,16 @@
           } else {
             draw();
             if (win) {
-              upgradeScreen.style.display = 'block';
+              if (currentLevel >= TOTAL_LEVELS) {
+                // Previously the upgrade screen appeared forever and the level
+                // counter had no ceiling, so a run could never be completed.
+                finishRun(true);
+              } else {
+                upgradeScreen.style.display = 'block';
+              }
             } else if (gameOver) {
-              gameOverScreen.style.display = 'block';
+              // Caught once and the run is over. Retrying starts a fresh run.
+              finishRun(false);
             }
           }
         }
@@ -754,13 +787,13 @@
           ctx.fillStyle = '#ecf0f1';
           ctx.font = '18px Roboto';
           ctx.textAlign = 'left';
-          ctx.fillText(`Niveau: ${currentLevel}`, 10, 25);
-          ctx.fillText(`Pommes: ${applesCollected}/${totalApples}`, 10, 50);
-          ctx.fillText(`Score: ${score}`, 10, 75);
+          ctx.fillText(`LEVEL: ${currentLevel} / ${TOTAL_LEVELS}`, 10, 25);
+          ctx.fillText(`APPLES: ${applesCollected}/${totalApples}`, 10, 50);
+          ctx.fillText(`SCORE: ${score}`, 10, 75);
           if (player.shield) {
             ctx.fillStyle = '#1abc9c';
             ctx.font = '16px Roboto';
-            ctx.fillText(`Bouclier: ${Math.ceil(player.shieldTimer / 60)}s`, 10, 100);
+            ctx.fillText(`SHIELD: ${Math.ceil(player.shieldTimer / 60)}s`, 10, 100);
           }
           if (player.boost) {
             ctx.fillStyle = '#e67e22';
@@ -780,7 +813,7 @@
           leaderboard.push({ name, score });
           leaderboard.sort((a, b) => b.score - a.score);
           localStorage.setItem("labyrinthLeaderboard", JSON.stringify(leaderboard));
-          alert("Score soumis!");
+          alert("Score posted!");
         }
 
         // ----- Upgrade Screen Handlers -----
@@ -811,6 +844,10 @@
         // ----- Game Over Screen Handler -----
         retryButton.addEventListener('click', () => {
           gameOverScreen.style.display = 'none';
+          // A fresh run, not a free retry of the level you just died on.
+          currentLevel = 1;
+          score = 0;
+          applesCollected = 0;
           initLevel();
           gameOver = false;
           gameLoop();
@@ -874,9 +911,16 @@
           } else {
             draw();
             if (win) {
-              upgradeScreen.style.display = 'block';
+              if (currentLevel >= TOTAL_LEVELS) {
+                // Previously the upgrade screen appeared forever and the level
+                // counter had no ceiling, so a run could never be completed.
+                finishRun(true);
+              } else {
+                upgradeScreen.style.display = 'block';
+              }
             } else if (gameOver) {
-              gameOverScreen.style.display = 'block';
+              // Caught once and the run is over. Retrying starts a fresh run.
+              finishRun(false);
             }
           }
         }

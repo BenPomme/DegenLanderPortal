@@ -283,3 +283,111 @@ free fall against an RK4 integration of the same drag equation (0.05% agreement)
 frame-rate independence between 1x1000 ms and 100x10 ms, mechanical energy that
 never increases, restitution against e^2, Magnus curvature sign, and no
 tunnelling at 60 m/s.
+
+---
+
+## Every other game: goal, skill, win, lose (2026-10-06)
+
+The remaining six games were audited against the same bar as the lander and the
+soccer game: does it have a stated goal, a named skill, and a reachable way to
+win and to lose? Four of them failed that bar completely.
+
+| Game | Before | Now |
+|---|---|---|
+| Degenerate Slots | no goal, pure RNG, could not be won | skill-stop reels, $1,000 to $2,000 in 22 spins |
+| Rugpull Roulette | no goal, pure RNG, could not be won | read the dossiers, $1,000 to $2,700 in 10 rounds |
+| Crypto Shitter | timer only, could not be won | $10,000 to $50,000 in 120 seconds |
+| Spaceship World | crashes still advanced the round, could not be lost | 3 hulls, 5 landings to win |
+| Ant Simulator | no objective at all | survive 5 waves of smarties |
+| Neon Labyrinth | French, uncapped levels, no finish | 5 levels, one life |
+
+### Degenerate Slots
+
+The machine picked a random symbol per reel and compared them. The player had no
+decisions and no influence. It is now a skill-stop machine: the reels scroll
+continuously and you stop each one. Reel 1 sets the symbol you are chasing and
+reels 2 and 3 light it up, so the aiming task is explicit. Scroll is driven by the
+fixed timestep, so the timing window is identical at any refresh rate.
+
+Three real bugs found while building it:
+
+1. **The stake was never deducted**, so the player could not lose money and the
+   machine was pointless.
+2. **Falling below the bet wedged the game.** `spin()` returned early and nothing
+   ended the run, so a broke player sat there forever. The stake now auto-drops
+   to the largest affordable step, and below the minimum the run ends.
+3. **`resolveSpin` never returned the machine to `ready`**, so exactly one spin
+   per session was accepted and every later input was silently ignored.
+
+The test sweeps reel accuracy and checks the win rate climbs with it:
+20% -> 8%, 35% -> 50%, 55% -> 97%. Random placement wins 0 of 120.
+
+### Rugpull Roulette
+
+It span a wheel, a random coin rugged, and you watched. There was no information
+to act on. It is now a deduction game: six coins publish five signals each, and
+the signals are deliberately not equally informative. Liquidity, dev wallet and
+holder concentration are hard signals and are right about 88% of the time.
+Shilling and audit badges are soft and are right about 54%, which is noise.
+
+The payout odds count every warning equally, which is the market's mistake. A
+coin that looks terrifying for soft reasons only pays like a long shot while
+actually being one of the safest on the board. Measured over 4,000 rounds: hard
+signals 87.8% accurate, soft 54.1%, and a soft-scary safe coin pays 2.45x while a
+hard-scary rugged one pays 2.84x.
+
+The card shows the market's naive risk score, not the true posterior. An earlier
+version printed the correct probability and the game collapsed into "click the
+highest number"; showing the market's own number makes the tool part of the trap.
+
+Two bugs: `nextRound()` never cleared `lastRound`, and `resolveRound` is guarded
+by `lastRound === null`, so only the first round of a run ever resolved. And
+tickers were deduped on the full name rather than the four-character ticker, so
+boards shipped with three coins all labelled PEPE.
+
+Win rate at a $100 stake: random picker 0 of 150, informed reader 66 of 150.
+
+### Crypto Shitter
+
+This one already had a real skill (timing a live price chart) but no target, so
+no run could be won and the player had no idea what they were aiming at. It now
+has a stated target of $50,000 from $10,000, a bust line at $1,000, and a results
+panel that says plainly whether you won or lost and why. A test hook exposes the
+closure state so the win path, the bust path and the clock path are all verified.
+
+### Spaceship World
+
+A crash advanced the round anyway, so five crashes still ended in "all 5 rounds
+done". There was no way to lose. It now has three hulls: a wreck or a hard
+touchdown costs one and you replay the round, and losing all three ends the run.
+The HUD carries the hulls and the menu states the goal, the skill and both
+outcomes.
+
+### Ant Simulator
+
+A sandbox with no objective. Seven smarties spawned once and the only terminal
+state was every ant dying. It now runs five waves, each larger and with more
+aggressive smarties, and clearing wave five wins. The tutorial states the goal
+(survive 5 waves), the skill (resource management) and both outcomes.
+
+### Neon Labyrinth
+
+Still in French, with an uncapped level counter and a level-complete branch that
+always opened the upgrade panel. A run could not be finished. It is now in
+English, capped at five levels, and death ends the run rather than granting a
+free retry of the level you just failed.
+
+### Verification
+
+```
+node .scratch/audit/slots-check.js      # 15 passed
+node .scratch/audit/rugpull-check.js    # 13 passed
+node .scratch/audit/shitter-check.js    # 11 passed
+node .scratch/audit/ship-check.js       #  6 passed
+node .scratch/audit/ants-check.js       #  6 passed
+node .scratch/audit/laby-check.js       #  8 passed
+node .scratch/audit/audit.js            # 15/15 pages clean
+```
+
+The arcade cards now carry each game's goal and skill, so the objective is
+visible before you click.

@@ -421,7 +421,9 @@
     
     <div id="start-screen">
       <h2>WELCOME, SHITCOIN TRADER!</h2>
-      <p>Ready to make some motherfucking money in this horseshit crypto market? Buy low, shill like a whore, and sell high!</p>
+      <p style="color:#ffd166;font-size:0.95em">GOAL: turn <b>$10,000 into $50,000</b> in 120 seconds.</p>
+      <p style="color:#00ff9d;font-size:0.95em">SKILL: reading the chart. Buy the dip, sell the pump, and get out before the rug.</p>
+      <p style="font-size:0.9em">WIN: hit $50,000. LOSE: run out of time short, or drop below $1,000.</p>
       <p>Remember these golden rules, dickhead:</p>
       <p>1. Don't be the last fucking bagholder or you're totally fucked</p>
       <p>2. Shill your coins to every goddamn idiot to pump the price</p>
@@ -431,7 +433,7 @@
     </div>
     
     <div id="game-over">
-      <h2>THE MARKET CRASHED, BITCH!</h2>
+      <h2 id="over-title">THE MARKET CRASHED, BITCH!</h2>
       <p>Your final score, dickhead:</p>
       <div id="final-score">$0</div>
       <p id="performance-text">You're a fucking paper-handed bitch!</p>
@@ -449,6 +451,8 @@
   <script>
     // Game Constants
     const GAME_DURATION = 120; // 2 minutes in seconds
+    const TARGET_VALUE = 50000;   // the goal: 5x the starting stack
+    const BUST_VALUE = 1000;      // below this you are out of the game
     const COIN_COUNT = 7;
     const STARTING_CASH = 10000;
     const RUGPULL_CHANCE = 0.15; // 15% chance of rugpull each turn
@@ -819,7 +823,7 @@
       secondsRemaining--;
       
       if (secondsRemaining <= 0) {
-        endGame();
+        endGame('time');
         return;
       }
       
@@ -836,6 +840,32 @@
       renderCoinList();
       if (selectedCoin) renderChart();
       updatePlayerStats();
+      checkOutcome();
+    }
+
+    /**
+     * Win and lose checks, evaluated once a second alongside the prices.
+     *
+     * Without these the only way a run could end was the clock, so "winning" did
+     * not exist and hitting the target early was not rewarded.
+     */
+    function checkOutcome() {
+      if (!gameActive) return;
+      const total = playerCash + portfolioTotalValue();
+      if (total >= TARGET_VALUE) { updatePlayerStats(); endGame('target'); return; }
+      if (total < BUST_VALUE) { updatePlayerStats(); endGame('broke'); }
+    }
+
+    /** Mark-to-market value of everything currently held. */
+    function portfolioTotalValue() {
+      let v = 0;
+      for (const symbol in playerHoldings) {
+        const amount = playerHoldings[symbol];
+        if (!amount) continue;
+        const coin = coins.find((c) => c.symbol === symbol);
+        if (coin) v += amount * coin.currentPrice;
+      }
+      return v;
     }
     
     // Start the game
@@ -873,7 +903,14 @@
     }
     
     // End the game
-    function endGame() {
+    /**
+     * End the run and say plainly whether it was won or lost and why.
+     *
+     * The old version just stopped the clock and printed a snarky line keyed off
+     * the final balance. There was no target, so no run could be won, and the
+     * player had no way of knowing what they were aiming at.
+     */
+    function endGame(outcome) {
       gameActive = false;
       clearInterval(gameTimer);
       
@@ -882,24 +919,34 @@
 
       // Post the run to the portal-wide leaderboard.
       if (window.DegenGame) window.DegenGame.finish('cryptoshitter', null, Math.round(finalScoreValue));
-      
-      // Determine performance message
-      let performanceMessage;
-      if (finalScoreValue >= STARTING_CASH * 2) {
-        performanceMessage = 'Holy shit! You\'re a fucking crypto god, you magnificent bastard!';
-      } else if (finalScoreValue >= STARTING_CASH * 1.5) {
-        performanceMessage = 'Nice gains, dickhead! You\'re a true fucking degen!';
-      } else if (finalScoreValue >= STARTING_CASH) {
-        performanceMessage = 'At least you didn\'t lose everything, you pussy-ass bitch.';
-      } else if (finalScoreValue >= STARTING_CASH * 0.5) {
-        performanceMessage = 'You got absolutely rekt, paper hands! Fucking pathetic!';
-      } else {
-        performanceMessage = 'You\'re a fucking disgrace to degens everywhere, you worthless sack of shit!';
+
+      const won = outcome === 'target';
+      const overTitle = document.getElementById('over-title');
+      if (overTitle) {
+        overTitle.textContent = won ? 'YOU HIT $50,000' : 'THE MARKET CRASHED, BITCH!';
+        overTitle.style.color = won ? '#00ff9d' : '#ff2d55';
       }
-      
-      // Play game over sound
-      playSoundEffect('gameOver');
-      
+
+      let performanceMessage;
+      if (won) {
+        performanceMessage = 'Target hit with ' + Math.ceil(secondsRemaining) +
+          ' seconds left. You sold the top and walked. Genuinely well played.';
+      } else if (outcome === 'broke') {
+        performanceMessage = 'You dropped below $1,000 with ' + Math.ceil(secondsRemaining) +
+          ' seconds on the clock. Rekt, liquidated, and shown the door.';
+      } else if (finalScoreValue >= STARTING_CASH * 2) {
+        performanceMessage = 'Time up at ' + Math.round(finalScoreValue / STARTING_CASH * 100) +
+          '% of your stack. Doubled up but you left the target on the table.';
+      } else if (finalScoreValue >= STARTING_CASH) {
+        performanceMessage = 'Time up and you are up on the session, but nowhere near $50,000.';
+      } else if (finalScoreValue >= STARTING_CASH * 0.5) {
+        performanceMessage = 'Time up and down on the session. You got absolutely rekt.';
+      } else {
+        performanceMessage = 'Time up and nearly everything is gone. Fucking pathetic.';
+      }
+
+      playSoundEffect(won ? 'win' : 'gameOver');
+
       performanceText.textContent = performanceMessage;
       gameOver.style.display = 'flex';
     }
@@ -1131,12 +1178,34 @@
           case 'gameStart':
             DegenSound.play('game', 'levelUp');
             break;
-          case 'gameOver':
+        case 'gameOver':
             DegenSound.play('game', 'explosion');
             break;
         }
       }
     }
+
+    /* Test hook. The game state lives in this closure, so the only way to verify
+       the win and lose paths from outside is to expose a small controlled API. */
+    window.ShitterGame = {
+      snapshot: function () {
+        return {
+          active: gameActive,
+          seconds: secondsRemaining,
+          cash: playerCash,
+          portfolio: portfolioTotalValue(),
+          total: playerCash + portfolioTotalValue(),
+          target: TARGET_VALUE,
+          bust: BUST_VALUE,
+          holdings: Object.keys(playerHoldings).length
+        };
+      },
+      setCash: function (v) { playerCash = v; updatePlayerStats(); return this.snapshot(); },
+      tick: function () { updateTimer(); return this.snapshot(); },
+      check: function () { checkOutcome(); return this.snapshot(); },
+      target: TARGET_VALUE,
+      bust: BUST_VALUE
+    };
   </script>
 </body>
 </html>

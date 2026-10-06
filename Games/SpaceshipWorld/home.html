@@ -365,7 +365,10 @@
     <p><span class="tutorialKey">↑</span> Accelerate forward</p>
     <p><span class="tutorialKey">↓</span> Accelerate backward</p>
     <p><span class="tutorialKey">←</span> <span class="tutorialKey">→</span> Rotate ship</p>
-    <p>Your goal is to explore the universe and collect all upgrades while managing your fuel.</p>
+    <p style="color:#ffd166">GOAL: land on all 5 exoplanets. You have 3 hulls.</p>
+        <p style="color:#00ff9d">SKILL: fuel management. Fly efficiently or you will not reach the next planet.</p>
+        <p>WIN: complete all 5 landings. LOSE: wreck three times.</p>
+        <p>Touchdown under 1.0 m/s is clean and doubles your leftover fuel.</p>
     <p>Complete all 5 rounds to win!</p>
     <button id="closeTutorial">Got it!</button>
   </div>
@@ -397,6 +400,8 @@
     /* GAME STATE */
     let totalRounds = 5;
     let currentRound = 1;
+    let lives = 3;
+    let roundFailed = false;
     let playerName = '';
     let totalMoney = 0;
     let gameState = 'menu'; // 'menu','playing','moonLander','roundOver','allDone'
@@ -555,6 +560,9 @@
     function startNewGame(){
       currentRound=1;
       totalMoney=0;
+      lives=3;
+      roundFailed=false;
+      gameTitle.style.color='';
       startRound();
     }
 
@@ -583,12 +591,16 @@
       updateInfo();
     }
 
-    function finalizeRun(){
+    function finalizeRun(won, msg){
+      const win = won !== false && lives > 0;
       leaderboard.push({ name: playerName, score: totalMoney });
       updateLeaderboard();
-      info.textContent='All 5 rounds done! You got '+ totalMoney +' money total. Return to menu.';
-      // Post the completed 5-round run to the portal-wide leaderboard.
+      info.textContent = win
+        ? 'All 5 exoplanets landed. You banked ' + totalMoney + ' money with ' + lives + ' hulls to spare.'
+        : 'Run over. ' + (msg || 'Out of hulls.') + ' You banked ' + totalMoney + ' money across ' + (currentRound - 1) + ' completed rounds.';
       if (window.DegenGame) window.DegenGame.finish('spaceship', playerName, Math.round(totalMoney));
+      gameTitle.textContent = win ? 'MISSION COMPLETE' : 'MISSION FAILED';
+      gameTitle.style.color = win ? '#00ff9d' : '#ff2d55';
       restartBtn.textContent='Return to Menu';
       restartBtn.style.display='inline-block';
       gameState='allDone';
@@ -601,22 +613,21 @@
         let speed= Math.sqrt( rocketVX*rocketVX + rocketVY*rocketVY );
         /* Now up to 7, not 0.5. The friction=0.5 is the deceleration factor; 
            the rocket can get up to speed=7 in the counter. */
-        info.textContent='Fuel: '+ fuel +' | Money: '+ totalMoney +' | Speed: '+ speed.toFixed(2);
+        info.textContent='Fuel: '+ fuel +' | Money: '+ totalMoney +' | Speed: '+ speed.toFixed(2) +' | Hulls: '+ '\u25A0'.repeat(Math.max(0,lives)) + '\u25A1'.repeat(Math.max(0,3-lives));
       } else if(gameState==='moonLander'){
-        info.textContent='Moon Lander: verticalSpeed='+ moonLander.verticalSpeed.toFixed(2)+' Fuel: '+ fuel+' | Money: '+ totalMoney;
+        info.textContent='Touchdown: '+ moonLander.verticalSpeed.toFixed(2) +' m/s (under 1.0 is clean) | Fuel: '+ fuel+' | Money: '+ totalMoney +' | Hulls: '+ '\u25A0'.repeat(Math.max(0,lives));
       }
     }
 
     function handleRestart(){
       if(gameState==='roundOver'){
-        if(currentRound< totalRounds){
-          currentRound++;
-          gameTitle.textContent = `Round ${currentRound} of ${totalRounds}`;
-          startRound();
-          updateInfo();
-        } else {
-          finalizeRun();
-        }
+        // A failed round is replayed; only a clean landing advances the ladder.
+        if(!roundFailed) currentRound++;
+        roundFailed=false;
+        if(currentRound> totalRounds){ finalizeRun(true); return; }
+        gameTitle.textContent = `Round ${currentRound} of ${totalRounds}`;
+        startRound();
+        updateInfo();
       } else if(gameState==='allDone'){
         showMenu();
       } else {
@@ -792,16 +803,19 @@
         let planetY= sunY+ orbitRadius*Math.sin(planetAngle);
         if(rocketY>= planetY){
           if(moonLander.verticalSpeed<1){
-            showAnnouncement('Moon Lander success => x2 leftover fuel => '+(fuel*2));
+            showAnnouncement('Clean landing. Leftover fuel doubled => '+(fuel*2));
             totalMoney+= fuel*2;
+            roundFailed= false;
+            gameState='roundOver';
+            rocketY= planetY;
+            restartBtn.style.display='inline-block';
+            restartBtn.textContent = currentRound < totalRounds ? 'Next Round' : 'Finish Mission';
           } else {
-            showAnnouncement('Moon Lander crash => x1 leftover fuel => '+ fuel);
-            totalMoney+= fuel;
+            // A hard landing is a wreck, not a pass. It costs a hull.
+            showAnnouncement('You hit the surface at '+ moonLander.verticalSpeed.toFixed(1) +' m/s. That is a wreck.');
+            endRoundCollision('Too fast on touchdown.');
+            return;
           }
-          gameState='roundOver';
-          rocketY= planetY;
-          restartBtn.style.display='inline-block';
-          restartBtn.textContent='Next Round';
         }
       }
       centerCameraOnRocket();
@@ -809,14 +823,23 @@
     }
 
     function endRoundCollision(msg){
-      info.textContent= msg +' Round Over! +'+ fuel +' money.';
-      totalMoney+= fuel;
+      // A crash used to advance the round anyway, which meant there was no way
+      // to lose: five crashes still ended in "all 5 rounds done". Now a wreck
+      // costs a hull and you replay the same round, and running out of hulls
+      // ends the run.
+      createExplosion(rocketX, rocketY);
+      lives--;
+      if(lives<=0){ endRun(false, msg); return; }
+      roundFailed= true;
+      info.textContent= msg +'  Hulls left: '+ lives +'.  Press Retry to fly round '+ currentRound +' again.';
       gameState='roundOver';
       restartBtn.style.display='inline-block';
-      restartBtn.textContent='Next Round';
-      
-      // Create explosion visual effect
-      createExplosion(rocketX, rocketY);
+      restartBtn.textContent='Retry Round '+ currentRound;
+    }
+
+    function endRun(won, msg){
+      gameState='allDone';
+      finalizeRun(won, msg);
     }
 
     function openUpgradeModal(){
