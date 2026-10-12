@@ -143,6 +143,7 @@
     .btn.red:hover { background: #ff2d55; color: #fff; border-color: #ff2d55; }
     .btn.ghost { color: #7b93a6; background: transparent; border-color: #2b4a63; }
     .btn.ghost:hover { background: #7b93a6; color: #05060a; }
+    .btn--sm { padding: 8px 10px; font-size: 8px; }
     .btn:disabled { opacity: 0.4; cursor: not-allowed; }
     .btn:disabled:hover { background: rgba(0, 255, 157, 0.07); color: #00ff9d; border-color: #0d7a52; }
 
@@ -392,6 +393,13 @@
         <div class="k">PENDING</div>
         <div class="v" id="v-pending">$0</div>
       </div>
+      <div class="stat">
+        <div class="k">CONTROL</div>
+        <div class="row" style="justify-content:flex-start;gap:6px">
+          <button class="btn btn--sm" id="restartBtn" title="Restart the run (R)">RESTART</button>
+          <button class="btn btn--sm ghost" id="assistBtn" title="Toggle flight assist">ASSIST: ON</button>
+        </div>
+      </div>
     </div>
 
     <!-- --------------------------------------------------- mobile pads -->
@@ -405,7 +413,8 @@
       <h3>FLIGHT MANUAL</h3>
       <ul>
         <li><kbd>&#8593;</kbd> or <kbd>W</kbd> thrust. The engine points where the nose points.</li>
-        <li><kbd>&#8592;</kbd> <kbd>&#8594;</kbd> rotate. The ship has angular momentum, so start your counter-burn early.</li>
+        <li><kbd>&#8592;</kbd> <kbd>&#8594;</kbd> rotate. With <b class="d-green">ASSIST ON</b> the ship steps in 15 degree increments and always settles exactly level, so there is nothing to fight. With assist off it keeps real angular momentum and you have to counter-burn early.</li>
+        <li><kbd>R</kbd> restarts the run at any time. There is a RESTART button in the panel too.</li>
         <li>Both legs must touch down. A hull strike is always fatal.</li>
         <li>The engine <b class="d-green">spools up</b> rather than snapping on, so a tap is a small correction and a hold is a full burn. Cutting the throttle is quicker than opening it.</li>
         <li>With the rotation keys released the ship eases onto the nearest <b class="d-green">15 degree step</b>, so level is a state you can always get back to. The envelope panel shows <b class="d-gold">LEVEL: ON</b> when you are on it.</li>
@@ -419,7 +428,6 @@
     <div class="links">
       <a href="../../index.html">ARCADE</a>
       <a href="../../leaderboard.html">LEADERBOARD</a>
-      <a href="simple-game.html">SIMPLE VERSION</a>
     </div>
 
     <footer>
@@ -444,6 +452,7 @@
     var forcedTicker = params.get('ticker');
     var stockData = null;
     var runOver = false;
+    var assist = difficulty !== 'hard';   // reference-style flight assist
 
     // ------------------------------------------------------------ resources
     var DEFAULT_STOCKS = [
@@ -535,6 +544,11 @@
       $('v-site').textContent = s.run.site + ' / x' + s.run.multiplier;
       $('v-banked').textContent = money(s.run.banked);
       $('v-pending').textContent = money(s.run.pending);
+      if (typeof engine.assist === 'function') {
+        var on = engine.assist();
+        var btn = $('assistBtn');
+        if (btn) btn.textContent = 'ASSIST: ' + (on ? 'ON' : 'OFF');
+      }
     }
 
     setInterval(function () {
@@ -606,7 +620,8 @@
           terrainSource: data,
           ticker: ticker,
           name: ($('player-name').value || '').trim(),
-          seed: forcedSeed || undefined
+          seed: forcedSeed || undefined,
+          assist: assist
         });
         hide('start-screen');
         hide('interlude');
@@ -661,6 +676,31 @@
       show('start-screen');
     });
 
+    /* A restart that is always reachable, not just from the game-over panel.
+       The old build hid its restart button behind a CSS class that was never
+       applied, so there was no way out of a bad run except reloading the page. */
+    function restartRun() {
+      hide('interlude');
+      hide('game-over');
+      startRun();
+    }
+    $('restartBtn').addEventListener('click', function () {
+      if (window.DegenSound) DegenSound.play('ui', 'click');
+      restartRun();
+    });
+    $('assistBtn').addEventListener('click', function () {
+      assist = !assist;
+      this.textContent = 'ASSIST: ' + (assist ? 'ON' : 'OFF');
+      engine.setAssist(assist);
+      if (window.DegenSound) DegenSound.play('ui', 'click');
+    });
+    window.addEventListener('keydown', function (e) {
+      if ((e.key === 'r' || e.key === 'R') && !e.repeat) {
+        if (document.getElementById('start-screen').classList.contains('show')) return;
+        restartRun();
+      }
+    });
+
     $('save-score').addEventListener('click', function () {
       var name = ($('player-name').value || '').trim() || 'Anon Degen';
       var score = engine.banked();
@@ -674,6 +714,8 @@
       btn.setAttribute('aria-pressed', btn.getAttribute('data-diff') === difficulty ? 'true' : 'false');
       btn.addEventListener('click', function () {
         difficulty = btn.getAttribute('data-diff');
+        assist = difficulty !== 'hard';
+        if (engine.setAssist) engine.setAssist(assist);
         Array.prototype.forEach.call(document.querySelectorAll('.diff'), function (b) {
           b.setAttribute('aria-pressed', b === btn ? 'true' : 'false');
         });

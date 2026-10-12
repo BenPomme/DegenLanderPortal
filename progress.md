@@ -469,3 +469,95 @@ Also removed while in here: the labyrinth's external Roboto request (Press Start
 2P is self-hosted), three redundant Google Fonts links on pages that already
 load `css/degen.css`, and the `game.html` meme pop-ups that hotlinked
 i.imgflip.com and therefore rendered as broken-image icons.
+
+---
+
+## The four-lander problem, and a proper port of the reference rotation
+
+### What went wrong
+
+The first pass at "borrowing from the reference" was too timid, and it was aimed
+at the wrong file.
+
+`Games/degenlander/` contained **four near-identical builds of the game**:
+`index.html` (the rebuilt one), `game.html`, `simple-game.html` and
+`direct-game.html`. Every rebuild, every test and every audit went to
+`index.html`. The other three were left as-is, still running the original
+physics, and nothing linked to the broken ones from the nav so the audit never
+saw them.
+
+`game.html` was the worst of them. Its update loop:
+
+```js
+let dynamicGravity = baseGravity * (1 + lander.score / 1000);
+const dynamicThrust = baseThrust * (1 - Math.min(lander.score / 10000, 0.5));
+lander.vy += dynamicGravity;
+lander.x += lander.vx;          // no delta-time
+```
+
+Gravity **doubles** as your score rises, thrust **halves**, there is no drag and
+no terminal velocity, and the walls set `vx = 0` so you stick to them. It also
+hid its restart button behind `#controlButtons { display: none }`, which is never
+un-hidden, so there was no way out of a bad run except reloading the page.
+
+That is the build that was open in the in-app browser, which is a fair reason to
+call the physics horrendous: it was a different, broken game.
+
+### What was done about it
+
+**Consolidated to one lander.** `game.html` and `simple-game.html` are now
+redirect stubs that forward to `index.html`. `direct-game.html` launches
+`index.html` with the current parameter names (`ticker=`, `name=`) instead of the
+retired ones. Old bookmarks, saved links and the direct-launch flow all keep
+working, and there is no longer a second physics implementation to land on by
+accident. The `SIMPLE VERSION` link was removed from the real game.
+
+**Restart, properly this time.** A `RESTART` button sits in the instrument panel
+and is visible during play, with `R` as a keyboard shortcut. This is the exact
+gap that made the old build feel like a dead end.
+
+**The reference rotation, ported rather than approximated.** The previous attempt
+kept real angular momentum and only nudged toward a detent, which was still
+slippery: you could overshoot and end up fighting the ship. The reference simply
+does not have that problem, because:
+
+```js
+targetRotation += direction * 15      // rate limited to one step per 80 ms
+targetRotation = clamp(targetRotation, -90, 90)
+rotation += (targetRotation - rotation) * 0.3
+if (|rotation - targetRotation| < 0.1) rotation = targetRotation
+```
+
+That is now implemented as written, with the per-frame `* 0.3` ease converted to
+`1 - Math.pow(1 - 0.3, dt * 60)` so it behaves identically at 120 Hz. It is an
+arcade control model rather than a simulation, so it lives behind the assist
+flag: **easy and medium get it, hard keeps the raw momentum physics**, and the
+`ASSIST` button toggles it live.
+
+Measured: one tap of the rotation key moves exactly 15.00 degrees. Holding it
+stops at exactly 90.000 and no further. Releasing holds the angle to the
+floating-point bit (90.000000 before and after three seconds of coasting). Spin
+is exactly 0.
+
+### Verification
+
+```
+node .scratch/audit/lander-physics.js   # 36 passed
+node .scratch/audit/lander-flow.js      #  9 passed
+node .scratch/audit/audit.js            # 15/15 pages clean
+```
+
+`lander-flow.js` is new and covers the things that were actually broken:
+`game.html` and `simple-game.html` reach the real game, the old
+`stockSymbol=`/`playerName=` parameters are mapped to `ticker=`/`name=`, the
+restart button is visible during play and resets the ship to the top, `R` does
+the same, and the assist button flips the control model.
+
+The two angular-momentum assertions moved to hard mode, since that physics is
+now opt-in, and five assertions were added for the stepped model.
+
+### Lesson for next time
+
+Consolidate duplicates *before* rebuilding one of them. Four copies of the same
+game means the audit, the tests and the user can all be looking at different
+files, and "it is fixed" is then only true of one of them.

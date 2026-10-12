@@ -94,14 +94,14 @@
         })
         .then(data => {
           // Stock data exists, launch the game
-          window.location.href = `game.html?stockSymbol=${stockSymbol}&playerName=${encodeURIComponent(playerName)}`;
+          window.location.href = `index.html?ticker=${stockSymbol}&name=${encodeURIComponent(playerName)}`;
         })
         .catch(error => {
           console.error(error);
           // Generate a fallback file
           generateFallbackTerrain(stockSymbol);
           // Then launch the game anyway
-          window.location.href = `game.html?stockSymbol=${stockSymbol}&playerName=${encodeURIComponent(playerName)}`;
+          window.location.href = `index.html?ticker=${stockSymbol}&name=${encodeURIComponent(playerName)}`;
         });
     });
     

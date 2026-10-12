@@ -95,6 +95,33 @@
     spoolUp: 4.2,            // throttle units per second while igniting
     spoolDown: 5.6,          // cutting is quicker than spooling
     dragK: 0.0215,           // terminal velocity ~ sqrt(1.78 / 0.0215) = 9.1 m/s
+
+    /* STEPPED ROTATION, taken from the reference almost verbatim.
+
+       The first pass at this engine kept real angular momentum and only nudged
+       toward a detent, which was still too slippery: you could still overshoot
+       and end up fighting the ship. The reference simply does not have that
+       problem, because its rotation is a stepped target with an ease and no
+       momentum at all:
+
+         targetRotation += direction * 15      (rate limited to one step per 80 ms)
+         targetRotation = clamp(targetRotation, -90, 90)
+         rotation += (targetRotation - rotation) * 0.3
+         if (|rotation - targetRotation| < 0.1) rotation = targetRotation
+
+       That snaps to exact multiples of 15, always ends level, and cannot be
+       over-rotated. It is an arcade control model rather than a simulation, so
+       it lives behind the assist flag and the raw momentum model is still there
+       for anyone who turns assist off. The `* 0.3` ease is per frame at 60 fps
+       in the original; here it is converted to a rate so it behaves the same at
+       any timestep. */
+    stepRotation: true,
+    stepDeg: 15,
+    stepIntervalMs: 80,
+    stepEase: 0.3,           // per 60 fps frame
+    stepSnapDeg: 0.1,
+    stepClampDeg: 90,
+
     detentDeg: 15,           // idle rotation eases toward multiples of this
     detentCaptureDeg: 12,    // only captured inside this window
     detentAccel: 3.4,        // rad/s^2 of restoring torque
@@ -165,6 +192,8 @@
       prevX: x, prevY: y,
       vx: 0, vy: 0,
       rot: 0,
+      targetRot: 0,          // stepped-rotation target (assist mode)
+      lastStepMs: -1e9,      // last time a rotation step was accepted
       spin: 0,
       fuel: cfg.fuelStart,
       throttle: 0,          // spooled engine state, not the raw command
@@ -445,42 +474,48 @@
 
     t += dt;
 
-    var torque = 0;
-    if (input.left) torque -= cfg.rcsAccel;
-    if (input.right) torque += cfg.rcsAccel;
-
-    // Detent assist. With the pilot's hands off the rotation keys, ease toward
-    // the nearest step so "level" is a state you can reliably return to. This is
-    // the reference's stepped rotation, expressed as a torque rather than as a
-    // lerp, so the ship keeps its real angular momentum.
-    if (torque === 0 && cfg.detentDeg > 0 && ship.fuel > 0) {
-      var step = cfg.detentDeg * Math.PI / 180;
-      var nearest = Math.round(ship.rot / step) * step;
-      var err = nearest - ship.rot;
-      if (Math.abs(err) < cfg.detentCaptureDeg * Math.PI / 180) {
-        var restore = clamp(err * 22, -cfg.detentAccel, cfg.detentAccel);
-        // Oppose the spin as well as the offset, or the ship oscillates through
-        // the detent instead of settling on it.
-        restore -= ship.spin * cfg.detentAccel * 0.55;
-        ship.spin += restore * dt;
+    if (cfg.stepRotation) {
+      // The reference's model: a stepped target, an ease, and no momentum.
+      var stepRad = cfg.stepDeg * Math.PI / 180;
+      var want = ship.targetRot;
+      if (input.left || input.right) {
+        // The original rate limits to one step per 80 ms, which is what stops a
+        // tap from jumping several steps and what makes sustained holding feel
+        // like a slow slew rather than a snap.
+        if (t * 1000 - ship.lastStepMs > cfg.stepIntervalMs) {
+          want += (input.left ? -1 : 1) * stepRad;
+          var limStep = cfg.stepClampDeg * Math.PI / 180;
+          want = clamp(want, -limStep, limStep);
+          ship.lastStepMs = t * 1000;
+        }
       }
-    }
-
-    if (torque !== 0 && ship.fuel > 0) {
-      ship.spin += torque * dt;
-      if (Math.random() < 0.5) emitRcs(torque > 0 ? 1 : -1);
-      ship.fuel = Math.max(0, ship.fuel - 0.004 * dt);
-    }
-    ship.spin -= ship.spin * cfg.rcsDamp * dt;
-    ship.spin = clamp(ship.spin, -cfg.maxSpin, cfg.maxSpin);
-    ship.rot += ship.spin * dt;
-
-    // Assisted mode cannot pass horizontal, so the one genuinely unrecoverable
-    // state in a lander is off the table while it is on.
-    if (cfg.assistTiltClampDeg > 0 && cfg.assistTiltClampDeg < 180) {
-      var lim = cfg.assistTiltClampDeg * Math.PI / 180;
-      if (ship.rot > lim) { ship.rot = lim; ship.spin = Math.min(0, ship.spin); }
-      if (ship.rot < -lim) { ship.rot = -lim; ship.spin = Math.max(0, ship.spin); }
+      // Convert the original per-frame ease into a rate so it behaves the same
+      // at 120 Hz, 60 Hz or anything else.
+      var ease = 1 - Math.pow(1 - cfg.stepEase, dt * 60);
+      ship.rot += (want - ship.rot) * ease;
+      var snap = cfg.stepSnapDeg * Math.PI / 180;
+      if (Math.abs(want - ship.rot) < snap) ship.rot = want;
+      ship.spin = 0;
+      // RCS puffs are cosmetic here, but the fuel cost is not.
+      if ((input.left || input.right) && ship.fuel > 0) {
+        ship.fuel = Math.max(0, ship.fuel - 0.004 * dt);
+        if (Math.random() < 0.4) emitRcs(input.right ? 1 : -1);
+      }
+      ship.targetRot = want;
+    } else {
+      // Raw mode: real angular momentum, which is what the physics suite tests.
+      var torque = 0;
+      if (input.left) torque -= cfg.rcsAccel;
+      if (input.right) torque += cfg.rcsAccel;
+      if (torque !== 0 && ship.fuel > 0) {
+        ship.spin += torque * dt;
+        if (Math.random() < 0.5) emitRcs(torque > 0 ? 1 : -1);
+        ship.fuel = Math.max(0, ship.fuel - 0.004 * dt);
+      }
+      ship.spin -= ship.spin * cfg.rcsDamp * dt;
+      ship.spin = clamp(ship.spin, -cfg.maxSpin, cfg.maxSpin);
+      ship.rot += ship.spin * dt;
+      ship.targetRot = ship.rot;
     }
 
     // Engine command, then spool the engine toward it rather than snapping.
@@ -678,6 +713,7 @@
   function newRun(opts) {
     opts = opts || {};
     run = {
+      assist: opts.assist,
       site: 1,
       multiplier: 1,
       banked: 0,
@@ -710,13 +746,19 @@
     cfg.fuelStart      = d === 'easy' ? 1.0 : (d === 'hard' ? 0.82 : 0.92);
     cfg.par            = BASE.par + 1.5 * (site - 1);
 
-    // Flight assist is the reference's control model: engine spool, rotation
-    // detents, and the +/-90 clamp. Easy and medium keep it. Hard turns it off
-    // so the raw physics is still available to anyone who wants it.
-    var assisted = d !== 'hard';
+    // Flight assist is the reference's control model: engine spool plus stepped
+    // rotation clamped to +/-90. Easy and medium keep it. Hard turns it off so
+    // the raw momentum physics is still available to anyone who wants it.
+    var assisted = run.assist !== undefined ? run.assist : (d !== 'hard');
+    cfg.stepRotation   = assisted;
+    cfg.stepDeg        = BASE.stepDeg;
+    cfg.stepIntervalMs = BASE.stepIntervalMs;
+    cfg.stepEase       = BASE.stepEase;
+    cfg.stepSnapDeg    = BASE.stepSnapDeg;
+    cfg.stepClampDeg   = BASE.stepClampDeg;
     cfg.spoolUp        = BASE.spoolUp;
     cfg.spoolDown      = BASE.spoolDown;
-    cfg.detentDeg      = assisted ? BASE.detentDeg : 0;
+    cfg.detentDeg      = 0;   // superseded by stepped rotation
     cfg.detentCaptureDeg = BASE.detentCaptureDeg;
     cfg.detentAccel    = BASE.detentAccel;
     cfg.assistTiltClampDeg = assisted ? BASE.assistTiltClampDeg : 180;
@@ -1472,6 +1514,22 @@
       applySite();
     },
     setDifficulty: function (d) { if (run) { run.difficulty = d; applySite(); } },
+    /** Turn the reference-style flight assist on or off mid-run. */
+    setAssist: function (on) {
+      if (!run) return null;
+      run.assist = !!on;
+      // Only the control model changes. Re-running applySite here would rebuild
+      // the terrain and respawn the ship, which is not what toggling a control
+      // option should do mid-descent.
+      cfg.stepRotation = !!on;
+      if (cfg.stepRotation) {
+        var lim = cfg.stepClampDeg * Math.PI / 180;
+        ship.targetRot = clamp(ship.rot, -lim, lim);
+        ship.spin = 0;
+      }
+      return snapshot();
+    },
+    assist: function () { return cfg.stepRotation; },
     input: input,
     mode: function () { return mode; },
     config: function () { return cfg; },
