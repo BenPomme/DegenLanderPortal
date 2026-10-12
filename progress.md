@@ -391,3 +391,81 @@ node .scratch/audit/audit.js            # 15/15 pages clean
 
 The arcade cards now carry each game's goal and skill, so the objective is
 visible before you click.
+
+---
+
+## Degen Lander: control model borrowed from moonlander.seb.ly (2026-10-12)
+
+Studied the reference at http://moonlander.seb.ly/ (Seb Lee-Delisle, part of the
+Lunar Trails project). Source read directly: `Lander.js`, `game.js`,
+`LandscapeData.js`.
+
+### What the reference actually does
+
+```js
+gravity = 0.0005, thrustAcceleration = 0.0015, topSpeed = 0.35, drag = 0.9997
+thrustBuild += ((this.thrusting - thrustBuild) * 0.2);   // spool
+targetRotation += direction * 15;                        // stepped, clamped +/-90
+this.rotation += (targetRotation - this.rotation) * 0.3; // eased toward target
+// landing gate: (lander.rotation == 0) && (lander.vel.y < 0.15)
+```
+
+It is a much simpler simulation than ours, and it is far easier to fly. Every
+reason for that is on the **control** side, not the physics side:
+
+1. **The engine spools.** `thrustBuild` lerps toward the command at 0.2 per
+   frame instead of snapping. Real engines do spool, and it turns a binary key
+   into a usable analogue control: a tap is a small correction, a hold is a full
+   burn.
+2. **Rotation is stepped and clamped.** Target angles are multiples of 15
+   degrees, bounded to +/-90, and the actual angle eases toward the target. Two
+   consequences matter: "level" is a discrete state you can always return to
+   exactly, and you can never end up inverted with no way back.
+3. **Speed is capped** (`topSpeed`), with `drag = 0.9997` applied on both axes
+   every frame so motion damps rather than running away.
+4. **The landing gate is `rotation == 0`**, which is only crisp because rotation
+   is discrete.
+5. **The ship must be fully inside the flat pad**, not hanging off an edge.
+
+It also has a real bug: `if(vel.y>topSpeed) velY=topSpeed;` assigns to an
+undeclared global `velY` instead of `vel.y`, so the speed clamp never fires. The
+intent is there, the implementation does nothing.
+
+### What we took, and how
+
+The reference's physics are not better than ours. Its *controls* are better, and
+the fix was to take those without giving up what this engine already does
+properly.
+
+| Borrowed | How it is implemented here |
+|---|---|
+| Engine spool | Throttle ramps at `spoolUp` 4.2/s igniting and `spoolDown` 5.6/s cutting, applied to the existing proportional throttle channel. |
+| Stepped rotation | Rather than replacing angular momentum with a lerp, **detent assist** adds a restoring torque toward the nearest 15 degree step once the pilot releases the keys. Momentum survives; level is still easy. |
+| +/-90 clamp | Assisted mode clamps attitude at horizontal, removing the one genuinely unrecoverable state. |
+| Speed cap | Real quadratic drag, `dragK = 0.0215`, giving a terminal velocity of sqrt(g/k) = 8.8 m/s. More honest than the reference's linear drag, and unlike theirs it actually works. |
+| Full-pad requirement | Already covered, more generally: the contact-plane normal means a ship straddling an edge reads as a steep tilt. |
+
+**FULL DEGEN turns both assists off** and gives the raw physics, so the original
+handling is still available.
+
+### Verification
+
+`node .scratch/audit/lander-physics.js` now runs 28 assertions, four of them new:
+
+- drag matches an independent RK4 integration of `dv/dt = g - k*v^2` to 0.12%
+  (sim 33.230 vs RK4 33.270 m/s after 0.25 s from 40 m/s)
+- a ship launched above terminal speed decelerates toward it instead of
+  accelerating
+- one physics step of thrust changes vy by 0.010 m/s against 0.036 at full
+  power, so the spool is real
+- released rotation settles onto a detent (measured 0.10 degrees off the 15
+  degree grid) and assisted mode stops at exactly 90.00 degrees
+
+The free-fall assertion was rewritten: it used to compare against the drag-free
+closed form `0.5*g*t^2`, which is no longer the right reference now that drag
+exists.
+
+Also removed while in here: the labyrinth's external Roboto request (Press Start
+2P is self-hosted), three redundant Google Fonts links on pages that already
+load `css/degen.css`, and the `game.html` meme pop-ups that hotlinked
+i.imgflip.com and therefore rendered as broken-image icons.

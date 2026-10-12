@@ -64,7 +64,41 @@
     padRadius: 4.6,
     windMax: 0.0,
     fuelStart: 1.0,
-    par: 26
+    par: 26,
+
+    /* --- borrowed from moonlander.seb.ly, which gets the feel right ----------
+
+       That reference is a far simpler simulation than this one, but it is much
+       easier to fly, and every reason for that is on the control side rather
+       than the physics side. The settings below take those lessons without
+       giving up what this engine already does better: swept collision, mass
+       depletion, slope-aware touchdown and wind.
+
+       SPOOL. The reference ramps its engine with
+       `thrustBuild += (thrusting - thrustBuild) * 0.2` rather than snapping to
+       full power. Real engines do spool, and it converts a binary key into a
+       usable analogue control: taps give small corrections instead of a full
+       burn. Cutting is faster than spooling, as on a real lander.
+
+       DETENT. The reference rotates in 15 degree steps clamped to +/-90 and
+       eased toward the target. Two consequences matter. "Level" becomes a
+       discrete state you can return to exactly, and you can never end up
+       inverted with no way back. This engine keeps real angular momentum
+       because that physics is better, so rather than replacing it, detent
+       assist adds a gentle restoring torque toward the nearest step once the
+       pilot releases the rotation keys. Momentum survives and level is still
+       easy to hit.
+
+       DRAG. The reference applies a linear drag every frame so motion damps and
+       free fall cannot run away. Quadratic drag is more honest and produces a
+       real terminal velocity: sqrt(gravity / dragK). */
+    spoolUp: 4.2,            // throttle units per second while igniting
+    spoolDown: 5.6,          // cutting is quicker than spooling
+    dragK: 0.0215,           // terminal velocity ~ sqrt(1.78 / 0.0215) = 9.1 m/s
+    detentDeg: 15,           // idle rotation eases toward multiples of this
+    detentCaptureDeg: 12,    // only captured inside this window
+    detentAccel: 3.4,        // rad/s^2 of restoring torque
+    assistTiltClampDeg: 90   // assisted mode cannot pass horizontal
   };
 
   var HULL = {
@@ -133,10 +167,10 @@
       rot: 0,
       spin: 0,
       fuel: cfg.fuelStart,
+      throttle: 0,          // spooled engine state, not the raw command
       dryMass: 1.0,
       fuelMass: 0.72,
       thrusting: false,
-      throttle: 0,
       alive: true,
       touchdown: null
     };
@@ -414,6 +448,24 @@
     var torque = 0;
     if (input.left) torque -= cfg.rcsAccel;
     if (input.right) torque += cfg.rcsAccel;
+
+    // Detent assist. With the pilot's hands off the rotation keys, ease toward
+    // the nearest step so "level" is a state you can reliably return to. This is
+    // the reference's stepped rotation, expressed as a torque rather than as a
+    // lerp, so the ship keeps its real angular momentum.
+    if (torque === 0 && cfg.detentDeg > 0 && ship.fuel > 0) {
+      var step = cfg.detentDeg * Math.PI / 180;
+      var nearest = Math.round(ship.rot / step) * step;
+      var err = nearest - ship.rot;
+      if (Math.abs(err) < cfg.detentCaptureDeg * Math.PI / 180) {
+        var restore = clamp(err * 22, -cfg.detentAccel, cfg.detentAccel);
+        // Oppose the spin as well as the offset, or the ship oscillates through
+        // the detent instead of settling on it.
+        restore -= ship.spin * cfg.detentAccel * 0.55;
+        ship.spin += restore * dt;
+      }
+    }
+
     if (torque !== 0 && ship.fuel > 0) {
       ship.spin += torque * dt;
       if (Math.random() < 0.5) emitRcs(torque > 0 ? 1 : -1);
@@ -423,14 +475,27 @@
     ship.spin = clamp(ship.spin, -cfg.maxSpin, cfg.maxSpin);
     ship.rot += ship.spin * dt;
 
-    var throttle;
-    if (typeof input.throttle === 'number') {
-      throttle = clamp(input.throttle, 0, 1);
-    } else {
-      throttle = input.thrust ? 1 : 0;
+    // Assisted mode cannot pass horizontal, so the one genuinely unrecoverable
+    // state in a lander is off the table while it is on.
+    if (cfg.assistTiltClampDeg > 0 && cfg.assistTiltClampDeg < 180) {
+      var lim = cfg.assistTiltClampDeg * Math.PI / 180;
+      if (ship.rot > lim) { ship.rot = lim; ship.spin = Math.min(0, ship.spin); }
+      if (ship.rot < -lim) { ship.rot = -lim; ship.spin = Math.max(0, ship.spin); }
     }
+
+    // Engine command, then spool the engine toward it rather than snapping.
+    var throttleCmd;
+    if (typeof input.throttle === 'number') {
+      throttleCmd = clamp(input.throttle, 0, 1);
+    } else {
+      throttleCmd = input.thrust ? 1 : 0;
+    }
+    var rate = throttleCmd > ship.throttle ? cfg.spoolUp : cfg.spoolDown;
+    ship.throttle += clamp(throttleCmd - ship.throttle, -rate * dt, rate * dt);
+    if (ship.fuel <= 0) ship.throttle = 0;
+    var throttle = ship.throttle;
+
     var wantThrust = throttle > 0.02 && ship.fuel > 0;
-    if (ship.fuel <= 0) throttle = 0;
     ship.thrusting = wantThrust;
     ship.throttle = wantThrust ? throttle : 0;
 
@@ -447,6 +512,21 @@
     }
 
     ship.vy += cfg.gravity * dt;
+
+    // Quadratic drag, which is what gives a real terminal velocity of
+    // sqrt(gravity / dragK). Without it a long fall accelerates without limit
+    // and every descent becomes unrecoverable; the reference caps speed for the
+    // same reason, just with a linear drag and a clamp that never actually
+    // fires (it assigns to an undeclared global instead of vel.y).
+    if (cfg.dragK > 0) {
+      var speed = hypot(ship.vx, ship.vy);
+      if (speed > 1e-4) {
+        var dragAccel = cfg.dragK * speed * speed;
+        ship.vx -= (ship.vx / speed) * dragAccel * dt;
+        ship.vy -= (ship.vy / speed) * dragAccel * dt;
+      }
+    }
+
     if (cfg.windMax > 0) ship.vx += windAt(ship.y) * dt;
 
     var nx = ship.x + ship.vx * dt;
@@ -629,6 +709,17 @@
     cfg.windMax        = (d === 'easy' ? 0 : (d === 'hard' ? 0.72 : 0.42)) * clamp(0.35 + 0.25 * (site - 1), 0, 1.5);
     cfg.fuelStart      = d === 'easy' ? 1.0 : (d === 'hard' ? 0.82 : 0.92);
     cfg.par            = BASE.par + 1.5 * (site - 1);
+
+    // Flight assist is the reference's control model: engine spool, rotation
+    // detents, and the +/-90 clamp. Easy and medium keep it. Hard turns it off
+    // so the raw physics is still available to anyone who wants it.
+    var assisted = d !== 'hard';
+    cfg.spoolUp        = BASE.spoolUp;
+    cfg.spoolDown      = BASE.spoolDown;
+    cfg.detentDeg      = assisted ? BASE.detentDeg : 0;
+    cfg.detentCaptureDeg = BASE.detentCaptureDeg;
+    cfg.detentAccel    = BASE.detentAccel;
+    cfg.assistTiltClampDeg = assisted ? BASE.assistTiltClampDeg : 180;
 
     terrain = buildTerrain(run.seedBase + site * 7919, site);
 
@@ -1114,6 +1205,19 @@
       { ok: spin <= cfg.maxSpinAtTouch, label: 'SPIN', value: spin.toFixed(1) + '/' + cfg.maxSpinAtTouch.toFixed(1) }
     ];
 
+    // Level is the condition the reference makes crisp by snapping rotation to
+    // fixed steps. Report it the same way here so the pilot has one unambiguous
+    // thing to chase: either the ship is sitting on a detent or it is not.
+    if (cfg.detentDeg > 0) {
+      var stepRad = cfg.detentDeg * Math.PI / 180;
+      var off = Math.abs(ship.rot - Math.round(ship.rot / stepRad) * stepRad);
+      checks.push({
+        ok: off < 0.035,
+        label: 'LEVEL',
+        value: off < 0.035 ? 'ON' : (off * 180 / Math.PI).toFixed(0) + ' deg off'
+      });
+    }
+
     var bx = 12, by = H - 12 - checks.length * 15;
     ctx.save();
     ctx.font = '8px "Press Start 2P", monospace';
@@ -1371,7 +1475,17 @@
     input: input,
     mode: function () { return mode; },
     config: function () { return cfg; },
-    constants: { PX_PER_M: PX_PER_M, W: W, H: H }
+    constants: { PX_PER_M: PX_PER_M, W: W, H: H },
+    // Test hook: drop the ship into a known state. Used to measure terminal
+    // velocity by launching above it, which is the only way to distinguish real
+    // drag from a short fall that simply had not got fast yet.
+    _setShip: function (xM, yM, vx, vy, rotRad) {
+      if (!ship) return null;
+      ship.x = xM; ship.y = yM;
+      ship.vx = vx; ship.vy = vy;
+      if (typeof rotRad === 'number') { ship.rot = rotRad; ship.spin = 0; }
+      return snapshot();
+    }
   };
 
   // Deterministic hooks required by the develop-web-game test loop.

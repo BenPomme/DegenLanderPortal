@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NEON LABYRINTH - five levels, one life</title>
   <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
   <style>
     /* Reset & Base */
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -13,7 +12,7 @@
       margin: 0;
       background-color: #1e1e1e;
       overflow: hidden;
-      font-family: 'Roboto', sans-serif;
+      font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
       color: #f0f0f0;
     }
     /* Canvas styling with animated neon gradient */
@@ -457,19 +456,19 @@
 
         function drawHUD() {
           ctx.fillStyle = '#ecf0f1';
-          ctx.font = '18px Roboto';
+          ctx.font = '18px ui-monospace, Menlo, monospace';
           ctx.textAlign = 'left';
           ctx.fillText(`LEVEL: ${currentLevel} / ${TOTAL_LEVELS}`, 10, 25);
           ctx.fillText(`APPLES: ${applesCollected}/${totalApples}`, 10, 50);
           ctx.fillText(`SCORE: ${score}`, 10, 75);
           if (player.shield) {
             ctx.fillStyle = '#1abc9c';
-            ctx.font = '16px Roboto';
+            ctx.font = '16px ui-monospace, Menlo, monospace';
             ctx.fillText(`SHIELD: ${Math.ceil(player.shieldTimer / 60)}s`, 10, 100);
           }
           if (player.boost) {
             ctx.fillStyle = '#e67e22';
-            ctx.font = '16px Roboto';
+            ctx.font = '16px ui-monospace, Menlo, monospace';
             ctx.fillText(`Boost: ${Math.ceil(player.boostTimer / 60)}s`, 10, 125);
           }
         }
@@ -785,19 +784,19 @@
 
         function drawHUD() {
           ctx.fillStyle = '#ecf0f1';
-          ctx.font = '18px Roboto';
+          ctx.font = '18px ui-monospace, Menlo, monospace';
           ctx.textAlign = 'left';
           ctx.fillText(`LEVEL: ${currentLevel} / ${TOTAL_LEVELS}`, 10, 25);
           ctx.fillText(`APPLES: ${applesCollected}/${totalApples}`, 10, 50);
           ctx.fillText(`SCORE: ${score}`, 10, 75);
           if (player.shield) {
             ctx.fillStyle = '#1abc9c';
-            ctx.font = '16px Roboto';
+            ctx.font = '16px ui-monospace, Menlo, monospace';
             ctx.fillText(`SHIELD: ${Math.ceil(player.shieldTimer / 60)}s`, 10, 100);
           }
           if (player.boost) {
             ctx.fillStyle = '#e67e22';
-            ctx.font = '16px Roboto';
+            ctx.font = '16px ui-monospace, Menlo, monospace';
             ctx.fillText(`Boost: ${Math.ceil(player.boostTimer / 60)}s`, 10, 125);
           }
         }

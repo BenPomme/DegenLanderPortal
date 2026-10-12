@@ -321,13 +321,13 @@
         <label style="margin-top:12px">DIFFICULTY</label>
         <div class="diffs" id="difficulty">
           <button class="diff" data-diff="easy" aria-pressed="false">
-            PAPER HANDS<small>no wind, wide pad</small>
+            PAPER HANDS<small>no wind, wide pad, assist</small>
           </button>
           <button class="diff" data-diff="medium" aria-pressed="true">
-            DIAMOND HANDS<small>wind, tighter pad</small>
+            DIAMOND HANDS<small>wind, tighter pad, assist</small>
           </button>
           <button class="diff" data-diff="hard" aria-pressed="false">
-            FULL DEGEN<small>strong wind, tiny pad</small>
+            FULL DEGEN<small>wind, tiny pad, no assist</small>
           </button>
         </div>
         <button class="btn gold" id="start-btn" style="margin-top:8px">LAUNCH</button>
@@ -407,6 +407,9 @@
         <li><kbd>&#8593;</kbd> or <kbd>W</kbd> thrust. The engine points where the nose points.</li>
         <li><kbd>&#8592;</kbd> <kbd>&#8594;</kbd> rotate. The ship has angular momentum, so start your counter-burn early.</li>
         <li>Both legs must touch down. A hull strike is always fatal.</li>
+        <li>The engine <b class="d-green">spools up</b> rather than snapping on, so a tap is a small correction and a hold is a full burn. Cutting the throttle is quicker than opening it.</li>
+        <li>With the rotation keys released the ship eases onto the nearest <b class="d-green">15 degree step</b>, so level is a state you can always get back to. The envelope panel shows <b class="d-gold">LEVEL: ON</b> when you are on it.</li>
+        <li>Easy and medium also stop you passing horizontal, so you can never end up inverted with no way back. <b class="d-gold">FULL DEGEN</b> turns both assists off and gives you the raw physics.</li>
         <li>Match the slope: tilt is measured against the ground under you, not the horizon.</li>
         <li><kbd>P</kbd> pause. <kbd>F</kbd> fullscreen. <kbd>Esc</kbd> exits fullscreen.</li>
         <li>Land, then bank the score or double down on a harder site for a bigger multiplier.</li>

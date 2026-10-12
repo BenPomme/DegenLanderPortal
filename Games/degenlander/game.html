@@ -6,7 +6,6 @@
   <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <!-- Import retro font for degen aesthetics -->
-  <link href="https://fonts.googleapis.com/css?family=Press+Start+2P" rel="stylesheet">
   <!-- Import shared DegenlanderPortal libraries -->
   <script src="../../js/degen-theme.js"></script>
   <script src="../../js/leaderboard.js"></script>
@@ -662,13 +661,9 @@
       "HODL MY BEER, I'M LANDING!", "BUY THE DIP, LAND THE SHIP!",
       "WHEN LAMBO? NOW!", "CRYPTO TO THE MOON, FINANCE STYLE!", "WEN MOON? NOW, BITCH!"
     ];
-    const memeImages = [
-      "https://i.imgflip.com/1bij.jpg",
-      "https://i.imgflip.com/26am.jpg",
-      "https://i.imgflip.com/3si4.jpg",
-      "https://i.imgflip.com/1otk96.jpg",
-      "https://i.imgflip.com/30b1gx.jpg"
-    ];
+    // Meme pop-ups used to hotlink i.imgflip.com, which blocks hotlinking, so
+    // every pop-up rendered as a broken-image icon. They are drawn now.
+    const memeColours = ['#00ff9d', '#ffd166', '#ff2d55', '#b026ff', '#00e5ff'];
     
     function initStars() {
       stars = [];
@@ -993,18 +988,43 @@
       setTimeout(() => { bubble.remove(); }, 2000);
     }
     function showMemePopup(x, y) {
-      const img = document.createElement("img");
-      const memeUrl = memeImages[Math.floor(Math.random() * memeImages.length)];
-      img.src = memeUrl;
-      img.style.position = "absolute";
-      img.style.left = x + "px";
-      img.style.top = y + "px";
-      img.style.width = "150px";
-      img.style.border = "3px solid #000";
-      img.style.borderRadius = "10px";
-      document.body.appendChild(img);
-      setTimeout(() => { img.remove(); }, 2500);
+      // These pop-ups used to hotlink i.imgflip.com, which blocks hotlinking, so
+      // every one of them rendered as a broken-image icon. Draw them instead.
+      const phrase = memePhrases[Math.floor(Math.random() * memePhrases.length)];
+      const colour = memeColours[Math.floor(Math.random() * memeColours.length)];
+      const card = document.createElement('canvas');
+      card.width = 320; card.height = 160;
+      const g = card.getContext('2d');
+      g.fillStyle = '#05060a';
+      g.fillRect(0, 0, 320, 160);
+      g.strokeStyle = colour;
+      g.lineWidth = 6;
+      g.strokeRect(3, 3, 314, 154);
+      g.fillStyle = colour;
+      g.font = 'bold 22px "Press Start 2P", monospace';
+      g.textAlign = 'center';
+      const words = phrase.split(' ');
+      const lines = []; let line = '';
+      words.forEach((w) => {
+        const next = line ? line + ' ' + w : w;
+        if (next.length > 16 && line) { lines.push(line); line = w; } else { line = next; }
+      });
+      if (line) lines.push(line);
+      const startY = 80 - (lines.length - 1) * 18;
+      lines.slice(0, 3).forEach((l, i) => g.fillText(l, 160, startY + i * 36));
+
+      card.style.position = 'absolute';
+      card.style.left = x + 'px';
+      card.style.top = y + 'px';
+      card.style.width = '160px';
+      card.style.height = '80px';
+      card.style.borderRadius = '10px';
+      card.style.pointerEvents = 'none';
+      card.style.zIndex = '500';
+      document.body.appendChild(card);
+      setTimeout(() => { card.remove(); }, 2500);
     }
+
     // Using the shared sound system instead of direct Audio objects
     // Sound effects will be handled by DegenSound
     function resizeCanvas() {
